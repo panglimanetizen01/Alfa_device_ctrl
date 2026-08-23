@@ -1,0 +1,10 @@
+=== ALFA EXECUTION CAPABILITY V1 ===
+
+[CAPABILITIES]
+EXEC_PRIVATE=PASS | verification=execution test
+EXEC_SHARED=PASS | verification=execution test
+SCRIPT_BASH=PASS | verification=bash execution
+SCRIPT_PYTHON=PASS | verification=python execution
+PROCESS_SPAWN=PASS | verification=process spawn
+
+[END]
