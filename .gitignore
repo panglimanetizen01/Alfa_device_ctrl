@@ -1,0 +1,4 @@
+# Gate 0 temporary provenance evidence
+artifacts/gate0_complete_provenance_evidence_*.txt
+artifacts/gate0_part_*.txt
+artifacts/gate0_provenance_evidence.txt
