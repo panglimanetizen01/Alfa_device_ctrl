@@ -8,6 +8,8 @@ echo "[EDE]"
 echo
 echo "[CDE]"
 ./tools/cde.sh
+LATEST_CDE=$(ls -1t artifacts/cde/cde_*.txt | head -1)
+cat "$LATEST_CDE"
 
 echo
 echo "=== END ==="

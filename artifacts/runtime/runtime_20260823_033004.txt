@@ -1,0 +1,68 @@
+=== ALFA RUNTIME DISCOVERY V1 ===
+
+[EDE]
+=== EDE V1 ===
+
+[HEADER]
+timestamp=2026-08-23 03:30:04
+ede_version=1
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[IDENTITY]
+username=userland
+uid=2000
+gid=2000
+groups=userland
+
+[KERNEL]
+kernel_name=Linux
+kernel_version=5.10.209-android12-9-00016-g7c6bbcca33e1-ab12029497
+architecture=aarch64
+
+[ENVIRONMENT]
+home=/home/userland
+pwd=/storage/emulated/0/Alfa_device_ctrl
+shell=/bin/bash
+
+[TOOLCHAIN]
+git=PRESENT
+python3=PRESENT
+java=ABSENT
+javac=ABSENT
+gradle=ABSENT
+
+[STORAGE]
+android_shared_storage=PRESENT
+writable_shared_storage=YES
+private_storage=/home/userland
+
+[CLASSIFICATION]
+android_host=DETECTED
+container_environment=DETECTED
+toolchain_status=WARNING
+storage_status=PASS
+
+[CDE]
+=== CDE V1 ===
+
+[REGISTRY]
+registry=CAPABILITY_REGISTRY_V1
+
+[CAPABILITIES]
+STORAGE_READ=PASS | verification=Read test | scope=current_environment
+STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment
+evidence=/storage/emulated/0/.cde_write_test.30955
+EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment
+EXEC_SHARED=PASS | verification=Execution test | scope=current_environment
+NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment
+
+[TOOLCHAIN]
+GIT=PASS | verification=command discovery | scope=current_environment
+PYTHON3=PASS | verification=command discovery | scope=current_environment
+JAVA=ERROR | verification=command discovery | scope=current_environment
+JAVAC=ERROR | verification=command discovery | scope=current_environment
+GRADLE=ERROR | verification=command discovery | scope=current_environment
+
+[END]
+
+=== END ===

@@ -1,0 +1,21 @@
+=== CDE V1 ===
+
+[REGISTRY]
+registry=CAPABILITY_REGISTRY_V1
+
+[CAPABILITIES]
+STORAGE_READ=PASS | verification=Read test | scope=current_environment
+STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment
+evidence=/storage/emulated/0/.cde_write_test.30955
+EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment
+EXEC_SHARED=PASS | verification=Execution test | scope=current_environment
+NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment
+
+[TOOLCHAIN]
+GIT=PASS | verification=command discovery | scope=current_environment
+PYTHON3=PASS | verification=command discovery | scope=current_environment
+JAVA=ERROR | verification=command discovery | scope=current_environment
+JAVAC=ERROR | verification=command discovery | scope=current_environment
+GRADLE=ERROR | verification=command discovery | scope=current_environment
+
+[END]
