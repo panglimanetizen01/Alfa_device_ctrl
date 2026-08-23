@@ -1,0 +1,11 @@
+=== CDE V1 ===
+
+[CAPABILITIES]
+STORAGE_READ=PASS
+STORAGE_WRITE=PASS
+evidence=/storage/emulated/0/.cde_write_test.26966
+EXEC_PRIVATE_RC=0
+EXEC_SHARED_RC=0
+NETWORK_DNS_RC=0
+
+[END]

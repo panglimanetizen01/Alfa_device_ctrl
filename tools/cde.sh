@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+TS=$(date +%Y%m%d_%H%M%S)
+OUT="artifacts/cde/cde_${TS}.txt"
+
+exec > "$OUT"
+
 echo "=== CDE V1 ==="
 echo
 
@@ -16,8 +21,9 @@ TMP=/storage/emulated/0/.cde_write_test.$$
 
 if touch "$TMP" >/dev/null 2>&1
 then
-    rm -f "$TMP" >/dev/null 2>&1
     echo "STORAGE_WRITE=PASS"
+    echo "evidence=$TMP"
+    rm -f "$TMP"
 else
     echo "STORAGE_WRITE=ERROR"
 fi
@@ -31,13 +37,8 @@ SH
 
 chmod +x "$PVT"
 
-if "$PVT" >/dev/null 2>&1
-then
-    echo "EXEC_PRIVATE=PASS"
-else
-    echo "EXEC_PRIVATE=ERROR"
-fi
-
+"$PVT" >/dev/null 2>&1
+echo "EXEC_PRIVATE_RC=$?"
 rm -f "$PVT"
 
 SHR=/storage/emulated/0/.cde_exec_shared.$$
@@ -49,18 +50,12 @@ SH
 
 chmod +x "$SHR"
 
-if "$SHR" >/dev/null 2>&1
-then
-    echo "EXEC_SHARED=PASS"
-else
-    echo "EXEC_SHARED=ERROR"
-fi
-
+"$SHR" >/dev/null 2>&1
+echo "EXEC_SHARED_RC=$?"
 rm -f "$SHR"
 
-if getent hosts google.com >/dev/null 2>&1
-then
-    echo "NETWORK_DNS=PASS"
-else
-    echo "NETWORK_DNS=ERROR"
-fi
+getent hosts google.com >/dev/null 2>&1
+echo "NETWORK_DNS_RC=$?"
+
+echo
+echo "[END]"
