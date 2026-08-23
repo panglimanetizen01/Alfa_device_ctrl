@@ -41,7 +41,12 @@ SH
 chmod +x "$PVT"
 
 "$PVT" >/dev/null 2>&1
-echo "EXEC_PRIVATE_RC=$? | verification=Execution test | scope=current_environment"
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment"
+else
+    echo "EXEC_PRIVATE=ERROR | verification=Execution test | scope=current_environment"
+fi
 rm -f "$PVT"
 
 SHR=/storage/emulated/0/.cde_exec_shared.$$
@@ -54,11 +59,21 @@ SH
 chmod +x "$SHR"
 
 "$SHR" >/dev/null 2>&1
-echo "EXEC_SHARED_RC=$? | verification=Execution test | scope=current_environment"
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "EXEC_SHARED=PASS | verification=Execution test | scope=current_environment"
+else
+    echo "EXEC_SHARED=ERROR | verification=Execution test | scope=current_environment"
+fi
 rm -f "$SHR"
 
 getent hosts google.com >/dev/null 2>&1
-echo "NETWORK_DNS_RC=$? | verification=DNS lookup | scope=current_environment"
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment"
+else
+    echo "NETWORK_DNS=ERROR | verification=DNS lookup | scope=current_environment"
+fi
 
 echo
 echo "[END]"
