@@ -76,4 +76,17 @@ else
 fi
 
 echo
+echo "[TOOLCHAIN]"
+
+for tool in git python3 java javac gradle
+do
+    if command -v "$tool" >/dev/null 2>&1
+    then
+        echo "$tool=PASS | verification=command discovery | scope=current_environment"
+    else
+        echo "$tool=ERROR | verification=command discovery | scope=current_environment"
+    fi
+done
+
+echo
 echo "[END]"
