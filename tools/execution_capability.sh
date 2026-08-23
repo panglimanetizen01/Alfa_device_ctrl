@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 echo "=== ALFA EXECUTION CAPABILITY V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
+
 echo
 
 echo "[CAPABILITIES]"
