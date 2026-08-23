@@ -1,0 +1,17 @@
+=== ALFA RUNTIME COMMAND POLICY V1 ===
+timestamp=2026-08-23 06:14:24
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[KERNEL]
+kernel_status=PASS
+
+[POLICY]
+allowed_command=pwd
+allowed_status=ALLOWED
+blocked_command=uname
+blocked_status=BLOCKED
+
+[EXECUTION CHECK]
+policy_execution=NONE
+
+[END]
