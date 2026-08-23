@@ -65,7 +65,54 @@ echo "private_storage=${HOME:-UNKNOWN}"
 echo
 
 echo "[CLASSIFICATION]"
-echo "android_host=DETECTED"
-echo "container_environment=UNKNOWN"
-echo "toolchain_status=DISCOVERED"
-echo "storage_status=DISCOVERED"
+
+ANDROID_HOST="UNKNOWN"
+
+if uname -r 2>/dev/null | grep -qi android
+then
+    ANDROID_HOST="DETECTED"
+elif [ -d /storage/emulated/0 ]
+then
+    ANDROID_HOST="DETECTED"
+fi
+
+CONTAINER_ENVIRONMENT="UNKNOWN"
+
+if env | grep -qi userland
+then
+    CONTAINER_ENVIRONMENT="DETECTED"
+fi
+
+TOOLCHAIN_PRESENT=0
+for tool in git python3 java javac gradle
+do
+    command -v "$tool" >/dev/null 2>&1 && TOOLCHAIN_PRESENT=$((TOOLCHAIN_PRESENT+1))
+done
+
+if [ "$TOOLCHAIN_PRESENT" -eq 5 ]
+then
+    TOOLCHAIN_STATUS="PASS"
+elif [ "$TOOLCHAIN_PRESENT" -ge 2 ]
+then
+    TOOLCHAIN_STATUS="WARNING"
+else
+    TOOLCHAIN_STATUS="ERROR"
+fi
+
+if [ -d /storage/emulated/0 ]
+then
+    if touch /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+    then
+        rm -f /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+        STORAGE_STATUS="PASS"
+    else
+        STORAGE_STATUS="WARNING"
+    fi
+else
+    STORAGE_STATUS="ERROR"
+fi
+
+echo "android_host=$ANDROID_HOST"
+echo "container_environment=$CONTAINER_ENVIRONMENT"
+echo "toolchain_status=$TOOLCHAIN_STATUS"
+echo "storage_status=$STORAGE_STATUS"
