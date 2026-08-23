@@ -82,9 +82,9 @@ for tool in git python3 java javac gradle
 do
     if command -v "$tool" >/dev/null 2>&1
     then
-        echo "$tool=PASS | verification=command discovery | scope=current_environment"
+        echo "$(printf "%s" "$tool" | tr "[:lower:]" "[:upper:]")=PASS | verification=command discovery | scope=current_environment"
     else
-        echo "$tool=ERROR | verification=command discovery | scope=current_environment"
+        echo "$(printf "%s" "$tool" | tr "[:lower:]" "[:upper:]")=ERROR | verification=command discovery | scope=current_environment"
     fi
 done
 
