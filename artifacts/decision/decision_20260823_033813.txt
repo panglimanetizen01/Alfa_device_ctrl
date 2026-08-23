@@ -1,0 +1,14 @@
+=== ALFA RUNTIME DECISION V1 ===
+timestamp=2026-08-23 03:38:13
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[REQUIRED]
+storage_read=PASS
+storage_write=PASS
+exec_private=PASS
+network_dns=PASS
+
+[DECISION]
+decision=READY
+
+[END]
