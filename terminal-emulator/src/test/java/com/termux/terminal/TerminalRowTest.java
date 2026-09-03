@@ -59,6 +59,29 @@ public class TerminalRowTest extends TestCase {
 		assertLineStartsWith(' ', DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, ' ');
 	}
 
+	public void testCombiningCharacterLimit() {
+		row.setChar(0, 'a', 0);
+
+		for (int i = 0; i < 15; i++) {
+			row.setChar(0, DIARESIS_CODEPOINT, 0);
+		}
+
+		assertEquals(95, row.getSpaceUsed());
+		assertLineStartsWith(
+			'a',
+			DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, DIARESIS_CODEPOINT,
+			DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, DIARESIS_CODEPOINT,
+			DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, DIARESIS_CODEPOINT,
+			DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, DIARESIS_CODEPOINT,
+			DIARESIS_CODEPOINT, DIARESIS_CODEPOINT, DIARESIS_CODEPOINT,
+			' '
+		);
+
+		row.setChar(0, DIARESIS_CODEPOINT, 0);
+
+		assertEquals(95, row.getSpaceUsed());
+	}
+
 	public void testStaticConstants() {
 		assertEquals(1, Character.charCount(ONE_JAVA_CHAR_DISPLAY_WIDTH_TWO_1));
 		assertEquals(1, Character.charCount(ONE_JAVA_CHAR_DISPLAY_WIDTH_TWO_2));
