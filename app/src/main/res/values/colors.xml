@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="alfa_background">#131315</color>
+    <color name="alfa_surface_lowest">#0E0E10</color>
+    <color name="alfa_surface_low">#1B1B1D</color>
+    <color name="alfa_surface">#201F21</color>
+    <color name="alfa_surface_high">#2A2A2C</color>
+    <color name="alfa_surface_highest">#353437</color>
+    <color name="alfa_primary">#ABC7FF</color>
+    <color name="alfa_primary_container">#448FFD</color>
+    <color name="alfa_secondary">#FFBC7C</color>
+    <color name="alfa_tertiary">#E8B3FF</color>
+    <color name="alfa_error">#FFB4AB</color>
+    <color name="alfa_on_surface">#E5E1E4</color>
+    <color name="alfa_on_surface_variant">#C1C6D5</color>
+    <color name="alfa_outline">#8B919F</color>
+</resources>
