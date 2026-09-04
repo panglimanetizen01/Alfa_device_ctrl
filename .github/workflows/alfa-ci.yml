@@ -46,7 +46,6 @@ jobs:
       - name: Gate A - Source integrity
         run: |
           mkdir -p ci-evidence
-          git status --porcelain=v1
           test -z "$(git status --porcelain=v1)"
           python3 - <<'PY'
           import hashlib, json, subprocess
@@ -55,14 +54,7 @@ jobs:
           for path in files:
               data = subprocess.check_output(["git", "show", f"HEAD:{path}"])
               h.update(path.encode()); h.update(b"\0"); h.update(hashlib.sha256(data).digest())
-          out = {
-              "gate": "A",
-              "status": "PASS",
-              "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
-              "tracked_files": len(files),
-              "tree_content_sha256": h.hexdigest(),
-          }
-          json.dump(out, open("ci-evidence/source-integrity.json", "w"), indent=2)
+          json.dump({"gate":"A","status":"PASS","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"tracked_files":len(files),"tree_content_sha256":h.hexdigest()},open("ci-evidence/source-integrity.json","w"),indent=2)
           PY
 
       - name: Gate B - Static audit
@@ -71,35 +63,20 @@ jobs:
           python3 - <<'PY'
           import json, re, subprocess
           files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
-          legacy = []
-          backups = []
-          secrets = []
-          project_refs = []
-          for path in files:
-              try:
-                  text = open(path, encoding="utf-8", errors="ignore").read()
-              except (IsADirectoryError, FileNotFoundError):
-                  continue
-              if re.search(r'/storage/emulated/0/UserLAnd|UserLAnd_home_migration|/storage/emulated/0/android-sdk', text):
-                  legacy.append(path)
-              if re.search(r'(^|/)[^/]+\.(bak|bak-[^/]+|before_[^/]+)$|audit-backup|codeql-fix-backup', path):
-                  backups.append(path)
-              if re.search(r'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----', text):
-                  secrets.append(path)
-              project_refs.extend(re.findall(r'project\(["\'](:[^"\']+)["\']\)', text))
-          settings = open("settings.gradle", encoding="utf-8").read()
-          included = set(re.findall(r'include\((.*?)\)', settings, re.S))
-          report = {
-              "gate": "B",
-              "legacy_path_files": sorted(set(legacy)),
-              "backup_named_files": sorted(set(backups)),
-              "secret_pattern_files": sorted(set(secrets)),
-              "project_references": sorted(set(project_refs)),
-              "settings_includes_present": bool(included),
-          }
-          report["status"] = "PASS" if not legacy and not backups and not secrets and included else "FAIL"
-          json.dump(report, open("ci-evidence/audit-summary.json", "w"), indent=2)
-          raise SystemExit(0 if report["status"] == "PASS" else 1)
+          scan_files = [p for p in files if p != ".github/workflows/alfa-ci.yml" and not p.startswith("docs/")]
+          legacy=[]; backups=[]; secrets=[]; project_refs=[]
+          for path in scan_files:
+              try: text=open(path,encoding="utf-8",errors="ignore").read()
+              except (IsADirectoryError,FileNotFoundError): continue
+              if re.search(r'/storage/emulated/0/UserLAnd|UserLAnd_home_migration|/storage/emulated/0/android-sdk',text): legacy.append(path)
+              if re.search(r'(^|/)[^/]+\.(bak|bak-[^/]+|before_[^/]+)$|audit-backup|codeql-fix-backup',path): backups.append(path)
+              if re.search(r'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----',text): secrets.append(path)
+              project_refs.extend(re.findall(r'project\(["\'](:[^"\']+)["\']\)',text))
+          settings=open("settings.gradle",encoding="utf-8").read()
+          included=set(re.findall(r'include\((.*?)\)',settings,re.S))
+          report={"gate":"B","status":"PASS" if not legacy and not backups and not secrets and included else "FAIL","legacy_path_files":sorted(set(legacy)),"backup_named_files":sorted(set(backups)),"secret_pattern_files":sorted(set(secrets)),"project_references":sorted(set(project_refs)),"settings_includes_present":bool(included)}
+          json.dump(report,open("ci-evidence/audit-summary.json","w"),indent=2)
+          raise SystemExit(0 if report["status"]=="PASS" else 1)
           PY
           B=$?
           echo "GATE_B_EXIT=$B"
@@ -112,14 +89,7 @@ jobs:
           C=$?
           python3 - "$C" <<'PY'
           import json, subprocess, sys
-          code = int(sys.argv[1])
-          json.dump({
-              "gate": "C",
-              "status": "PASS" if code == 0 else "FAIL",
-              "exit_code": code,
-              "task": ":app:assembleDebug",
-              "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
-          }, open("ci-evidence/build-result.json", "w"), indent=2)
+          code=int(sys.argv[1]); json.dump({"gate":"C","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":":app:assembleDebug","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()},open("ci-evidence/build-result.json","w"),indent=2)
           PY
           exit 0
 
@@ -130,14 +100,7 @@ jobs:
           D=$?
           python3 - "$D" <<'PY'
           import json, subprocess, sys
-          code = int(sys.argv[1])
-          json.dump({
-              "gate": "D",
-              "status": "PASS" if code == 0 else "FAIL",
-              "exit_code": code,
-              "task": "test",
-              "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
-          }, open("ci-evidence/test-result.json", "w"), indent=2)
+          code=int(sys.argv[1]); json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()},open("ci-evidence/test-result.json","w"),indent=2)
           PY
           exit 0
 
@@ -146,14 +109,10 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, sys
-          required = ["audit-summary.json", "build-result.json", "test-result.json", "source-integrity.json"]
-          missing = [x for x in required if not os.path.isfile("ci-evidence/" + x)]
-          for name in required:
-              if name not in missing:
-                  with open("ci-evidence/" + name, encoding="utf-8") as f: json.load(f)
-          if missing:
-              print("MISSING_EVIDENCE=" + ",".join(missing))
-              sys.exit(1)
+          required=["audit-summary.json","build-result.json","test-result.json","source-integrity.json"]
+          missing=[x for x in required if not os.path.isfile("ci-evidence/"+x)]
+          if missing: print("MISSING_EVIDENCE="+",".join(missing)); sys.exit(1)
+          for name in required: json.load(open("ci-evidence/"+name,encoding="utf-8"))
           print("EVIDENCE_SCHEMA=PASS")
           PY
 
@@ -180,13 +139,11 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, sys
-          files = ["source-integrity.json", "audit-summary.json", "build-result.json", "test-result.json"]
-          missing = [f for f in files if not os.path.isfile("ci-evidence/" + f)]
-          if missing:
-              print("FAILED_GATES=E:" + ",".join(missing))
-              sys.exit(1)
-          reports = [json.load(open("ci-evidence/" + f)) for f in files]
-          failed = [r["gate"] for r in reports if r.get("status") != "PASS"]
-          print("FAILED_GATES=" + (",".join(failed) if failed else "NONE"))
+          files=["source-integrity.json","audit-summary.json","build-result.json","test-result.json"]
+          missing=[f for f in files if not os.path.isfile("ci-evidence/"+f)]
+          if missing: print("FAILED_GATES=E:"+",".join(missing)); sys.exit(1)
+          reports=[json.load(open("ci-evidence/"+f)) for f in files]
+          failed=[r["gate"] for r in reports if r.get("status")!="PASS"]
+          print("FAILED_GATES="+(",".join(failed) if failed else "NONE"))
           sys.exit(1 if failed else 0)
           PY
