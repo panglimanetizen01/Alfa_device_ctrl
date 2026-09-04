@@ -99,13 +99,16 @@ jobs:
           sh ./gradlew test --no-daemon --stacktrace
           D=$?
           mkdir -p ci-evidence/junit-xml ci-evidence/test-report
-          find . -type f -path '*/build/test-results/test/*.xml' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/junit-xml/; done
-          if [ -d build/reports/tests/test ]; then cp -R build/reports/tests/test/. ci-evidence/test-report/; fi
+          find . -type f -path '*/build/test-results/*/*.xml' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/junit-xml/; done
+          find . -type f -path '*/build/reports/tests/*' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/test-report/; done
+          echo "JUNIT_XML_FILES=$(find ci-evidence/junit-xml -type f -name '*.xml' | wc -l)"
+          echo "TEST_REPORT_FILES=$(find ci-evidence/test-report -type f | wc -l)"
           python3 - "$D" <<'PY'
-          import glob, json, os, subprocess, sys
+          import glob, json, subprocess, sys
           from xml.etree import ElementTree as ET
           failures=[]
-          for path in glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True):
+          xml_files=glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True)
+          for path in xml_files:
               try:
                   root=ET.parse(path).getroot()
               except ET.ParseError:
@@ -116,7 +119,7 @@ jobs:
                       if node is not None:
                           failures.append({"xml":path,"classname":case.get("classname"),"name":case.get("name"),"type":node.get("type"),"message":node.get("message"),"detail":"".join(node.itertext()).strip()})
           code=int(sys.argv[1])
-          json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"failure_count":len(failures),"failures":failures},open("ci-evidence/test-result.json","w"),indent=2)
+          json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"junit_xml_count":len(xml_files),"failure_count":len(failures),"failures":failures},open("ci-evidence/test-result.json","w"),indent=2)
           PY
           exit 0
 
