@@ -98,9 +98,25 @@ jobs:
           set +e
           sh ./gradlew test --no-daemon --stacktrace
           D=$?
+          mkdir -p ci-evidence/junit-xml ci-evidence/test-report
+          find . -type f -path '*/build/test-results/test/*.xml' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/junit-xml/; done
+          if [ -d build/reports/tests/test ]; then cp -R build/reports/tests/test/. ci-evidence/test-report/; fi
           python3 - "$D" <<'PY'
-          import json, subprocess, sys
-          code=int(sys.argv[1]); json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()},open("ci-evidence/test-result.json","w"),indent=2)
+          import glob, json, os, subprocess, sys
+          from xml.etree import ElementTree as ET
+          failures=[]
+          for path in glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True):
+              try:
+                  root=ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for case in root.iter("testcase"):
+                  for tag in ("failure", "error"):
+                      node=case.find(tag)
+                      if node is not None:
+                          failures.append({"xml":path,"classname":case.get("classname"),"name":case.get("name"),"type":node.get("type"),"message":node.get("message"),"detail":"".join(node.itertext()).strip()})
+          code=int(sys.argv[1])
+          json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"failure_count":len(failures),"failures":failures},open("ci-evidence/test-result.json","w"),indent=2)
           PY
           exit 0
 
