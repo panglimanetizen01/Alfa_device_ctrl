@@ -95,6 +95,25 @@ jobs:
 
       - name: Gate D - Unit tests
         run: |
+          set -e
+          FIXTURE_DIR="artifacts/test-fixtures"
+          FIXTURE="${FIXTURE_DIR}/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          FIXTURE_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          SUMS_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS"
+          EXPECTED_SHA256="04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2"
+          mkdir -p "$FIXTURE_DIR" ci-evidence
+          curl -fsSL "$SUMS_URL" -o ci-evidence/ubuntu-base-SHA256SUMS
+          CANONICAL_SHA256="$(awk '$2 == "*ubuntu-base-24.04.4-base-arm64.tar.gz" {print $1}' ci-evidence/ubuntu-base-SHA256SUMS)"
+          test "$CANONICAL_SHA256" = "$EXPECTED_SHA256"
+          curl -fL "$FIXTURE_URL" -o "$FIXTURE"
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$FIXTURE" | sha256sum -c -
+          gzip -t "$FIXTURE"
+          python3 - <<'PY'
+          import json, os, subprocess
+          fixture="artifacts/test-fixtures/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          digest=subprocess.check_output(["sha256sum",fixture],text=True).split()[0]
+          json.dump({"fixture":fixture,"source":"https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz","manifest":"https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS","sha256":digest,"expected_sha256":"04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2","size_bytes":os.path.getsize(fixture),"gzip_integrity":"PASS","status":"PASS"},open("ci-evidence/fixture-provenance.json","w"),indent=2)
+          PY
           set +e
           sh ./gradlew test --no-daemon --stacktrace
           D=$?
@@ -128,7 +147,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, sys
-          required=["audit-summary.json","build-result.json","test-result.json","source-integrity.json"]
+          required=["audit-summary.json","build-result.json","test-result.json","source-integrity.json","fixture-provenance.json"]
           missing=[x for x in required if not os.path.isfile("ci-evidence/"+x)]
           if missing: print("MISSING_EVIDENCE="+",".join(missing)); sys.exit(1)
           for name in required: json.load(open("ci-evidence/"+name,encoding="utf-8"))
@@ -158,11 +177,11 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, sys
-          files=["source-integrity.json","audit-summary.json","build-result.json","test-result.json"]
+          files=["source-integrity.json","audit-summary.json","build-result.json","test-result.json","fixture-provenance.json"]
           missing=[f for f in files if not os.path.isfile("ci-evidence/"+f)]
           if missing: print("FAILED_GATES=E:"+",".join(missing)); sys.exit(1)
           reports=[json.load(open("ci-evidence/"+f)) for f in files]
-          failed=[r["gate"] for r in reports if r.get("status")!="PASS"]
+          failed=[r.get("gate", "fixture") for r in reports if r.get("status")!="PASS"]
           print("FAILED_GATES="+(",".join(failed) if failed else "NONE"))
           sys.exit(1 if failed else 0)
           PY
