@@ -37,11 +37,11 @@ jobs:
 
       - name: Prepare Android SDK
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-
-      - name: Prepare Gradle Wrapper
-        run: gradle wrapper --gradle-version 9.2.1 --distribution-type bin
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "ANDROID_SDK_READY=PASS"
 
       - name: Gate A - Source integrity
         run: |
@@ -179,8 +179,12 @@ jobs:
         if: always()
         run: |
           python3 - <<'PY'
-          import json, sys
+          import json, os, sys
           files = ["source-integrity.json", "audit-summary.json", "build-result.json", "test-result.json"]
+          missing = [f for f in files if not os.path.isfile("ci-evidence/" + f)]
+          if missing:
+              print("FAILED_GATES=E:" + ",".join(missing))
+              sys.exit(1)
           reports = [json.load(open("ci-evidence/" + f)) for f in files]
           failed = [r["gate"] for r in reports if r.get("status") != "PASS"]
           print("FAILED_GATES=" + (",".join(failed) if failed else "NONE"))
