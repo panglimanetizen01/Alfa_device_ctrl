@@ -1,0 +1,12 @@
+Alfa Device Ctrl internal terminal staging
+
+Selected components:
+- terminal-emulator
+- terminal-view
+
+Upstream: https://github.com/termux/termux-app.git
+Pinned commit: 3b66f8799635a4dba4a206563048ff0e6792c487
+License: Apache-2.0 exception for the Terminal Emulator for Android code used by these library modules, as stated in the upstream LICENSE.md.
+
+Full attribution and license files are stored under third_party_licenses/NOTICE_ALFA_TERMINAL.md, TERMUX_REPOSITORY_LICENSE.md, and APACHE-2.0.txt.
+The Termux application, plugins, and termux-shared GPLv3 scope are not included.
