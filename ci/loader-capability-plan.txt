@@ -1,5 +1,0 @@
-Capability: PRoot external loader
-Reference: termux/proot commit 7266fb3e8516535682f5a9c8f3a7e70f6506eddb
-Target: arm64-v8a / Android targetSdk 35
-Loader destination: app/src/main/jniLibs/arm64-v8a/libproot-loader.so
-Runtime variable: PROOT_LOADER=<ApplicationInfo.nativeLibraryDir>/libproot-loader.so
