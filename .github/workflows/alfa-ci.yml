@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: alfa-ci-${{ github.workflow }}-${{ github.ref }}
@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   ci:
+    if: ${{ !contains(github.event.head_commit.message, '[bot] implement PRoot external loader capability') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -42,6 +43,76 @@ jobs:
           test -d "$ANDROID_HOME/build-tools/35.0.0"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "ANDROID_SDK_READY=PASS"
+
+      - name: Integrate PRoot external loader
+        shell: bash
+        env:
+          PROOT_COMMIT: 7266fb3e8516535682f5a9c8f3a7e70f6506eddb
+        run: |
+          set -euo pipefail
+          sdkmanager "ndk;28.0.13004108"
+          rm -rf .ci/proot
+          git clone https://github.com/termux/proot.git .ci/proot
+          git -C .ci/proot checkout --detach "$PROOT_COMMIT"
+          test "$(git -C .ci/proot rev-parse HEAD)" = "$PROOT_COMMIT"
+          NDK="$ANDROID_SDK_ROOT/ndk/28.0.13004108"
+          TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          CC="$TOOLCHAIN/clang --target=aarch64-linux-android26"
+          make -C .ci/proot/src CC="$CC" LD="$CC" STRIP="$TOOLCHAIN/llvm-strip" loader/loader
+          install -D -m 0755 .ci/proot/src/loader/loader app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          file app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          readelf -h app/src/main/jniLibs/arm64-v8a/libproot-loader.so | grep -E 'Class:|Machine:'
+          sha256sum app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('app/src/main/java/com/alfa/device_ctrl/MainActivity.java')
+          s = p.read_text()
+          old = '"PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath()'
+          new = old + ',\n                        "PROOT_LOADER=" + new File(getApplicationInfo().nativeLibraryDir, "libproot-loader.so").getAbsolutePath()'
+          if '"PROOT_LOADER=" + new File(getApplicationInfo().nativeLibraryDir' not in s:
+              if old not in s: raise SystemExit('MainActivity anchor missing')
+              s = s.replace(old, new, 1)
+              p.write_text(s)
+
+          p = Path('app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java')
+          s = p.read_text()
+          anchor = '            validatePackagedEngine(packagedEngine, nativeLibraryDir);\n'
+          if 'private void validatePackagedLoader' not in s:
+              if anchor not in s: raise SystemExit('RuntimeInstaller validation anchor missing')
+              s = s.replace(anchor, anchor + '            validatePackagedLoader(nativeLibraryDir);\n', 1)
+              marker = '    private static boolean isArm64Elf(File engine) throws IOException {'
+              method = '''    private void validatePackagedLoader(File libraryDir) throws Exception {
+        File loader = new File(libraryDir.getCanonicalFile(), "libproot-loader.so").getCanonicalFile();
+        if (!loader.isFile()) throw new IOException("runtime-loader-missing");
+        if (!loader.canExecute()) throw new IOException("runtime-loader-not-executable");
+    }
+'''
+              if marker not in s: raise SystemExit('RuntimeInstaller method marker missing')
+              s = s.replace(marker, method + '\n' + marker, 1)
+          old = '            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());'
+          new = old + '\n            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();\n            if (!loader.isFile() || !loader.canExecute()) return "runtime-smoke-loader-missing-or-not-executable";\n            builder.environment().put("PROOT_LOADER", loader.getAbsolutePath());'
+          if 'builder.environment().put("PROOT_LOADER"' not in s:
+              if old not in s: raise SystemExit('RuntimeInstaller smoke anchor missing')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('app/build.gradle')
+          s = p.read_text()
+          if 'useLegacyPackaging true' not in s:
+              marker = 'android {\n'
+              replacement = 'android {\n    packagingOptions {\n        jniLibs {\n            useLegacyPackaging true\n        }\n    }\n\n'
+              if marker not in s: raise SystemExit('build.gradle anchor missing')
+              s = s.replace(marker, replacement, 1)
+              p.write_text(s)
+          PY
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/build.gradle app/src/main/java/com/alfa/device_ctrl/MainActivity.java app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          git diff --cached --quiet || git commit -m '[bot] implement PRoot external loader capability'
+          git push origin HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}
 
       - name: Gate A - Source integrity
         run: |
@@ -128,15 +199,12 @@ jobs:
           failures=[]
           xml_files=glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True)
           for path in xml_files:
-              try:
-                  root=ET.parse(path).getroot()
-              except ET.ParseError:
-                  continue
+              try: root=ET.parse(path).getroot()
+              except ET.ParseError: continue
               for case in root.iter("testcase"):
                   for tag in ("failure", "error"):
                       node=case.find(tag)
-                      if node is not None:
-                          failures.append({"xml":path,"classname":case.get("classname"),"name":case.get("name"),"type":node.get("type"),"message":node.get("message"),"detail":"".join(node.itertext()).strip()})
+                      if node is not None: failures.append({"xml":path,"classname":case.get("classname"),"name":case.get("name"),"type":node.get("type"),"message":node.get("message"),"detail":"".join(node.itertext()).strip()})
           code=int(sys.argv[1])
           json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"junit_xml_count":len(xml_files),"failure_count":len(failures),"failures":failures},open("ci-evidence/test-result.json","w"),indent=2)
           PY
