@@ -106,6 +106,14 @@ public final class RuntimeInstallerTest {
         assertTrue("fixture hash must be trusted",
                 RuntimeInstaller.TRUSTED_PROOT_ARM64_SHA256.equalsIgnoreCase(sha256(engine)));
 
+        File loaderSource = projectFixture("app/src/main/jniLibs/arm64-v8a/libproot-loader.so");
+        if (loaderSource.isFile()) {
+            File loader = new File(nativeLibDir, "libproot-loader.so");
+            Files.copy(loaderSource.toPath(), loader.toPath());
+            assertTrue("loader fixture must be executable", loader.setExecutable(true, false));
+            assertTrue("loader fixture must be executable", loader.canExecute());
+        }
+
         return engine;
     }
 
