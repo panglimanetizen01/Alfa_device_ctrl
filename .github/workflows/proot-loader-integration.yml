@@ -3,6 +3,8 @@ name: Build and integrate PRoot loader
 on:
   push:
     branches: [review/gate-sync]
+  pull_request:
+    branches: [master]
 
 permissions:
   contents: write
@@ -92,6 +94,7 @@ jobs:
           test -f app/src/main/jniLibs/arm64-v8a/libproot-loader.so
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep 'lib/arm64-v8a/libproot-loader.so'
       - name: Commit integration
+        if: ${{ github.event_name == 'push' }}
         shell: bash
         run: |
           set -euo pipefail
