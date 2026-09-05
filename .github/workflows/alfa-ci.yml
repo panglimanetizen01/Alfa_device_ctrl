@@ -165,6 +165,10 @@ jobs:
               path = line[3:]
               if " -> " in path:
                   path = path.split(" -> ", 1)[1]
+              if path == ".ci" or path.startswith(".ci/"):
+                  continue
+              if path == "ci-evidence" or path.startswith("ci-evidence/"):
+                  continue
               paths.add(path)
           if not paths.issubset(allowed):
               raise SystemExit(f"unexpected runner changes: {sorted(paths - allowed)}")
