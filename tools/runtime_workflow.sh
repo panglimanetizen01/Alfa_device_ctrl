@@ -1,35 +1,7 @@
 #!/usr/bin/env bash
-
 set -u
-
-ROOT=/storage/emulated/0/Alfa_device_ctrl
-cd "$ROOT"
-
-LATEST=$(ls -1t artifacts/action/action_*.txt 2>/dev/null | head -1)
-
-echo "=== ALFA RUNTIME WORKFLOW V1 ==="
-echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
-echo "execution_path=$(pwd)"
-
-echo
-echo "[ACTION]"
-
-if [ -n "$LATEST" ] && grep -q '^action_status=PASS$' "$LATEST"
-then
-    echo "action_status=PASS"
-
-    echo
-    echo "[WORKFLOW]"
-    echo "workflow_name=runtime_self_workflow"
-    echo "workflow_status=PASS"
-else
-    echo "action_status=BLOCKED"
-
-    echo
-    echo "[WORKFLOW]"
-    echo "workflow_name=runtime_self_workflow"
-    echo "workflow_status=BLOCKED"
-fi
-
-echo
-echo "[END]"
+ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
+RUN_ID=${1:-run_20260823_171233_30513}
+INPUT="${ROOT}/artifacts/pipeline/${RUN_ID}/gate9/action.txt"
+OUTPUT="$ROOT/artifacts/pipeline/${RUN_ID}/gate10/workflow.txt"
+bash "$ROOT/tools/runtime_stage.sh" "gate10" "$RUN_ID" "$INPUT" "" "$OUTPUT"

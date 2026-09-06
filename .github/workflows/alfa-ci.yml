@@ -1,0 +1,407 @@
+name: Alfa CI
+
+on:
+  push:
+    branches:
+      - master
+      - review/gate-sync
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alfa-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Capture source commit
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          printf '%s\n' "$SOURCE_SHA" > ci-evidence/source-commit.txt
+          test "$SOURCE_SHA" = "${GITHUB_SHA}"
+          git status --porcelain=v1
+          echo "SOURCE_SHA=$SOURCE_SHA"
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.2.1'
+
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "ANDROID_SDK_READY=PASS"
+
+      - name: Build and inject PRoot external loader (runner-only)
+        shell: bash
+        env:
+          PROOT_COMMIT: 7266fb3e8516535682f5a9c8f3a7e70f6506eddb
+          NDK_VERSION: 28.0.13004108
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          sdkmanager "ndk;${NDK_VERSION}"
+
+          rm -rf .ci/proot
+          git clone https://github.com/termux/proot.git .ci/proot
+          git -C .ci/proot checkout --detach "$PROOT_COMMIT"
+          test "$(git -C .ci/proot rev-parse HEAD)" = "$PROOT_COMMIT"
+
+          NDK="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          CC="$TOOLCHAIN/clang --target=aarch64-linux-android26"
+
+          make -C .ci/proot/src \
+            CC="$CC" \
+            LD="$CC" \
+            STRIP="$TOOLCHAIN/llvm-strip" \
+            loader/loader
+
+          install -D -m 0755 \
+            .ci/proot/src/loader/loader \
+            app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+
+          test -x app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          file app/src/main/jniLibs/arm64-v8a/libproot-loader.so
+          readelf -h app/src/main/jniLibs/arm64-v8a/libproot-loader.so | grep -E 'Class:|Machine:'
+          LOADER_SHA256="$(sha256sum app/src/main/jniLibs/arm64-v8a/libproot-loader.so | awk '{print $1}')"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("app/src/main/java/com/alfa/device_ctrl/MainActivity.java")
+          s = p.read_text()
+          old = '"PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath()'
+          new = old + ',\n                        "PROOT_LOADER=" + new File(getApplicationInfo().nativeLibraryDir, "libproot-loader.so").getAbsolutePath()'
+          if 'PROOT_LOADER=' not in s:
+              if old not in s:
+                  raise SystemExit("MainActivity loader anchor missing")
+              p.write_text(s.replace(old, new, 1))
+
+          p = Path("app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java")
+          s = p.read_text()
+          anchor = "            validatePackagedEngine(packagedEngine, nativeLibraryDir);\n"
+          if "private void validatePackagedLoader" not in s:
+              if anchor not in s:
+                  raise SystemExit("RuntimeInstaller validation anchor missing")
+              s = s.replace(anchor, anchor + "            validatePackagedLoader(nativeLibraryDir);\n", 1)
+              marker = "    private static boolean isArm64Elf(File engine) throws IOException {"
+              method = (
+                  "    private void validatePackagedLoader(File libraryDir) throws Exception {\n"
+                  "        File loader = new File(libraryDir.getCanonicalFile(), \"libproot-loader.so\").getCanonicalFile();\n"
+                  "        if (!loader.isFile()) throw new IOException(\"runtime-loader-missing\");\n"
+                  "        if (!loader.canExecute()) throw new IOException(\"runtime-loader-not-executable\");\n"
+                  "    }\n"
+              )
+              if marker not in s:
+                  raise SystemExit("RuntimeInstaller method marker missing")
+              s = s.replace(marker, method + "\n" + marker, 1)
+
+          old = '            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());'
+          new = old + '\n            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();\n            if (!loader.isFile() || !loader.canExecute()) return "runtime-smoke-loader-missing-or-not-executable";\n            builder.environment().put("PROOT_LOADER", loader.getAbsolutePath());'
+          if 'builder.environment().put("PROOT_LOADER"' not in s:
+              if old not in s:
+                  raise SystemExit("RuntimeInstaller smoke anchor missing")
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path("app/build.gradle")
+          s = p.read_text()
+          if "useLegacyPackaging true" not in s:
+              marker = "android {\n"
+              replacement = (
+                  "android {\n"
+                  "    packagingOptions {\n"
+                  "        jniLibs {\n"
+                  "            useLegacyPackaging true\n"
+                  "        }\n"
+                  "    }\n"
+                  "\n"
+              )
+              if marker not in s:
+                  raise SystemExit("build.gradle anchor missing")
+              p.write_text(s.replace(marker, replacement, 1))
+          PY
+
+          git diff --check
+          git diff --binary > ci-evidence/runner-injection.patch
+
+          python3 - "$LOADER_SHA256" "$(cat ci-evidence/source-commit.txt)" "$PROOT_COMMIT" "$NDK_VERSION" <<'PY'
+          import json, subprocess, sys
+          allowed = {
+              "app/build.gradle",
+              "app/src/main/java/com/alfa/device_ctrl/MainActivity.java",
+              "app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java",
+              "app/src/main/jniLibs/arm64-v8a/libproot-loader.so",
+          }
+          status = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
+          paths = set()
+          for line in status:
+              path = line[3:]
+              if " -> " in path:
+                  path = path.split(" -> ", 1)[1]
+              if path == ".ci" or path.startswith(".ci/"):
+                  continue
+              if path == "ci-evidence" or path.startswith("ci-evidence/"):
+                  continue
+              paths.add(path)
+          if not paths.issubset(allowed):
+              raise SystemExit(f"unexpected runner changes: {sorted(paths - allowed)}")
+          if paths != allowed:
+              raise SystemExit(f"runner injection incomplete: missing={sorted(allowed - paths)}")
+          report = {
+              "status": "PASS",
+              "mode": "runner-only",
+              "source_commit": sys.argv[2],
+              "proot_commit": sys.argv[3],
+              "ndk_version": sys.argv[4],
+              "loader_path": "app/src/main/jniLibs/arm64-v8a/libproot-loader.so",
+              "loader_sha256": sys.argv[1],
+              "changed_paths": sorted(paths),
+          }
+          json.dump(report, open("ci-evidence/runner-injection.json", "w"), indent=2)
+          PY
+
+      - name: Gate A - Source integrity
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="$(cat ci-evidence/source-commit.txt)"
+          python3 - "$SOURCE_SHA" <<'PY'
+          import hashlib, json, subprocess, sys
+          source = sys.argv[1]
+          files = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", source], text=True).splitlines()
+          h = hashlib.sha256()
+          for path in files:
+              data = subprocess.check_output(["git", "show", f"{source}:{path}"])
+              h.update(path.encode())
+              h.update(b"\0")
+              h.update(hashlib.sha256(data).digest())
+          json.dump({
+              "gate": "A",
+              "status": "PASS",
+              "source_commit": source,
+              "tracked_files": len(files),
+              "tree_content_sha256": h.hexdigest(),
+          }, open("ci-evidence/source-integrity.json", "w"), indent=2)
+          PY
+
+      - name: Gate B - Static audit
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re, subprocess
+          files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
+          scan_files = [p for p in files if p != ".github/workflows/alfa-ci.yml" and not p.startswith("docs/")]
+          legacy = []
+          backups = []
+          secrets = []
+          project_refs = []
+          for path in scan_files:
+              try:
+                  text = open(path, encoding="utf-8", errors="ignore").read()
+              except (IsADirectoryError, FileNotFoundError):
+                  continue
+              if re.search(r'/storage/emulated/0/UserLAnd|UserLAnd_home_migration|/storage/emulated/0/android-sdk', text):
+                  legacy.append(path)
+              if re.search(r'(^|/)[^/]+\.(bak|bak-[^/]+|before_[^/]+)$|audit-backup|codeql-fix-backup', path):
+                  backups.append(path)
+              if re.search(r'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----', text):
+                  secrets.append(path)
+              project_refs.extend(re.findall(r'project\(["\'](:[^"\']+)["\']\)', text))
+          settings = open("settings.gradle", encoding="utf-8").read()
+          included = set(re.findall(r'include\((.*?)\)', settings, re.S))
+          report = {
+              "gate": "B",
+              "status": "PASS" if not legacy and not backups and not secrets and included else "FAIL",
+              "legacy_path_files": sorted(set(legacy)),
+              "backup_named_files": sorted(set(backups)),
+              "secret_pattern_files": sorted(set(secrets)),
+              "project_references": sorted(set(project_refs)),
+              "settings_includes_present": bool(included),
+          }
+          json.dump(report, open("ci-evidence/audit-summary.json", "w"), indent=2)
+          raise SystemExit(0 if report["status"] == "PASS" else 1)
+          PY
+
+      - name: Gate C - Debug build
+        run: |
+          set +e
+          sh ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          C=$?
+          python3 - "$C" <<'PY'
+          import json, sys
+          code = int(sys.argv[1])
+          json.dump({
+              "gate": "C",
+              "status": "PASS" if code == 0 else "FAIL",
+              "exit_code": code,
+              "task": ":app:assembleDebug",
+              "source_commit": open("ci-evidence/source-commit.txt").read().strip(),
+          }, open("ci-evidence/build-result.json", "w"), indent=2)
+          PY
+          exit 0
+
+      - name: Gate D - Unit tests
+        run: |
+          set -euo pipefail
+          FIXTURE_DIR="artifacts/test-fixtures"
+          FIXTURE="${FIXTURE_DIR}/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          FIXTURE_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          SUMS_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS"
+          EXPECTED_SHA256="04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2"
+          mkdir -p "$FIXTURE_DIR" ci-evidence
+          curl -fsSL "$SUMS_URL" -o ci-evidence/ubuntu-base-SHA256SUMS
+          CANONICAL_SHA256="$(awk '$2 == "*ubuntu-base-24.04.4-base-arm64.tar.gz" {print $1}' ci-evidence/ubuntu-base-SHA256SUMS)"
+          test "$CANONICAL_SHA256" = "$EXPECTED_SHA256"
+          curl -fL "$FIXTURE_URL" -o "$FIXTURE"
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$FIXTURE" | sha256sum -c -
+          gzip -t "$FIXTURE"
+          python3 - <<'PY'
+          import json, os, subprocess
+          fixture="artifacts/test-fixtures/ubuntu-base-24.04.4-base-arm64.tar.gz"
+          digest=subprocess.check_output(["sha256sum",fixture],text=True).split()[0]
+          json.dump({
+              "fixture": fixture,
+              "source": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz",
+              "manifest": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS",
+              "sha256": digest,
+              "expected_sha256": "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",
+              "size_bytes": os.path.getsize(fixture),
+              "gzip_integrity": "PASS",
+              "status": "PASS",
+          }, open("ci-evidence/fixture-provenance.json","w"), indent=2)
+          PY
+          set +e
+          sh ./gradlew test --no-daemon --stacktrace
+          D=$?
+          mkdir -p ci-evidence/junit-xml ci-evidence/test-report
+          find . -type f -path '*/build/test-results/*/*.xml' -print0 |
+            while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/junit-xml/; done
+          find . -type f -path '*/build/reports/tests/*' -print0 |
+            while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/test-report/; done
+          python3 - "$D" <<'PY'
+          import glob, json, subprocess, sys
+          from xml.etree import ElementTree as ET
+          failures = []
+          xml_files = glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True)
+          for path in xml_files:
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for case in root.iter("testcase"):
+                  for tag in ("failure", "error"):
+                      node = case.find(tag)
+                      if node is not None:
+                          failures.append({
+                              "xml": path,
+                              "classname": case.get("classname"),
+                              "name": case.get("name"),
+                              "type": node.get("type"),
+                              "message": node.get("message"),
+                              "detail": "".join(node.itertext()).strip(),
+                          })
+          code = int(sys.argv[1])
+          json.dump({
+              "gate": "D",
+              "status": "PASS" if code == 0 else "FAIL",
+              "exit_code": code,
+              "task": "test",
+              "junit_xml_count": len(xml_files),
+              "failure_count": len(failures),
+              "failures": failures,
+          }, open("ci-evidence/test-result.json", "w"), indent=2)
+          PY
+          exit 0
+
+      - name: Gate E - Evidence validation
+        if: always()
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          required = [
+              "source-commit.txt",
+              "source-integrity.json",
+              "runner-injection.json",
+              "audit-summary.json",
+              "build-result.json",
+              "test-result.json",
+              "runner-injection.patch",
+              "fixture-provenance.json",
+          ]
+          missing = [x for x in required if not os.path.isfile("ci-evidence/" + x)]
+          if missing:
+              raise SystemExit("MISSING_EVIDENCE=" + ",".join(missing))
+          for name in required:
+              if name.endswith(".json"):
+                  json.load(open("ci-evidence/" + name, encoding="utf-8"))
+          print("EVIDENCE_SCHEMA=PASS")
+          PY
+
+      - name: Upload structured evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: alfa-ci-evidence-${{ github.sha }}
+          path: ci-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: alfa-debug-apk-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Final gate decision
+        if: always()
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sys
+          files = [
+              "source-integrity.json",
+              "runner-injection.json",
+              "audit-summary.json",
+              "build-result.json",
+              "test-result.json",
+              "fixture-provenance.json",
+          ]
+          missing = [f for f in files if not os.path.isfile("ci-evidence/" + f)]
+          if missing:
+              print("FAILED_GATES=E:" + ",".join(missing))
+              sys.exit(1)
+          reports = [json.load(open("ci-evidence/" + f, encoding="utf-8")) for f in files]
+          failed = [r.get("gate", "fixture") for r in reports if r.get("status") != "PASS"]
+          print("FAILED_GATES=" + (",".join(failed) if failed else "NONE"))
+          sys.exit(1 if failed else 0)
+          PY

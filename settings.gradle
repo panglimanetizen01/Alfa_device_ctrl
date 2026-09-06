@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AlfaDeviceCtrl"
-include(":app")
+rootProject.name = "AlfaDeviceCtrlInternalTerminalV1"
+include(":app", ":terminal-emulator", ":terminal-view")

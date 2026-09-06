@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Alfa Device Ctrl</string>
+    <string name="alfa_os">ALFA_OS</string>
+    <string name="tab_bash">bash</string>
+    <string name="tab_htop">htop</string>
+    <string name="tab_network">jaringan</string>
+    <string name="add_session">Tambah sesi</string>
+    <string name="start_verified_session">Mulai sesi runtime terverifikasi</string>
+    <string name="session_blocked">Sesi diblokir</string>
+    <string name="session_blocked_reason">Evidence runtime belum lengkap</string>
+    <string name="foreground_only">Lifecycle: sesi foreground saja</string>
+    <string name="esc">ESC</string>
+    <string name="ctrl">CTRL</string>
+    <string name="alt">ALT</string>
+    <string name="tab_key">TAB</string>
+    <string name="launcher">Peluncur aplikasi</string>
+    <string name="files">Berkas</string>
+    <string name="settings">Pengaturan</string>
+    <string name="system">Sistem</string>
+    <string name="network">Jaringan</string>
+    <string name="logs">Log</string>
+    <string name="applications">Aplikasi</string>
+    <string name="search_applications">Cari aplikasi…</string>
+    <string name="all_apps">Semua aplikasi</string>
+    <string name="development">Pengembangan</string>
+    <string name="dismiss">Tutup</string>
+    <string name="kill_process">Hentikan proses</string>
+    <string name="copy">Salin</string>
+    <string name="move">Pindahkan</string>
+    <string name="rename">Ubah nama</string>
+    <string name="permissions">Izin</string>
+    <string name="delete">Hapus</string>
+    <string name="status_unknown">UNKNOWN</string>
+    <string name="status_blocked">BLOCKED</string>
+    <string name="resource_alert_title">Peringatan resource</string>
+    <string name="resource_unknown_message">Data resource belum tersedia (UNKNOWN).</string>
+    <string name="resource_kill_blocked">Hentikan proses tidak tersedia tanpa evidence dan authorization.</string>
+</resources>

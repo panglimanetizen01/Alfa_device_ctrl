@@ -1,35 +1,7 @@
 #!/usr/bin/env bash
-
 set -u
-
-ROOT=/storage/emulated/0/Alfa_device_ctrl
-cd "$ROOT"
-
-LATEST=$(ls -1t artifacts/session/session_*.txt 2>/dev/null | head -1)
-
-echo "=== ALFA RUNTIME TASK V1 ==="
-echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
-echo "execution_path=$(pwd)"
-
-echo
-echo "[SESSION]"
-
-if [ -n "$LATEST" ] && grep -q '^session_status=PASS$' "$LATEST"
-then
-    echo "session_status=PASS"
-
-    echo
-    echo "[TASK]"
-    echo "task_name=runtime_self_test"
-    echo "task_status=PASS"
-else
-    echo "session_status=BLOCKED"
-
-    echo
-    echo "[TASK]"
-    echo "task_name=runtime_self_test"
-    echo "task_status=BLOCKED"
-fi
-
-echo
-echo "[END]"
+ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
+RUN_ID=${1:-run_20260823_171233_30513}
+INPUT="${ROOT}/artifacts/pipeline/${RUN_ID}/gate7/session.txt"
+OUTPUT="$ROOT/artifacts/pipeline/${RUN_ID}/gate8/task.txt"
+bash "$ROOT/tools/runtime_stage.sh" "gate8" "$RUN_ID" "$INPUT" "" "$OUTPUT"

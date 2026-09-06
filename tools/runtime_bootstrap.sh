@@ -1,31 +1,7 @@
 #!/usr/bin/env bash
-
 set -u
-
-ROOT=/storage/emulated/0/Alfa_device_ctrl
-cd "$ROOT"
-
-LATEST=$(ls -1t artifacts/decision/decision_*.txt 2>/dev/null | head -1)
-
-echo "=== ALFA RUNTIME BOOTSTRAP V1 ==="
-echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
-echo "execution_path=$(pwd)"
-
-echo
-echo "[DECISION]"
-
-if [ -n "$LATEST" ] && grep -q '^decision=READY$' "$LATEST"
-then
-    echo "decision=READY"
-    BOOTSTRAP_STATUS="PASS"
-else
-    echo "decision=NOT_READY"
-    BOOTSTRAP_STATUS="BLOCKED"
-fi
-
-echo
-echo "[BOOTSTRAP]"
-echo "bootstrap_status=$BOOTSTRAP_STATUS"
-
-echo
-echo "[END]"
+ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
+RUN_ID=${1:-run_20260823_171233_30513}
+INPUT="${ROOT}/artifacts/pipeline/${RUN_ID}/gate5/decisions/gate5-self-test.txt"
+OUTPUT="$ROOT/artifacts/pipeline/${RUN_ID}/gate6/bootstrap.txt"
+bash "$ROOT/tools/runtime_stage.sh" "gate6" "$RUN_ID" "$INPUT" "" "$OUTPUT"
