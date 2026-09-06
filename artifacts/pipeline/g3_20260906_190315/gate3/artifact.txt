@@ -1,0 +1,14 @@
+=== ALFA EXECUTION CAPABILITY V1 ===
+timestamp=2026-09-06 19:03:17
+execution_path=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+
+[CAPABILITIES]
+./tools/execution_capability.sh: line 12: /tmp/alfa_exec_private.18176: No such file or directory
+chmod: cannot access '/tmp/alfa_exec_private.18176': No such file or directory
+EXEC_PRIVATE=ERROR | verification=execution test
+EXEC_SHARED=ERROR | verification=execution test
+SCRIPT_BASH=PASS | verification=bash execution
+SCRIPT_PYTHON=PASS | verification=python execution
+PROCESS_SPAWN=PASS | verification=process spawn
+
+[END]

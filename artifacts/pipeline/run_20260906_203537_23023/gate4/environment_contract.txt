@@ -1,0 +1,42 @@
+schema_version=environment-contract.v1
+pipeline_run_id=run_20260906_203537_23023
+project_id=alfa_device_ctrl
+project_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+source_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+input_state=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_203537_23023/pipeline_state.txt
+input_manifest=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_203537_23023/manifest.txt
+ede_artifact=UNKNOWN
+ede_envelope=UNKNOWN
+ede_sha256=UNKNOWN
+cde_artifact=UNKNOWN
+cde_envelope=UNKNOWN
+cde_sha256=UNKNOWN
+gate3_artifact=UNKNOWN
+gate3_envelope=UNKNOWN
+gate3_sha256=UNKNOWN
+runtime_profile=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201835_17597.txt
+profile_authority=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_authority.txt
+profile_authority_path=UNKNOWN
+profile_sha256=UNKNOWN
+profile_pipeline_run_id=UNKNOWN
+profile_source_commit=UNKNOWN
+device_class=UNKNOWN
+android_host=DETECTED
+container_environment=UNKNOWN
+cpu_arch=aarch64
+storage_read=PASS | verification=Read test | scope=current_environment
+storage_write=PASS | verification=Write/delete test | scope=current_environment
+exec_private=ERROR | verification=execution test
+exec_shared=ERROR | verification=execution test
+network_dns=ERROR | verification=DNS lookup | scope=current_environment
+python3=PASS | verification=command discovery | scope=current_environment
+git=PASS | verification=command discovery | scope=current_environment
+java=PASS | verification=command discovery | scope=current_environment
+javac=PASS | verification=command discovery | scope=current_environment
+gradle=PASS | verification=command discovery | scope=current_environment
+pipeline_status=SUCCESS
+completion_status=BLOCKED
+contract_result=BLOCKED
+failure_status=BLOCKED
+failure_reason=CURRENT_RUN_STATE_MANIFEST_OR_STAGE_VALIDATION_FAILED
+generated_at=2026-09-06 20:52:19

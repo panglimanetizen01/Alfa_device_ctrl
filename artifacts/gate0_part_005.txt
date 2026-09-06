@@ -1,0 +1,342 @@
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:14:25 2026 +0000
+
+    feat: implement ede classifier v1
+
+M	tools/ede.sh
+
+commit 1b60c1c9bc8468edf3da1a32d5bb359ac46a580d
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:15:33 2026 +0000
+
+    docs: define capability discovery engine v1
+
+A	docs/CDE_SPEC_V1.md
+
+commit 8457bd5c43cf6a544cb44f1ab56e4019a8c5ebd8
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:16:13 2026 +0000
+
+    feat: implement cde v1
+
+A	tools/cde.sh
+
+commit 416ea91776ed4ef29e9e81a642e8b1a88c6d6497
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:18:38 2026 +0000
+
+    feat: add cde evidence artifacts
+
+A	artifacts/cde/cde_20260823_031837.txt
+M	tools/cde.sh
+
+commit 55f4a80ce9bffdaa3c7cddfd4e30969fc163349f
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:19:24 2026 +0000
+
+    docs: define capability registry v1
+
+A	docs/CAPABILITY_REGISTRY_V1.md
+
+commit 9d4791a5791bd36c4dea65af6d338a3d42b40b89
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:19:49 2026 +0000
+
+    feat: connect cde output to capability registry
+
+M	tools/cde.sh
+
+commit 6f04d494b24bf66cf2aea897b24c39bb04ecd26b
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:21:06 2026 +0000
+
+    fix: normalize cde capability result identifiers
+
+A	artifacts/cde/cde_20260823_031948.txt
+A	artifacts/cde/cde_20260823_032104.txt
+M	tools/cde.sh
+
+commit ed264814544fbcd89d9c6ad17130362e1ea47fb2
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:24:43 2026 +0000
+
+    fix: report toolchain capabilities in cde artifacts
+
+A	artifacts/cde/cde_20260823_032442.txt
+M	tools/cde.sh
+
+commit 4cc0acfe2240092331a853905c95e1b5ad1608b4
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:26:48 2026 +0000
+
+    fix: normalize cde toolchain capability IDs
+
+A	artifacts/cde/cde_20260823_032646.txt
+M	tools/cde.sh
+
+commit b96cec020e3cb324c2279c602f0f364242ad1023
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:28:47 2026 +0000
+
+    feat: integrate ede and cde runtime discovery
+
+A	artifacts/runtime/runtime_20260823_032839.txt
+A	tools/runtime_discovery.sh
+
+commit b70e1f220393d0e524263370fa034eb01268a703
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:30:11 2026 +0000
+
+    fix: include cde results in runtime discovery
+
+A	artifacts/cde/cde_20260823_032841.txt
+A	artifacts/cde/cde_20260823_033005.txt
+A	artifacts/runtime/runtime_20260823_033004.txt
+M	tools/runtime_discovery.sh
+
+commit 9cb17f8ee2e07b91f70521679ed6a2118ceb619f
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:31:23 2026 +0000
+
+    feat: start gate 3 execution capability engine
+
+A	artifacts/execution/execution_20260823_033122.txt
+A	docs/GATE_3_SPEC_V1.md
+A	tools/execution_capability.sh
+
+commit e2ab9afb3b0d0a46b8c20d9bdee5e3f571fa650a
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:32:52 2026 +0000
+
+    docs: define gate 3 execution result schema
+
+A	docs/GATE_3_RESULT_SCHEMA_V1.md
+
+commit b1267ad9bd15e11adafe1b19832d67aa8b72fa11
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:33:31 2026 +0000
+
+    feat: add gate 3 result header
+
+A	artifacts/execution/execution_20260823_033329.txt
+M	tools/execution_capability.sh
+
+commit c9c7482324f9888e81645e927b6443a3b3407769
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:34:55 2026 +0000
+
+    feat: start gate 4 environment contract engine
+
+A	artifacts/contract/contract_20260823_033449.txt
+A	docs/GATE_4_SPEC_V1.md
+A	tools/environment_contract.sh
+
+commit c8364a2acfecc0a980eccd28f0af57c998e593bf
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:38:14 2026 +0000
+
+    feat: start gate 5 runtime decision engine
+
+A	artifacts/decision/decision_20260823_033813.txt
+A	docs/GATE_5_SPEC_V1.md
+A	tools/runtime_decision.sh
+
+commit 5250353f01e6a93aaf0ca5af31388f0e992d723f
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:40:11 2026 +0000
+
+    feat: start gate 6 runtime bootstrap engine
+
+A	artifacts/bootstrap/bootstrap_20260823_034010.txt
+A	docs/GATE_6_SPEC_V1.md
+A	tools/runtime_bootstrap.sh
+
+commit 96ac6fe818382e63e7c8dcabd437abcaa4997916
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:42:06 2026 +0000
+
+    feat: start gate 7 runtime session engine
+
+A	artifacts/session/session_20260823_034205.txt
+A	docs/GATE_7_SPEC_V1.md
+A	tools/runtime_session.sh
+
+commit 9b4574ec90fa2483ab8a98e09e0097038846ea2a
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 05:57:40 2026 +0000
+
+    feat: start gate 8 runtime task engine
+
+A	artifacts/task/task_20260823_055739.txt
+A	docs/GATE_8_SPEC_V1.md
+A	tools/runtime_task.sh
+
+commit db9d1a59521cf3e8bb57c670f20156f838553634
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 05:59:42 2026 +0000
+
+    feat: start gate 9 runtime action engine
+
+A	artifacts/action/action_20260823_055942.txt
+A	docs/GATE_9_SPEC_V1.md
+A	tools/runtime_action.sh
+
+commit dca88405ba74c4319c5c0f390bbc5e3b005c0c8f
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:01:58 2026 +0000
+
+    feat: start gate 10 runtime workflow engine
+
+A	artifacts/workflow/workflow_20260823_060158.txt
+A	docs/GATE_10_SPEC_V1.md
+A	tools/runtime_workflow.sh
+
+commit 2d041d366a27e0b837b62c10406ba5971bca5e1d
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:03:37 2026 +0000
+
+    feat: start gate 11 runtime orchestrator engine
+
+A	artifacts/orchestrator/orchestrator_20260823_060336.txt
+A	docs/GATE_11_SPEC_V1.md
+A	tools/runtime_orchestrator.sh
+
+commit 53760822c59d6a84a1ce1dac527c62da2d8e65c2
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:05:07 2026 +0000
+
+    feat: start gate 12 runtime kernel engine
+
+A	artifacts/kernel/kernel_20260823_060506.txt
+A	docs/GATE_12_SPEC_V1.md
+A	tools/runtime_kernel.sh
+
+commit ad8c38bbb75a4353ebbca1236655c9862df3644e
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:10:03 2026 +0000
+
+    feat: start gate 13 runtime command engine
+
+A	artifacts/command/command_20260823_061002.txt
+A	docs/GATE_13_SPEC_V1.md
+A	tools/runtime_command.sh
+
+commit f2362a501eb76b308ed199ad1353a5736d2ec1c5
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:12:13 2026 +0000
+
+    feat: start gate 14 runtime command validation engine
+
+A	artifacts/validation/validation_20260823_061213.txt
+A	docs/GATE_14_SPEC_V1.md
+A	tools/runtime_command_validate.sh
+
+commit 37ae19851ff0d4148bb6b413346c36ad5b4d884e
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:14:09 2026 +0000
+
+    feat: start gate 15 runtime command policy engine
+
+A	artifacts/policy/policy_20260823_061409.txt
+A	docs/GATE_15_SPEC_V1.md
+A	tools/runtime_command_policy.sh
+
+commit c69a5ebf041e8bf59fc8a8944ac6853f14479ee1
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:14:24 2026 +0000
+
+    feat: start gate 15 runtime command policy engine
+
+A	artifacts/policy/policy_20260823_061424.txt
+
+commit 480845f4102ea9dcbbd5c67369a7a842e67b0408
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:17:19 2026 +0000
+
+    feat: start gate 16 runtime execution authorization engine
+
+A	artifacts/authorization/authorization_20260823_061718.txt
+A	docs/GATE_16_SPEC_V1.md
+A	tools/runtime_execution_authorize.sh
+
+commit cf78bd0c5f2b99c0f5978481ede6e59120968456
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:19:49 2026 +0000
+
+    feat: start gate 17 runtime execution engine
+
+A	artifacts/execution/execution_20260823_061948.txt
+A	docs/GATE_17_SPEC_V1.md
+A	tools/runtime_execution.sh
+
+commit 041dc10f57ff11b8482dbab08544a4bb1b627a4e
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:21:46 2026 +0000
+
+    feat: start gate 18 runtime execution result engine
+
+A	artifacts/result/result_20260823_062145.txt
+A	docs/GATE_18_SPEC_V1.md
+A	tools/runtime_execution_result.sh
+
+commit 5959d9ff9a141842ad00053a92af383f05efe547
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 06:24:37 2026 +0000
+
+    feat: start gate 19 runtime result consumer engine
+
+A	artifacts/consumer/consumer_20260823_062436.txt
+A	docs/GATE_19_SPEC_V1.md
+A	tools/runtime_result_consumer.sh
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ INITIAL COMMIT(S) — COMPLETE DETAIL ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+INITIAL_COMMIT=80f42c04c2547d90481a30c9da6d0034cfd124df
+commit 80f42c04c2547d90481a30c9da6d0034cfd124df
+Author:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+AuthorDate: Sat Aug 22 15:48:00 2026 +0000
+Commit:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+CommitDate: Sat Aug 22 15:48:00 2026 +0000
+
+    chore: initialize alfa_device_ctrl master
+
+A	PROJECT.md
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ CURRENT HEAD — COMPLETE DETAIL ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\HEAD_COMMIT=]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\5959d9ff9a141842ad00053a92af383f05efe547
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\commit 5959d9ff9a141842ad00053a92af383f05efe547
+Author:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+AuthorDate: Sun Aug 23 06:24:37 2026 +0000
+Commit:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+CommitDate: Sun Aug 23 06:24:37 2026 +0000
+
+    feat: start gate 19 runtime result consumer engine
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\commit 5959d9ff9a141842ad00053a92af383f05efe547
+Author:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+AuthorDate: Sun Aug 23 06:24:37 2026 +0000
+Commit:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+CommitDate: Sun Aug 23 06:24:37 2026 +0000
+
+    feat: start gate 19 runtime result consumer engine
+
+A	artifacts/consumer/consumer_20260823_062436.txt
+A	docs/GATE_19_SPEC_V1.md
+A	tools/runtime_result_consumer.sh
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ UNSTAGED DIFF AGAINST HEAD ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ STAGED DIFF ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ POST-COLLECTION WORKTREE STATUS ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\## master
+?? artifacts/gate0_complete_provenance_evidence_20260823_072846_29475.txt
+?? artifacts/gate0_provenance_evidence.txt
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ GATE 0 RAW EVIDENCE COLLECTION COMPLETE ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\EVIDENCE_ARTIFACT=/storage/emulated/0/Alfa_device_ctrl/artifacts/gate0_complete_provenance_evidence_20260823_072846_29475.txt
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\NEXT_STEP=Return this output/artifact for external content-level provenance classification. Do not remediate or commit.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\NOTE=The evidence artifact is intentionally new and untracked; it was excluded from its own dump and reference search.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ EVIDENCE ARTIFACT PATH ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\/storage/emulated/0/Alfa_device_ctrl/artifacts/gate0_complete_provenance_evidence_20260823_072846_29475.txt
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\logout

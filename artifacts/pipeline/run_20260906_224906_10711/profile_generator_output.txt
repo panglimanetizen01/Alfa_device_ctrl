@@ -1,0 +1,182 @@
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: set -u
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_RC_OK=0
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_RC_BLOCKED=20
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_RC_INVALID=21
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROJECT_ROOT_EXPECTED=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROJECT_ID_EXPECTED=alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_DIR_REL=artifacts/runtime_profiles
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: AUTHORITY_FILE_NAME=profile_authority.txt
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROJECT_ROOT=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_OUTPUT_DIR=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_AUTHORITY_FILE=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: AUTHORITY_LOCK_DIR=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RUN_DIR=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RUN_ID=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: STATE_FILE=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: MANIFEST_FILE=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: SOURCE_COMMIT=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_FILE=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_REL=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_SHA256=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_GENERATED_AT=
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: main /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local script_dir canonical_script_root
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 1 -ne 1 ']'
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: dirname -- /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools/runtime_profile_generator.sh
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: CDPATH=
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: cd -- /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: pwd
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: script_dir=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: realpath -e /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools/..
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: canonical_script_root=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROJECT_ROOT_EXPECTED=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROJECT_ROOT=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_OUTPUT_DIR=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: mkdir -p /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PROFILE_AUTHORITY_FILE=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_authority.txt
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RUN_DIR=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: basename /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RUN_ID=run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: STATE_FILE=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: MANIFEST_FILE=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/manifest.txt
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: case "$RUN_DIR" in
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' run_20260906_224906_10711 '!=' . ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' run_20260906_224906_10711 '!=' .. ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -d /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: validate_explicit_run
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local state_schema state_run state_project state_root state_status state_completion state_result
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local manifest_run manifest_commit manifest_schema
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local ede_rel cde_rel gate3_rel ede_env cde_env gate3_env
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local ede_hash cde_hash gate3_hash
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local ede_stage cde_stage gate3_stage
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local canonical_run expected_run
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -d /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -f /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -f /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/manifest.txt ']'
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: realpath -e /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: canonical_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: realpath -e /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: expected_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711 = /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711 ']'
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt schema_version
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=schema_version
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^schema_version=[[:space:]]*//p' -e 's/^schema_version:[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=pipeline-state.v1
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value pipeline-state.v1
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s pipeline-state.v1
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_schema=pipeline-state.v1
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt pipeline_run_id
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=pipeline_run_id
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_run=run_20260906_224906_10711
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt project_id
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=project_id
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^project_id=[[:space:]]*//p' -e 's/^project_id:[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_project=alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt project_root
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=project_root
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^project_root=[[:space:]]*//p' -e 's/^project_root:[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_root=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt source_commit
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=source_commit
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=82de18affdb69a40d144226b126eb1f1e32f589f
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: SOURCE_COMMIT=82de18affdb69a40d144226b126eb1f1e32f589f
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt pipeline_status
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=pipeline_status
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^pipeline_status=[[:space:]]*//p' -e 's/^pipeline_status:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_status=RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt completion_status
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=completion_status
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_completion=RUNNING
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt contract_result
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=contract_result
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^contract_result=[[:space:]]*//p' -e 's/^contract_result:[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=BLOCKED
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value BLOCKED
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s BLOCKED
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: state_result=BLOCKED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' pipeline-state.v1 = pipeline-state.v1 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' run_20260906_224906_10711 = run_20260906_224906_10711 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' alfa_device_ctrl = alfa_device_ctrl ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl = /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -n 82de18affdb69a40d144226b126eb1f1e32f589f ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 82de18affdb69a40d144226b126eb1f1e32f589f '!=' UNKNOWN ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' RUNNING = RUNNING ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' RUNNING = RUNNING ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' BLOCKED = BLOCKED ']'
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: read_field /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt ede_rc
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local file=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local key=ede_rc
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local value
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n -e 's/^ede_rc=[[:space:]]*//p' -e 's/^ede_rc:[[:space:]]*//p' -e 's/^[[:space:]]*ede_rc[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_rc[[:space:]]*:[[:space:]]*//p' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224906_10711/pipeline_state.txt
++++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed -n 1p
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: value=UNSET
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: trim_value UNSET
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s UNSET
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' UNSET = 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: return 1
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: fail_blocked CURRENT_RUN_VALIDATION_FAILED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: local reason=CURRENT_RUN_VALIDATION_FAILED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf '%s\n' PROFILE_AUTHORITY_STATUS=BLOCKED
+PROFILE_AUTHORITY_STATUS=BLOCKED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf '%s\n' PROFILE_AUTHORITY_FAILURE_REASON=CURRENT_RUN_VALIDATION_FAILED
+PROFILE_AUTHORITY_FAILURE_REASON=CURRENT_RUN_VALIDATION_FAILED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf '%s\n' PROFILE_AUTHORITATIVE=FALSE
+PROFILE_AUTHORITATIVE=FALSE
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: return 20
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: return 20

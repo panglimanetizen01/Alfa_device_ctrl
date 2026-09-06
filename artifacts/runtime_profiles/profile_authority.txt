@@ -1,0 +1,10 @@
+authority_schema_version=profile-authority.v1
+pipeline_run_id=run_20260906_191721_23826
+profile_path=artifacts/runtime_profiles/profile_20260906_201835_17597.txt
+profile_sha256=dff7cc2157660a9fd395c0a471c468bd0977d4561f99ae144fefac108e85199f
+profile_version=1
+source_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+generated_at=2026-09-06 20:18:35
+authoritative=TRUE
+profile_status=VALID
+

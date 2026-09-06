@@ -31,7 +31,7 @@ else
     echo "STORAGE_WRITE=ERROR | verification=Write/delete test | scope=current_environment"
 fi
 
-PVT=/tmp/cde_exec_private.$$
+PVT="${TMPDIR:-${PREFIX:-$HOME}/tmp}/cde_exec_private.$$"
 
 cat > "$PVT" <<'SH'
 #!/bin/sh
@@ -67,12 +67,12 @@ else
 fi
 rm -f "$SHR"
 
-getent hosts google.com >/dev/null 2>&1
+python3 -c 'import socket; socket.getaddrinfo("google.com", 443, type=socket.SOCK_STREAM)' >/dev/null 2>&1
 RC=$?
 if [ "$RC" -eq 0 ]; then
-    echo "NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment"
+    echo "NETWORK_DNS=PASS | verification=DNS lookup via socket.getaddrinfo | scope=current_environment"
 else
-    echo "NETWORK_DNS=ERROR | verification=DNS lookup | scope=current_environment"
+    echo "NETWORK_DNS=ERROR | verification=DNS lookup via socket.getaddrinfo | scope=current_environment"
 fi
 
 echo

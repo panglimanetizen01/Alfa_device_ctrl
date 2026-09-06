@@ -1,0 +1,66 @@
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: date +%Y%m%d_%H%M%S
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TS=20260906_224907
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: OUT=artifacts/cde/cde_20260906_224907.txt
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: exec
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '=== CDE V1 ==='
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[REGISTRY]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo registry=CAPABILITY_REGISTRY_V1
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[CAPABILITIES]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -r /storage/emulated/0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'STORAGE_READ=PASS | verification=Read test | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TMP=/storage/emulated/0/.cde_write_test.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: touch /storage/emulated/0/.cde_write_test.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo evidence=/storage/emulated/0/.cde_write_test.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /storage/emulated/0/.cde_write_test.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: PVT=/data/data/com.termux/files/usr/tmp/cde_exec_private.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: cat
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: chmod +x /data/data/com.termux/files/usr/tmp/cde_exec_private.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: /data/data/com.termux/files/usr/tmp/cde_exec_private.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RC=0
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 0 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /data/data/com.termux/files/usr/tmp/cde_exec_private.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: SHR=/storage/emulated/0/.cde_exec_shared.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: cat
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: chmod +x /storage/emulated/0/.cde_exec_shared.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: /storage/emulated/0/.cde_exec_shared.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RC=126
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 126 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'EXEC_SHARED=ERROR | verification=Execution test | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /storage/emulated/0/.cde_exec_shared.10770
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: python3 -c 'import socket; socket.getaddrinfo("google.com", 443, type=socket.SOCK_STREAM)'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: RC=0
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 0 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'NETWORK_DNS=PASS | verification=DNS lookup via socket.getaddrinfo | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[TOOLCHAIN]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v git
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s git
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: tr '[:lower:]' '[:upper:]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'GIT=PASS | verification=command discovery | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v python3
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s python3
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: tr '[:lower:]' '[:upper:]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'PYTHON3=PASS | verification=command discovery | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v java
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s java
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: tr '[:lower:]' '[:upper:]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'JAVA=PASS | verification=command discovery | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v javac
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s javac
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: tr '[:lower:]' '[:upper:]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'JAVAC=PASS | verification=command discovery | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v gradle
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf %s gradle
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: tr '[:lower:]' '[:upper:]'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'GRADLE=PASS | verification=command discovery | scope=current_environment'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[END]'

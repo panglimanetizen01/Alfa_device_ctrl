@@ -1,0 +1,134 @@
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: set -u
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '=== EDE V1 ==='
+=== EDE V1 ===
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[HEADER]'
+[HEADER]
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: date '+%Y-%m-%d %H:%M:%S'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'timestamp=2026-09-06 22:49:06'
+timestamp=2026-09-06 22:49:06
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo ede_version=1
+ede_version=1
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: pwd
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo execution_path=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+execution_path=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[IDENTITY]'
+[IDENTITY]
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: whoami
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo username=u0_a622
+username=u0_a622
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: id -u
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo uid=10622
+uid=10622
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: id -g
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo gid=10622
+gid=10622
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: id -Gn
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'groups=u0_a622 ext_obb_rw inet everybody u0_a622_cache all_a622'
+groups=u0_a622 ext_obb_rw inet everybody u0_a622_cache all_a622
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[KERNEL]'
+[KERNEL]
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: uname -s
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo kernel_name=Linux
+kernel_name=Linux
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: uname -r
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo kernel_version=5.10.209-android12-9-00016-g7c6bbcca33e1-ab12029497
+kernel_version=5.10.209-android12-9-00016-g7c6bbcca33e1-ab12029497
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: uname -m
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo architecture=aarch64
+architecture=aarch64
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[ENVIRONMENT]'
+[ENVIRONMENT]
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo home=/data/data/com.termux/files/home
+home=/data/data/com.termux/files/home
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: pwd
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo pwd=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+pwd=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo shell=/data/data/com.termux/files/usr/bin/bash
+shell=/data/data/com.termux/files/usr/bin/bash
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[TOOLCHAIN]'
+[TOOLCHAIN]
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v git
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo git=PRESENT
+git=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v python3
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo python3=PRESENT
+python3=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v java
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo java=PRESENT
+java=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v javac
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo javac=PRESENT
+javac=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo gradle=PRESENT
+gradle=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[STORAGE]'
+[STORAGE]
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -d /storage/emulated/0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo android_shared_storage=PRESENT
+android_shared_storage=PRESENT
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TMPFILE=/storage/emulated/0/.ede_write_test.10731
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: touch /storage/emulated/0/.ede_write_test.10731
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /storage/emulated/0/.ede_write_test.10731
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo writable_shared_storage=YES
+writable_shared_storage=YES
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo private_storage=/data/data/com.termux/files/home
+private_storage=/data/data/com.termux/files/home
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[CLASSIFICATION]'
+[CLASSIFICATION]
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: ANDROID_HOST=UNKNOWN
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: uname -r
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: grep -qi android
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: ANDROID_HOST=DETECTED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: CONTAINER_ENVIRONMENT=UNKNOWN
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: env
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: grep -qi userland
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=0
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v git
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=1
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v python3
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=2
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v java
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=3
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v javac
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=4
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: for tool in git python3 java javac gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: command -v gradle
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_PRESENT=5
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 5 -eq 5 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: TOOLCHAIN_STATUS=PASS
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' -d /storage/emulated/0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: touch /storage/emulated/0/.ede_write_test.10731
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /storage/emulated/0/.ede_write_test.10731
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: STORAGE_STATUS=PASS
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo android_host=DETECTED
+android_host=DETECTED
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo container_environment=UNKNOWN
+container_environment=UNKNOWN
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo toolchain_status=PASS
+toolchain_status=PASS
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo storage_status=PASS
+storage_status=PASS

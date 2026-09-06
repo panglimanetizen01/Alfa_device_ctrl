@@ -1,0 +1,186 @@
++tools/runtime_profile_generator.sh:3:: set -u
+tools/runtime_profile_generator.sh: line 5: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_RC_OK=0
+tools/runtime_profile_generator.sh: line 6: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_RC_BLOCKED=20
+tools/runtime_profile_generator.sh: line 7: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_RC_INVALID=21
+tools/runtime_profile_generator.sh: line 9: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROJECT_ROOT_EXPECTED=
+tools/runtime_profile_generator.sh: line 10: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROJECT_ID_EXPECTED=alfa_device_ctrl
+tools/runtime_profile_generator.sh: line 11: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_DIR_REL=artifacts/runtime_profiles
+tools/runtime_profile_generator.sh: line 12: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: AUTHORITY_FILE_NAME=profile_authority.txt
+tools/runtime_profile_generator.sh: line 14: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROJECT_ROOT=
+tools/runtime_profile_generator.sh: line 15: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_OUTPUT_DIR=
+tools/runtime_profile_generator.sh: line 16: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_AUTHORITY_FILE=
+tools/runtime_profile_generator.sh: line 17: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: AUTHORITY_LOCK_DIR=
+tools/runtime_profile_generator.sh: line 18: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: RUN_DIR=
+tools/runtime_profile_generator.sh: line 19: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: RUN_ID=
+tools/runtime_profile_generator.sh: line 20: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: STATE_FILE=
+tools/runtime_profile_generator.sh: line 21: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: MANIFEST_FILE=
+tools/runtime_profile_generator.sh: line 22: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: SOURCE_COMMIT=
+tools/runtime_profile_generator.sh: line 24: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_FILE=
+tools/runtime_profile_generator.sh: line 25: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_REL=
+tools/runtime_profile_generator.sh: line 26: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_SHA256=
+tools/runtime_profile_generator.sh: line 27: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: PROFILE_GENERATED_AT=
+tools/runtime_profile_generator.sh: line 634: FUNCNAME[0]: unbound variable
++${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: main /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
++tools/runtime_profile_generator.sh:563:main: local script_dir canonical_script_root
++tools/runtime_profile_generator.sh:565:main: '[' 1 -ne 1 ']'
++++tools/runtime_profile_generator.sh:570:main: dirname -- tools/runtime_profile_generator.sh
+++tools/runtime_profile_generator.sh:570:main: CDPATH=
+++tools/runtime_profile_generator.sh:570:main: cd -- tools
+++tools/runtime_profile_generator.sh:570:main: pwd
++tools/runtime_profile_generator.sh:570:main: script_dir=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools
+++tools/runtime_profile_generator.sh:571:main: CDPATH=
+++tools/runtime_profile_generator.sh:571:main: cd -- /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools/..
+++tools/runtime_profile_generator.sh:571:main: pwd
++tools/runtime_profile_generator.sh:571:main: canonical_script_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++tools/runtime_profile_generator.sh:572:main: '[' -n /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++tools/runtime_profile_generator.sh:573:main: PROJECT_ROOT_EXPECTED=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++tools/runtime_profile_generator.sh:574:main: PROJECT_ROOT=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++tools/runtime_profile_generator.sh:575:main: PROFILE_OUTPUT_DIR=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++tools/runtime_profile_generator.sh:576:main: mkdir -p /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++tools/runtime_profile_generator.sh:580:main: PROFILE_AUTHORITY_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_authority.txt
++tools/runtime_profile_generator.sh:581:main: RUN_DIR=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:582:main: basename /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
++tools/runtime_profile_generator.sh:582:main: RUN_ID=run_20260906_224055_8449
++tools/runtime_profile_generator.sh:583:main: STATE_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++tools/runtime_profile_generator.sh:584:main: MANIFEST_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/manifest.txt
++tools/runtime_profile_generator.sh:586:main: case "$RUN_DIR" in
++tools/runtime_profile_generator.sh:590:main: '[' run_20260906_224055_8449 '!=' . ']'
++tools/runtime_profile_generator.sh:590:main: '[' run_20260906_224055_8449 '!=' .. ']'
++tools/runtime_profile_generator.sh:591:main: '[' -d /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles ']'
++tools/runtime_profile_generator.sh:593:main: validate_explicit_run
++tools/runtime_profile_generator.sh:152:validate_explicit_run: local state_schema state_run state_project state_root state_status state_completion state_result
++tools/runtime_profile_generator.sh:153:validate_explicit_run: local manifest_run manifest_commit manifest_schema
++tools/runtime_profile_generator.sh:154:validate_explicit_run: local ede_rel cde_rel gate3_rel ede_env cde_env gate3_env
++tools/runtime_profile_generator.sh:155:validate_explicit_run: local ede_hash cde_hash gate3_hash
++tools/runtime_profile_generator.sh:156:validate_explicit_run: local ede_stage cde_stage gate3_stage
++tools/runtime_profile_generator.sh:157:validate_explicit_run: local canonical_run expected_run
++tools/runtime_profile_generator.sh:159:validate_explicit_run: '[' -d /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449 ']'
++tools/runtime_profile_generator.sh:160:validate_explicit_run: '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt ']'
++tools/runtime_profile_generator.sh:161:validate_explicit_run: '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/manifest.txt ']'
+++tools/runtime_profile_generator.sh:163:validate_explicit_run: realpath -e /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
++tools/runtime_profile_generator.sh:163:validate_explicit_run: canonical_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:164:validate_explicit_run: realpath -e /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
++tools/runtime_profile_generator.sh:164:validate_explicit_run: expected_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449
++tools/runtime_profile_generator.sh:165:validate_explicit_run: '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449 ']'
++tools/runtime_profile_generator.sh:165:validate_explicit_run: '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449 ']'
++tools/runtime_profile_generator.sh:166:validate_explicit_run: '[' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449 = /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449 ']'
+++tools/runtime_profile_generator.sh:168:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt schema_version
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=schema_version
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^schema_version=[[:space:]]*//p' -e 's/^schema_version:[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=pipeline-state.v1
+++tools/runtime_profile_generator.sh:45:read_field: trim_value pipeline-state.v1
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s pipeline-state.v1
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:168:validate_explicit_run: state_schema=pipeline-state.v1
+++tools/runtime_profile_generator.sh:169:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt pipeline_run_id
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=pipeline_run_id
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:45:read_field: trim_value run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:169:validate_explicit_run: state_run=run_20260906_224055_8449
+++tools/runtime_profile_generator.sh:170:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt project_id
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=project_id
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^project_id=[[:space:]]*//p' -e 's/^project_id:[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=alfa_device_ctrl
+++tools/runtime_profile_generator.sh:45:read_field: trim_value alfa_device_ctrl
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s alfa_device_ctrl
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:170:validate_explicit_run: state_project=alfa_device_ctrl
+++tools/runtime_profile_generator.sh:171:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt project_root
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=project_root
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^project_root=[[:space:]]*//p' -e 's/^project_root:[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++tools/runtime_profile_generator.sh:45:read_field: trim_value /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:171:validate_explicit_run: state_root=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++tools/runtime_profile_generator.sh:172:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt source_commit
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=source_commit
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=82de18affdb69a40d144226b126eb1f1e32f589f
+++tools/runtime_profile_generator.sh:45:read_field: trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:172:validate_explicit_run: SOURCE_COMMIT=82de18affdb69a40d144226b126eb1f1e32f589f
+++tools/runtime_profile_generator.sh:173:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt pipeline_status
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=pipeline_status
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^pipeline_status=[[:space:]]*//p' -e 's/^pipeline_status:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=BLOCKED
+++tools/runtime_profile_generator.sh:45:read_field: trim_value BLOCKED
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s BLOCKED
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:173:validate_explicit_run: state_status=BLOCKED
+++tools/runtime_profile_generator.sh:174:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt completion_status
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=completion_status
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=BLOCKED
+++tools/runtime_profile_generator.sh:45:read_field: trim_value BLOCKED
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s BLOCKED
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:174:validate_explicit_run: state_completion=BLOCKED
+++tools/runtime_profile_generator.sh:175:validate_explicit_run: read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt contract_result
+++tools/runtime_profile_generator.sh:34:read_field: local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
+++tools/runtime_profile_generator.sh:35:read_field: local key=contract_result
+++tools/runtime_profile_generator.sh:36:read_field: local value
++++tools/runtime_profile_generator.sh:43:read_field: sed -n -e 's/^contract_result=[[:space:]]*//p' -e 's/^contract_result:[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_224055_8449/pipeline_state.txt
++++tools/runtime_profile_generator.sh:43:read_field: sed -n 1p
+++tools/runtime_profile_generator.sh:43:read_field: value=VALID
+++tools/runtime_profile_generator.sh:45:read_field: trim_value VALID
+++tools/runtime_profile_generator.sh:30:trim_value: printf %s VALID
+++tools/runtime_profile_generator.sh:30:trim_value: sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++tools/runtime_profile_generator.sh:175:validate_explicit_run: state_result=VALID
++tools/runtime_profile_generator.sh:177:validate_explicit_run: '[' pipeline-state.v1 = pipeline-state.v1 ']'
++tools/runtime_profile_generator.sh:178:validate_explicit_run: '[' run_20260906_224055_8449 = run_20260906_224055_8449 ']'
++tools/runtime_profile_generator.sh:179:validate_explicit_run: '[' alfa_device_ctrl = alfa_device_ctrl ']'
++tools/runtime_profile_generator.sh:180:validate_explicit_run: '[' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl = /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++tools/runtime_profile_generator.sh:180:validate_explicit_run: return 1
++tools/runtime_profile_generator.sh:594:main: fail_blocked CURRENT_RUN_VALIDATION_FAILED
++tools/runtime_profile_generator.sh:547:fail_blocked: local reason=CURRENT_RUN_VALIDATION_FAILED
++tools/runtime_profile_generator.sh:548:fail_blocked: printf '%s\n' PROFILE_AUTHORITY_STATUS=BLOCKED
++tools/runtime_profile_generator.sh:549:fail_blocked: printf '%s\n' PROFILE_AUTHORITY_FAILURE_REASON=CURRENT_RUN_VALIDATION_FAILED
++tools/runtime_profile_generator.sh:550:fail_blocked: printf '%s\n' PROFILE_AUTHORITATIVE=FALSE
++tools/runtime_profile_generator.sh:551:fail_blocked: return 20
++tools/runtime_profile_generator.sh:595:main: return 20

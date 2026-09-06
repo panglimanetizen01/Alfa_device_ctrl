@@ -1,0 +1,45 @@
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '=== ALFA EXECUTION CAPABILITY V1 ==='
+=== ALFA EXECUTION CAPABILITY V1 ===
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: date '+%Y-%m-%d %H:%M:%S'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'timestamp=2026-09-06 22:49:08'
+timestamp=2026-09-06 22:49:08
+++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: pwd
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo execution_path=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+execution_path=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[CAPABILITIES]'
+[CAPABILITIES]
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: P=/data/data/com.termux/files/usr/tmp/alfa_exec_private.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf '#!/bin/sh\nexit 0\n'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: chmod +x /data/data/com.termux/files/usr/tmp/alfa_exec_private.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: /data/data/com.termux/files/usr/tmp/alfa_exec_private.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'EXEC_PRIVATE=PASS | verification=execution test | scope=current_environment'
+EXEC_PRIVATE=PASS | verification=execution test | scope=current_environment
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /data/data/com.termux/files/usr/tmp/alfa_exec_private.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: S=/storage/emulated/0/.alfa_exec_shared.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf '#!/bin/sh\nexit 0\n'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: chmod +x /storage/emulated/0/.alfa_exec_shared.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: /storage/emulated/0/.alfa_exec_shared.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 126 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'EXEC_SHARED=ERROR | verification=execution test'
+EXEC_SHARED=ERROR | verification=execution test
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: rm -f /storage/emulated/0/.alfa_exec_shared.10816
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf 'echo SCRIPT_BASH_OK\n'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: bash
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 0 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'SCRIPT_BASH=PASS | verification=bash execution'
+SCRIPT_BASH=PASS | verification=bash execution
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: printf 'print("SCRIPT_PYTHON_OK")\n'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: python3
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 0 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'SCRIPT_PYTHON=PASS | verification=python execution'
+SCRIPT_PYTHON=PASS | verification=python execution
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: sh -c true
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: '[' 0 -eq 0 ']'
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo 'PROCESS_SPAWN=PASS | verification=process spawn'
+PROCESS_SPAWN=PASS | verification=process spawn
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo
+
++/data/data/com.termux/files/usr/tmp/alfa-g4-profile-env.12657.sh:1:: echo '[END]'
+[END]

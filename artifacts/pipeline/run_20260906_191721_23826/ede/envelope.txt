@@ -1,0 +1,16 @@
+schema_version=artifact-envelope.v1
+pipeline_run_id=run_20260906_191721_23826
+project_id=alfa_device_ctrl
+project_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+stage_id=ede
+producer=tools/ede.sh
+source_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+artifact_path=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+sha256=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+completion_status=COMPLETE
+created_at=2026-09-06 19:17:24
+execution_path=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+input_artifacts=NONE
+payload_schema=stage-output.v1
+completed_at=2026-09-06 19:17:24
+evidence_status=COMPLETE

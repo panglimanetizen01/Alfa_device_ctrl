@@ -1,0 +1,12 @@
+=== ALFA EXECUTION CAPABILITY V1 ===
+timestamp=2026-09-06 22:34:04
+execution_path=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+
+[CAPABILITIES]
+EXEC_PRIVATE=PASS | verification=execution test | scope=current_environment
+EXEC_SHARED=ERROR | verification=execution test
+SCRIPT_BASH=PASS | verification=bash execution
+SCRIPT_PYTHON=PASS | verification=python execution
+PROCESS_SPAWN=PASS | verification=process spawn
+
+[END]

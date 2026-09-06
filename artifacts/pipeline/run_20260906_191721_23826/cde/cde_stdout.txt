@@ -1,0 +1,2 @@
+./tools/cde.sh: line 36: /tmp/cde_exec_private.23876: No such file or directory
+chmod: cannot access '/tmp/cde_exec_private.23876': No such file or directory

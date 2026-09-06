@@ -5,9 +5,10 @@ set -u
 main() {
     local SCRIPT_DIR PROJECT_ROOT DISCOVERY_SCRIPT INVOCATION_CWD
     local RUN_ID RUN_DIR STATE_FILE TRANSCRIPT SUMMARY
-    local DISCOVERY_RC FINAL_STATUS CONTRACT_RESULT
+    local DISCOVERY_RC PROFILE_RC GATE4_RC FINAL_STATUS CONTRACT_RESULT
     local SOURCE_COMMIT EDE_RC CDE_RC GATE3_RC
-    local EDE_ARTIFACT CDE_ARTIFACT GATE3_ARTIFACT
+    local EDE_ARTIFACT CDE_ARTIFACT GATE3_ARTIFACT GATE4_ARTIFACT
+    local PROFILE_RC_OUT PROFILE_FILE PROFILE_PATH
     local FAILURE_STAGE FAILURE_REASON COMPLETION_STATUS
     local STAGE_COMPLETION ARTIFACT_HASHES
 
@@ -20,7 +21,7 @@ main() {
         return 10
     fi
 
-    PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." 2>/dev/null && pwd)
+    PROJECT_ROOT=$(realpath -e "$SCRIPT_DIR/.." 2>/dev/null || true)
     if [ -z "$PROJECT_ROOT" ] || [ ! -d "$PROJECT_ROOT" ]; then
         printf '%s\n' 'PIPELINE_STATUS=BLOCKED'
         printf '%s\n' 'PIPELINE_ERROR=PROJECT_ROOT_UNRESOLVED'
@@ -58,7 +59,7 @@ main() {
         printf '%s\n' "source_commit=$SOURCE_COMMIT"
         printf '%s\n' "invocation_cwd=$INVOCATION_CWD"
         printf '%s\n' "execution_cwd=$PROJECT_ROOT"
-        printf '%s\n' 'stage_order=EDE,CDE,GATE3'
+        printf '%s\n' 'stage_order=EDE,CDE,GATE3,GATE4'
         printf '%s\n' 'pipeline_status=RUNNING'
         printf '%s\n' 'ede_rc=UNSET'
         printf '%s\n' 'cde_rc=UNSET'
@@ -85,7 +86,7 @@ main() {
     printf '%s\n' '=== ALFA DEVICE CTRL RUNTIME PIPELINE PHASE 5 ==='
     printf '%s\n' "pipeline_run_id=$RUN_ID"
     printf '%s\n' "project_root=$PROJECT_ROOT"
-    printf '%s\n' 'stage_order=EDE -> CDE -> GATE3'
+    printf '%s\n' 'stage_order=EDE -> CDE -> GATE3 -> PROFILE -> GATE4'
     printf '%s\n' 'runtime_discovery_invocations=1'
 
     if CDPATH= cd -- "$PROJECT_ROOT" && bash "$DISCOVERY_SCRIPT" "$RUN_ID" "$RUN_DIR" "$INVOCATION_CWD" > "$TRANSCRIPT" 2>&1; then
@@ -102,6 +103,69 @@ main() {
     EDE_ARTIFACT=$(grep '^ede_artifact=' "$SUMMARY" 2>/dev/null | sed 's/^ede_artifact=//' | sed -n '1p')
     CDE_ARTIFACT=$(grep '^cde_artifact=' "$SUMMARY" 2>/dev/null | sed 's/^cde_artifact=//' | sed -n '1p')
     GATE3_ARTIFACT=$(grep '^gate3_artifact=' "$SUMMARY" 2>/dev/null | sed 's/^gate3_artifact=//' | sed -n '1p')
+
+    if [ "$DISCOVERY_RC" -eq 0 ] \
+       && [ "$EDE_RC" = '0' ] \
+       && [ "$CDE_RC" = '0' ] \
+       && [ "$GATE3_RC" = '0' ]; then
+        if ! {
+            printf '%s\n' 'schema_version=pipeline-state.v1'
+            printf '%s\n' "pipeline_run_id=$RUN_ID"
+            printf '%s\n' 'project_id=alfa_device_ctrl'
+            printf '%s\n' "project_root=$PROJECT_ROOT"
+            printf '%s\n' "source_commit=$SOURCE_COMMIT"
+            printf '%s\n' "invocation_cwd=$INVOCATION_CWD"
+            printf '%s\n' "execution_cwd=$PROJECT_ROOT"
+            printf '%s\n' 'stage_order=EDE,CDE,GATE3,GATE4'
+            printf '%s\n' 'pipeline_status=RUNNING'
+            printf '%s\n' "ede_rc=$EDE_RC"
+            printf '%s\n' "cde_rc=$CDE_RC"
+            printf '%s\n' "gate3_rc=$GATE3_RC"
+            printf '%s\n' "ede_artifact=$EDE_ARTIFACT"
+            printf '%s\n' "cde_artifact=$CDE_ARTIFACT"
+            printf '%s\n' "gate3_artifact=$GATE3_ARTIFACT"
+            printf '%s\n' 'failure_stage=NONE'
+            printf '%s\n' 'failure_reason=NONE'
+            printf '%s\n' 'completion_status=RUNNING'
+            printf '%s\n' 'completed_at=UNSET'
+            printf '%s\n' "state_artifact=artifacts/pipeline/$RUN_ID/pipeline_state.txt"
+            printf '%s\n' "transcript_artifact=artifacts/pipeline/$RUN_ID/runtime_discovery_output.txt"
+            printf '%s\n' "manifest_artifact=artifacts/pipeline/$RUN_ID/manifest.txt"
+            printf '%s\n' 'stage_completion=EDE:COMPLETE,CDE:COMPLETE,GATE3:COMPLETE'
+            printf '%s\n' 'artifact_hashes=UNSET'
+            printf '%s\n' 'contract_result=BLOCKED'
+        } > "$STATE_FILE"; then
+            PROFILE_RC=21
+        fi
+    fi
+
+    PROFILE_RC=21
+    PROFILE_RC_OUT="$RUN_DIR/profile_generator_output.txt"
+    PROFILE_FILE=''
+    PROFILE_PATH=''
+
+    if [ "$DISCOVERY_RC" -eq 0 ] && [ "$EDE_RC" = '0' ] && [ "$CDE_RC" = '0' ] && [ "$GATE3_RC" = '0' ]; then
+        if CDPATH= cd -- "$PROJECT_ROOT" && bash "$PROJECT_ROOT/tools/runtime_profile_generator.sh" "$RUN_DIR" > "$PROFILE_RC_OUT" 2>&1; then
+            PROFILE_RC=0
+        else
+            PROFILE_RC=$?
+        fi
+    fi
+
+    PROFILE_FILE=$(grep '^PROFILE_FILE=' "$PROFILE_RC_OUT" 2>/dev/null | sed 's/^PROFILE_FILE=//' | sed -n '1p')
+    PROFILE_PATH=$(grep '^PROFILE_PATH=' "$PROFILE_RC_OUT" 2>/dev/null | sed 's/^PROFILE_PATH=//' | sed -n '1p')
+
+    GATE4_RC=21
+    GATE4_ARTIFACT="$RUN_DIR/gate4/environment_contract.txt"
+
+    if [ "$PROFILE_RC" -eq 0 ] && [ -n "$PROFILE_FILE" ]; then
+        if CDPATH= cd -- "$PROJECT_ROOT" && bash "$PROJECT_ROOT/tools/environment_contract.sh" "$RUN_DIR" "$PROFILE_FILE" > "$RUN_DIR/gate4_output.txt" 2>&1; then
+            GATE4_RC=0
+        else
+            GATE4_RC=$?
+        fi
+    fi
+
     STAGE_COMPLETION=$(grep '^stage_completion=' "$SUMMARY" 2>/dev/null | sed 's/^stage_completion=//' | sed -n '1p')
     ARTIFACT_HASHES=$(grep '^artifact_hashes=' "$SUMMARY" 2>/dev/null | sed 's/^artifact_hashes=//' | sed -n '1p')
 
@@ -112,6 +176,13 @@ main() {
        && [ "$EDE_RC" = '0' ] \
        && [ "$CDE_RC" = '0' ] \
        && [ "$GATE3_RC" = '0' ] \
+       && [ "$PROFILE_RC" = '0' ] \
+       && [ -n "$PROFILE_FILE" ] \
+       && [ -n "$PROFILE_PATH" ] \
+       && [ "$GATE4_RC" = '0' ] \
+       && [ -s "$GATE4_ARTIFACT" ] \
+       && grep -q '^GATE4_STATUS=PASS$' "$RUN_DIR/gate4_output.txt" \
+       && grep -q '^GATE4_RESULT=VALID$' "$RUN_DIR/gate4_output.txt" \
        && [ "$CONTRACT_RESULT" = 'VALID' ] \
        && [ -n "$SOURCE_COMMIT" ] \
        && [ "$SOURCE_COMMIT" != 'UNKNOWN' ]; then
@@ -134,12 +205,23 @@ main() {
     if [ -z "$EDE_RC" ]; then EDE_RC=UNSET; fi
     if [ -z "$CDE_RC" ]; then CDE_RC=UNSET; fi
     if [ -z "$GATE3_RC" ]; then GATE3_RC=UNSET; fi
+    if [ -z "$GATE4_RC" ]; then GATE4_RC=UNSET; fi
     if [ -z "$CONTRACT_RESULT" ]; then CONTRACT_RESULT=BLOCKED; fi
     if [ -z "$SOURCE_COMMIT" ]; then SOURCE_COMMIT=UNKNOWN; fi
     if [ -z "$EDE_ARTIFACT" ]; then EDE_ARTIFACT="artifacts/pipeline/$RUN_ID/ede/artifact.txt"; fi
     if [ -z "$CDE_ARTIFACT" ]; then CDE_ARTIFACT="artifacts/pipeline/$RUN_ID/cde/artifact.txt"; fi
     if [ -z "$GATE3_ARTIFACT" ]; then GATE3_ARTIFACT="artifacts/pipeline/$RUN_ID/gate3/artifact.txt"; fi
     if [ -z "$STAGE_COMPLETION" ]; then STAGE_COMPLETION='EDE:UNKNOWN,CDE:UNKNOWN,GATE3:UNKNOWN'; fi
+    if [ "$PROFILE_RC" = '0' ]; then
+        STAGE_COMPLETION="$STAGE_COMPLETION,PROFILE:COMPLETE"
+    else
+        STAGE_COMPLETION="$STAGE_COMPLETION,PROFILE:FAILED"
+    fi
+    if [ "$GATE4_RC" = '0' ]; then
+        STAGE_COMPLETION="$STAGE_COMPLETION,GATE4:COMPLETE"
+    else
+        STAGE_COMPLETION="$STAGE_COMPLETION,GATE4:FAILED"
+    fi
     if [ -z "$ARTIFACT_HASHES" ]; then ARTIFACT_HASHES=UNKNOWN; fi
 
     if ! {
@@ -150,14 +232,19 @@ main() {
         printf '%s\n' "source_commit=$SOURCE_COMMIT"
         printf '%s\n' "invocation_cwd=$INVOCATION_CWD"
         printf '%s\n' "execution_cwd=$PROJECT_ROOT"
-        printf '%s\n' 'stage_order=EDE,CDE,GATE3'
+        printf '%s\n' 'stage_order=EDE,CDE,GATE3,GATE4'
         printf '%s\n' "pipeline_status=$FINAL_STATUS"
         printf '%s\n' "ede_rc=$EDE_RC"
         printf '%s\n' "cde_rc=$CDE_RC"
         printf '%s\n' "gate3_rc=$GATE3_RC"
+        printf '%s\n' "profile_rc=$PROFILE_RC"
+        printf '%s\n' "gate4_rc=$GATE4_RC"
         printf '%s\n' "ede_artifact=$EDE_ARTIFACT"
         printf '%s\n' "cde_artifact=$CDE_ARTIFACT"
         printf '%s\n' "gate3_artifact=$GATE3_ARTIFACT"
+        printf '%s\n' "profile_file=$PROFILE_FILE"
+        printf '%s\n' "profile_path=$PROFILE_PATH"
+        printf '%s\n' "gate4_artifact=$GATE4_ARTIFACT"
         printf '%s\n' "failure_stage=$FAILURE_STAGE"
         printf '%s\n' "failure_reason=$FAILURE_REASON"
         printf '%s\n' "completion_status=$COMPLETION_STATUS"

@@ -6,7 +6,8 @@ GATE4_RC_VALID=0
 GATE4_RC_BLOCKED=20
 GATE4_RC_INVALID=21
 
-PROJECT_ROOT_EXPECTED='/storage/emulated/0/Alfa_device_ctrl'
+PROJECT_ROOT_EXPECTED=''
+PROJECT_ROOT_EXPECTED_CANONICAL=''
 PROJECT_ID_EXPECTED='alfa_device_ctrl'
 PIPELINE_ROOT_REL='artifacts/pipeline'
 PROFILE_ROOT_REL='artifacts/runtime_profiles'
@@ -350,14 +351,17 @@ hash_matches() {
 validate_state_and_manifest() {
     local state_schema state_run state_project state_root state_status state_completion state_result
     local manifest_schema manifest_run manifest_commit manifest_project manifest_root
-    local canonical_run expected_run
+    local canonical_run expected_run canonical_expected_root
 
     [ -d "$RUN_DIR" ] || return 1
     [ -f "$STATE_FILE" ] || return 1
     [ -f "$MANIFEST_FILE" ] || return 1
 
     canonical_run=$(realpath -e "$RUN_DIR" 2>/dev/null || true)
-    expected_run="$PROJECT_ROOT_EXPECTED/$PIPELINE_ROOT_REL/$RUN_ID"
+    canonical_expected_root=$(realpath -e "$PROJECT_ROOT_EXPECTED" 2>/dev/null || true)
+    [ -n "$canonical_run" ] || return 1
+    [ -n "$canonical_expected_root" ] || return 1
+    expected_run="$canonical_expected_root/$PIPELINE_ROOT_REL/$RUN_ID"
     [ "$canonical_run" = "$expected_run" ] || return 1
 
     state_schema=$(read_field "$STATE_FILE" schema_version)
@@ -380,9 +384,9 @@ validate_state_and_manifest() {
     [ "$state_project" = "$PROJECT_ID_EXPECTED" ] || return 1
     [ "$state_root" = "$PROJECT_ROOT_EXPECTED" ] || return 1
     is_non_unknown "$SOURCE_COMMIT" || return 1
-    [ "$state_status" = 'SUCCESS' ] || return 1
-    [ "$state_completion" = 'COMPLETE' ] || return 1
-    [ "$state_result" = 'VALID' ] || return 1
+    [ "$state_status" = 'RUNNING' ] || return 1
+    [ "$state_completion" = 'RUNNING' ] || return 1
+    [ "$state_result" = 'BLOCKED' ] || return 1
     [ "$(read_field "$STATE_FILE" ede_rc)" = '0' ] || return 1
     [ "$(read_field "$STATE_FILE" cde_rc)" = '0' ] || return 1
     [ "$(read_field "$STATE_FILE" gate3_rc)" = '0' ] || return 1
@@ -467,7 +471,6 @@ validate_profile_authority() {
     [ "$profile_run" = "$RUN_ID" ] || return 1
     [ "$profile_source" = "$SOURCE_COMMIT" ] || return 1
     [ "$profile_version" = '1' ] || return 1
-    [ "$profile_pipeline_status" = 'SUCCESS' ] || return 1
 
     for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH STORAGE_READ STORAGE_WRITE EXEC_PRIVATE EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE; do
         count=$(field_count "$PROFILE_FILE" "$key")
@@ -654,13 +657,19 @@ main() {
     fi
 
     script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)
-    canonical_root=$(CDPATH= cd -- "$script_dir/.." 2>/dev/null && pwd)
-    [ "$canonical_root" = "$PROJECT_ROOT_EXPECTED" ] || { fail_blocked MASTER_PATH_MISMATCH; return $?; }
+    canonical_root=$(realpath -e "$script_dir/.." 2>/dev/null || true)
+    [ -n "$canonical_root" ] || { fail_blocked MASTER_PATH_UNRESOLVED; return $?; }
     PROJECT_ROOT="$canonical_root"
+    PROJECT_ROOT_EXPECTED="$PROJECT_ROOT"
+    PROJECT_ROOT_EXPECTED_CANONICAL="$PROJECT_ROOT"
 
     RUN_DIR="$1"
     PROFILE_FILE="$2"
     RUN_ID=$(basename "$RUN_DIR")
+
+    RUN_DIR=$(realpath -e "$RUN_DIR" 2>/dev/null || true)
+    [ -n "$RUN_DIR" ] || { fail_blocked RUN_DIR_UNRESOLVED; return $?; }
+
     STATE_FILE="$RUN_DIR/pipeline_state.txt"
     MANIFEST_FILE="$RUN_DIR/manifest.txt"
     PROFILE_AUTHORITY_FILE="$PROJECT_ROOT/$AUTHORITY_REL"

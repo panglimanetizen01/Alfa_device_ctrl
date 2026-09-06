@@ -1,0 +1,1000 @@
+echo "=== ALFA RUNTIME WORKFLOW V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[ACTION]"
+
+if [ -n "$LATEST" ] && grep -q '^action_status=PASS$' "$LATEST"
+then
+    echo "action_status=PASS"
+
+    echo
+    echo "[WORKFLOW]"
+    echo "workflow_name=runtime_self_workflow"
+    echo "workflow_status=PASS"
+else
+    echo "action_status=BLOCKED"
+
+    echo
+    echo "[WORKFLOW]"
+    echo "workflow_name=runtime_self_workflow"
+    echo "workflow_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+================ ALFA LINUX REFERENCE SEARCH ================
+PROJECT.md:20:Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+
+================ GIT HISTORY ================
+80f42c04c2547d90481a30c9da6d0034cfd124df | 2026-08-22 15:48:00 +0000 | Alfa Device Ctrl | chore: initialize alfa_device_ctrl master
+e70495515067e65661daef7c1a5fa91c30f17508 | 2026-08-22 15:49:10 +0000 | Alfa Device Ctrl | docs: define initial alfa_device_ctrl architecture
+7a32c3102fcd232629a621cbc465986d0ced6216 | 2026-08-22 15:50:56 +0000 | Alfa Device Ctrl | docs: define alfa_device_ctrl product contract
+96a7b534fa4988af3776865d5dfb69c44d0448d4 | 2026-08-22 15:52:11 +0000 | Alfa Device Ctrl | feat: initialize android application skeleton
+cbb4c6dce0488b8df99672891cca849bb80d6646 | 2026-08-23 03:11:10 +0000 | Alfa Device Ctrl | docs: define environment discovery engine v1
+127988aaf2ff200e061cea50db33e1fe0cdf83bc | 2026-08-23 03:11:46 +0000 | Alfa Device Ctrl | docs: define ede result schema v1
+c7a46a1cdc56febe4b0bf9947b02fea51fc682b7 | 2026-08-23 03:12:38 +0000 | Alfa Device Ctrl | feat: implement ede v1
+7165d90174ea1b1e088a4052d786acc9a49e450f | 2026-08-23 03:13:37 +0000 | Alfa Device Ctrl | docs: define ede classification rules v1
+935403a6be4b2e05ea627fb1def019d06842600e | 2026-08-23 03:14:25 +0000 | Alfa Device Ctrl | feat: implement ede classifier v1
+1b60c1c9bc8468edf3da1a32d5bb359ac46a580d | 2026-08-23 03:15:33 +0000 | Alfa Device Ctrl | docs: define capability discovery engine v1
+8457bd5c43cf6a544cb44f1ab56e4019a8c5ebd8 | 2026-08-23 03:16:13 +0000 | Alfa Device Ctrl | feat: implement cde v1
+416ea91776ed4ef29e9e81a642e8b1a88c6d6497 | 2026-08-23 03:18:38 +0000 | Alfa Device Ctrl | feat: add cde evidence artifacts
+55f4a80ce9bffdaa3c7cddfd4e30969fc163349f | 2026-08-23 03:19:24 +0000 | Alfa Device Ctrl | docs: define capability registry v1
+9d4791a5791bd36c4dea65af6d338a3d42b40b89 | 2026-08-23 03:19:49 +0000 | Alfa Device Ctrl | feat: connect cde output to capability registry
+6f04d494b24bf66cf2aea897b24c39bb04ecd26b | 2026-08-23 03:21:06 +0000 | Alfa Device Ctrl | fix: normalize cde capability result identifiers
+ed264814544fbcd89d9c6ad17130362e1ea47fb2 | 2026-08-23 03:24:43 +0000 | Alfa Device Ctrl | fix: report toolchain capabilities in cde artifacts
+4cc0acfe2240092331a853905c95e1b5ad1608b4 | 2026-08-23 03:26:48 +0000 | Alfa Device Ctrl | fix: normalize cde toolchain capability IDs
+b96cec020e3cb324c2279c602f0f364242ad1023 | 2026-08-23 03:28:47 +0000 | Alfa Device Ctrl | feat: integrate ede and cde runtime discovery
+b70e1f220393d0e524263370fa034eb01268a703 | 2026-08-23 03:30:11 +0000 | Alfa Device Ctrl | fix: include cde results in runtime discovery
+9cb17f8ee2e07b91f70521679ed6a2118ceb619f | 2026-08-23 03:31:23 +0000 | Alfa Device Ctrl | feat: start gate 3 execution capability engine
+e2ab9afb3b0d0a46b8c20d9bdee5e3f571fa650a | 2026-08-23 03:32:52 +0000 | Alfa Device Ctrl | docs: define gate 3 execution result schema
+b1267ad9bd15e11adafe1b19832d67aa8b72fa11 | 2026-08-23 03:33:31 +0000 | Alfa Device Ctrl | feat: add gate 3 result header
+c9c7482324f9888e81645e927b6443a3b3407769 | 2026-08-23 03:34:55 +0000 | Alfa Device Ctrl | feat: start gate 4 environment contract engine
+c8364a2acfecc0a980eccd28f0af57c998e593bf | 2026-08-23 03:38:14 +0000 | Alfa Device Ctrl | feat: start gate 5 runtime decision engine
+5250353f01e6a93aaf0ca5af31388f0e992d723f | 2026-08-23 03:40:11 +0000 | Alfa Device Ctrl | feat: start gate 6 runtime bootstrap engine
+96ac6fe818382e63e7c8dcabd437abcaa4997916 | 2026-08-23 03:42:06 +0000 | Alfa Device Ctrl | feat: start gate 7 runtime session engine
+9b4574ec90fa2483ab8a98e09e0097038846ea2a | 2026-08-23 05:57:40 +0000 | Alfa Device Ctrl | feat: start gate 8 runtime task engine
+db9d1a59521cf3e8bb57c670f20156f838553634 | 2026-08-23 05:59:42 +0000 | Alfa Device Ctrl | feat: start gate 9 runtime action engine
+dca88405ba74c4319c5c0f390bbc5e3b005c0c8f | 2026-08-23 06:01:58 +0000 | Alfa Device Ctrl | feat: start gate 10 runtime workflow engine
+2d041d366a27e0b837b62c10406ba5971bca5e1d | 2026-08-23 06:03:37 +0000 | Alfa Device Ctrl | feat: start gate 11 runtime orchestrator engine
+53760822c59d6a84a1ce1dac527c62da2d8e65c2 | 2026-08-23 06:05:07 +0000 | Alfa Device Ctrl | feat: start gate 12 runtime kernel engine
+ad8c38bbb75a4353ebbca1236655c9862df3644e | 2026-08-23 06:10:03 +0000 | Alfa Device Ctrl | feat: start gate 13 runtime command engine
+f2362a501eb76b308ed199ad1353a5736d2ec1c5 | 2026-08-23 06:12:13 +0000 | Alfa Device Ctrl | feat: start gate 14 runtime command validation engine
+37ae19851ff0d4148bb6b413346c36ad5b4d884e | 2026-08-23 06:14:09 +0000 | Alfa Device Ctrl | feat: start gate 15 runtime command policy engine
+c69a5ebf041e8bf59fc8a8944ac6853f14479ee1 | 2026-08-23 06:14:24 +0000 | Alfa Device Ctrl | feat: start gate 15 runtime command policy engine
+480845f4102ea9dcbbd5c67369a7a842e67b0408 | 2026-08-23 06:17:19 +0000 | Alfa Device Ctrl | feat: start gate 16 runtime execution authorization engine
+cf78bd0c5f2b99c0f5978481ede6e59120968456 | 2026-08-23 06:19:49 +0000 | Alfa Device Ctrl | feat: start gate 17 runtime execution engine
+041dc10f57ff11b8482dbab08544a4bb1b627a4e | 2026-08-23 06:21:46 +0000 | Alfa Device Ctrl | feat: start gate 18 runtime execution result engine
+5959d9ff9a141842ad00053a92af383f05efe547 | 2026-08-23 06:24:37 +0000 | Alfa Device Ctrl | feat: start gate 19 runtime result consumer engine
+
+================ GIT NAME STATUS ================
+COMMIT 80f42c04c2547d90481a30c9da6d0034cfd124df | chore: initialize alfa_device_ctrl master
+
+A	PROJECT.md
+COMMIT e70495515067e65661daef7c1a5fa91c30f17508 | docs: define initial alfa_device_ctrl architecture
+
+A	docs/ARCHITECTURE.md
+COMMIT 7a32c3102fcd232629a621cbc465986d0ced6216 | docs: define alfa_device_ctrl product contract
+
+A	docs/PRODUCT_CONTRACT.md
+COMMIT 96a7b534fa4988af3776865d5dfb69c44d0448d4 | feat: initialize android application skeleton
+
+A	app/build.gradle
+A	app/src/main/AndroidManifest.xml
+A	app/src/main/java/com/alfa/device_ctrl/MainActivity.java
+A	build.gradle
+A	settings.gradle
+COMMIT cbb4c6dce0488b8df99672891cca849bb80d6646 | docs: define environment discovery engine v1
+
+A	docs/EDE_SPEC_V1.md
+COMMIT 127988aaf2ff200e061cea50db33e1fe0cdf83bc | docs: define ede result schema v1
+
+A	docs/EDE_RESULT_SCHEMA_V1.md
+COMMIT c7a46a1cdc56febe4b0bf9947b02fea51fc682b7 | feat: implement ede v1
+
+A	tools/ede.sh
+COMMIT 7165d90174ea1b1e088a4052d786acc9a49e450f | docs: define ede classification rules v1
+
+A	docs/EDE_CLASSIFICATION_V1.md
+COMMIT 935403a6be4b2e05ea627fb1def019d06842600e | feat: implement ede classifier v1
+
+M	tools/ede.sh
+COMMIT 1b60c1c9bc8468edf3da1a32d5bb359ac46a580d | docs: define capability discovery engine v1
+
+A	docs/CDE_SPEC_V1.md
+COMMIT 8457bd5c43cf6a544cb44f1ab56e4019a8c5ebd8 | feat: implement cde v1
+
+A	tools/cde.sh
+COMMIT 416ea91776ed4ef29e9e81a642e8b1a88c6d6497 | feat: add cde evidence artifacts
+
+A	artifacts/cde/cde_20260823_031837.txt
+M	tools/cde.sh
+COMMIT 55f4a80ce9bffdaa3c7cddfd4e30969fc163349f | docs: define capability registry v1
+
+A	docs/CAPABILITY_REGISTRY_V1.md
+COMMIT 9d4791a5791bd36c4dea65af6d338a3d42b40b89 | feat: connect cde output to capability registry
+
+M	tools/cde.sh
+COMMIT 6f04d494b24bf66cf2aea897b24c39bb04ecd26b | fix: normalize cde capability result identifiers
+
+A	artifacts/cde/cde_20260823_031948.txt
+A	artifacts/cde/cde_20260823_032104.txt
+M	tools/cde.sh
+COMMIT ed264814544fbcd89d9c6ad17130362e1ea47fb2 | fix: report toolchain capabilities in cde artifacts
+
+A	artifacts/cde/cde_20260823_032442.txt
+M	tools/cde.sh
+COMMIT 4cc0acfe2240092331a853905c95e1b5ad1608b4 | fix: normalize cde toolchain capability IDs
+
+A	artifacts/cde/cde_20260823_032646.txt
+M	tools/cde.sh
+COMMIT b96cec020e3cb324c2279c602f0f364242ad1023 | feat: integrate ede and cde runtime discovery
+
+A	artifacts/runtime/runtime_20260823_032839.txt
+A	tools/runtime_discovery.sh
+COMMIT b70e1f220393d0e524263370fa034eb01268a703 | fix: include cde results in runtime discovery
+
+A	artifacts/cde/cde_20260823_032841.txt
+A	artifacts/cde/cde_20260823_033005.txt
+A	artifacts/runtime/runtime_20260823_033004.txt
+M	tools/runtime_discovery.sh
+COMMIT 9cb17f8ee2e07b91f70521679ed6a2118ceb619f | feat: start gate 3 execution capability engine
+
+A	artifacts/execution/execution_20260823_033122.txt
+A	docs/GATE_3_SPEC_V1.md
+A	tools/execution_capability.sh
+COMMIT e2ab9afb3b0d0a46b8c20d9bdee5e3f571fa650a | docs: define gate 3 execution result schema
+
+A	docs/GATE_3_RESULT_SCHEMA_V1.md
+COMMIT b1267ad9bd15e11adafe1b19832d67aa8b72fa11 | feat: add gate 3 result header
+
+A	artifacts/execution/execution_20260823_033329.txt
+M	tools/execution_capability.sh
+COMMIT c9c7482324f9888e81645e927b6443a3b3407769 | feat: start gate 4 environment contract engine
+
+A	artifacts/contract/contract_20260823_033449.txt
+A	docs/GATE_4_SPEC_V1.md
+A	tools/environment_contract.sh
+COMMIT c8364a2acfecc0a980eccd28f0af57c998e593bf | feat: start gate 5 runtime decision engine
+
+A	artifacts/decision/decision_20260823_033813.txt
+A	docs/GATE_5_SPEC_V1.md
+A	tools/runtime_decision.sh
+COMMIT 5250353f01e6a93aaf0ca5af31388f0e992d723f | feat: start gate 6 runtime bootstrap engine
+
+A	artifacts/bootstrap/bootstrap_20260823_034010.txt
+A	docs/GATE_6_SPEC_V1.md
+A	tools/runtime_bootstrap.sh
+COMMIT 96ac6fe818382e63e7c8dcabd437abcaa4997916 | feat: start gate 7 runtime session engine
+
+A	artifacts/session/session_20260823_034205.txt
+A	docs/GATE_7_SPEC_V1.md
+A	tools/runtime_session.sh
+COMMIT 9b4574ec90fa2483ab8a98e09e0097038846ea2a | feat: start gate 8 runtime task engine
+
+A	artifacts/task/task_20260823_055739.txt
+A	docs/GATE_8_SPEC_V1.md
+A	tools/runtime_task.sh
+COMMIT db9d1a59521cf3e8bb57c670f20156f838553634 | feat: start gate 9 runtime action engine
+
+A	artifacts/action/action_20260823_055942.txt
+A	docs/GATE_9_SPEC_V1.md
+A	tools/runtime_action.sh
+COMMIT dca88405ba74c4319c5c0f390bbc5e3b005c0c8f | feat: start gate 10 runtime workflow engine
+
+A	artifacts/workflow/workflow_20260823_060158.txt
+A	docs/GATE_10_SPEC_V1.md
+A	tools/runtime_workflow.sh
+COMMIT 2d041d366a27e0b837b62c10406ba5971bca5e1d | feat: start gate 11 runtime orchestrator engine
+
+A	artifacts/orchestrator/orchestrator_20260823_060336.txt
+A	docs/GATE_11_SPEC_V1.md
+A	tools/runtime_orchestrator.sh
+COMMIT 53760822c59d6a84a1ce1dac527c62da2d8e65c2 | feat: start gate 12 runtime kernel engine
+
+A	artifacts/kernel/kernel_20260823_060506.txt
+A	docs/GATE_12_SPEC_V1.md
+A	tools/runtime_kernel.sh
+COMMIT ad8c38bbb75a4353ebbca1236655c9862df3644e | feat: start gate 13 runtime command engine
+
+A	artifacts/command/command_20260823_061002.txt
+A	docs/GATE_13_SPEC_V1.md
+A	tools/runtime_command.sh
+COMMIT f2362a501eb76b308ed199ad1353a5736d2ec1c5 | feat: start gate 14 runtime command validation engine
+
+A	artifacts/validation/validation_20260823_061213.txt
+A	docs/GATE_14_SPEC_V1.md
+A	tools/runtime_command_validate.sh
+COMMIT 37ae19851ff0d4148bb6b413346c36ad5b4d884e | feat: start gate 15 runtime command policy engine
+
+A	artifacts/policy/policy_20260823_061409.txt
+A	docs/GATE_15_SPEC_V1.md
+A	tools/runtime_command_policy.sh
+COMMIT c69a5ebf041e8bf59fc8a8944ac6853f14479ee1 | feat: start gate 15 runtime command policy engine
+
+A	artifacts/policy/policy_20260823_061424.txt
+COMMIT 480845f4102ea9dcbbd5c67369a7a842e67b0408 | feat: start gate 16 runtime execution authorization engine
+
+A	artifacts/authorization/authorization_20260823_061718.txt
+A	docs/GATE_16_SPEC_V1.md
+A	tools/runtime_execution_authorize.sh
+COMMIT cf78bd0c5f2b99c0f5978481ede6e59120968456 | feat: start gate 17 runtime execution engine
+
+A	artifacts/execution/execution_20260823_061948.txt
+A	docs/GATE_17_SPEC_V1.md
+A	tools/runtime_execution.sh
+COMMIT 041dc10f57ff11b8482dbab08544a4bb1b627a4e | feat: start gate 18 runtime execution result engine
+
+A	artifacts/result/result_20260823_062145.txt
+A	docs/GATE_18_SPEC_V1.md
+A	tools/runtime_execution_result.sh
+COMMIT 5959d9ff9a141842ad00053a92af383f05efe547 | feat: start gate 19 runtime result consumer engine
+
+A	artifacts/consumer/consumer_20260823_062436.txt
+A	docs/GATE_19_SPEC_V1.md
+A	tools/runtime_result_consumer.sh
+
+================ INITIAL COMMIT ================
+INITIAL_COMMIT=80f42c04c2547d90481a30c9da6d0034cfd124df
+80f42c0 chore: initialize alfa_device_ctrl master
+ PROJECT.md | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+commit 80f42c04c2547d90481a30c9da6d0034cfd124df
+Author:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+AuthorDate: Sat Aug 22 15:48:00 2026 +0000
+Commit:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+CommitDate: Sat Aug 22 15:48:00 2026 +0000
+
+    chore: initialize alfa_device_ctrl master
+
+A	PROJECT.md
+
+================ CURRENT HEAD ================
+commit 5959d9ff9a141842ad00053a92af383f05efe547
+Author:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+AuthorDate: Sun Aug 23 06:24:37 2026 +0000
+Commit:     Alfa Device Ctrl <alfa-device-ctrl@localhost>
+CommitDate: Sun Aug 23 06:24:37 2026 +0000
+
+    feat: start gate 19 runtime result consumer engine
+## master
+?? artifacts/gate0_provenance_evidence.txt
+
+=== GATE 0 PROVENANCE EVIDENCE COMPLETE ===
+
+===== END FILE: artifacts/gate0_provenance_evidence.txt =====
+
+===== BEGIN FILE: artifacts/kernel/kernel_20260823_060506.txt =====
+=== ALFA RUNTIME KERNEL V1 ===
+timestamp=2026-08-23 06:05:06
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[ORCHESTRATOR]
+orchestrator_status=PASS
+
+[KERNEL]
+kernel_name=runtime_self_kernel
+kernel_status=PASS
+
+[END]
+
+===== END FILE: artifacts/kernel/kernel_20260823_060506.txt =====
+
+===== BEGIN FILE: artifacts/orchestrator/orchestrator_20260823_060336.txt =====
+=== ALFA RUNTIME ORCHESTRATOR V1 ===
+timestamp=2026-08-23 06:03:37
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[WORKFLOW]
+workflow_status=PASS
+
+[ORCHESTRATOR]
+orchestrator_name=runtime_self_orchestrator
+orchestrator_status=PASS
+
+[END]
+
+===== END FILE: artifacts/orchestrator/orchestrator_20260823_060336.txt =====
+
+===== BEGIN FILE: artifacts/policy/policy_20260823_061409.txt =====
+=== ALFA RUNTIME COMMAND POLICY V1 ===
+timestamp=2026-08-23 06:14:09
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[KERNEL]
+kernel_status=PASS
+
+[POLICY]
+allowed_command=pwd
+allowed_status=ALLOWED
+blocked_command=uname
+blocked_status=BLOCKED
+
+[EXECUTION CHECK]
+policy_execution=NONE
+
+[END]
+
+===== END FILE: artifacts/policy/policy_20260823_061409.txt =====
+
+===== BEGIN FILE: artifacts/policy/policy_20260823_061424.txt =====
+=== ALFA RUNTIME COMMAND POLICY V1 ===
+timestamp=2026-08-23 06:14:24
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[KERNEL]
+kernel_status=PASS
+
+[POLICY]
+allowed_command=pwd
+allowed_status=ALLOWED
+blocked_command=uname
+blocked_status=BLOCKED
+
+[EXECUTION CHECK]
+policy_execution=NONE
+
+[END]
+
+===== END FILE: artifacts/policy/policy_20260823_061424.txt =====
+
+===== BEGIN FILE: artifacts/result/result_20260823_062145.txt =====
+=== ALFA RUNTIME EXECUTION RESULT V1 ===
+timestamp=2026-08-23 06:21:45
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[EXECUTION]
+execution_status=PASS
+command=pwd
+command_result=/storage/emulated/0/Alfa_device_ctrl
+result_status=PASS
+
+[END]
+
+===== END FILE: artifacts/result/result_20260823_062145.txt =====
+
+===== BEGIN FILE: artifacts/runtime/runtime_20260823_032839.txt =====
+=== ALFA RUNTIME DISCOVERY V1 ===
+
+[EDE]
+=== EDE V1 ===
+
+[HEADER]
+timestamp=2026-08-23 03:28:40
+ede_version=1
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[IDENTITY]
+username=userland
+uid=2000
+gid=2000
+groups=userland
+
+[KERNEL]
+kernel_name=Linux
+kernel_version=5.10.209-android12-9-00016-g7c6bbcca33e1-ab12029497
+architecture=aarch64
+
+[ENVIRONMENT]
+home=/home/userland
+pwd=/storage/emulated/0/Alfa_device_ctrl
+shell=/bin/bash
+
+[TOOLCHAIN]
+git=PRESENT
+python3=PRESENT
+java=ABSENT
+javac=ABSENT
+gradle=ABSENT
+
+[STORAGE]
+android_shared_storage=PRESENT
+writable_shared_storage=YES
+private_storage=/home/userland
+
+[CLASSIFICATION]
+android_host=DETECTED
+container_environment=DETECTED
+toolchain_status=WARNING
+storage_status=PASS
+
+[CDE]
+
+=== END ===
+
+===== END FILE: artifacts/runtime/runtime_20260823_032839.txt =====
+
+===== BEGIN FILE: artifacts/runtime/runtime_20260823_033004.txt =====
+=== ALFA RUNTIME DISCOVERY V1 ===
+
+[EDE]
+=== EDE V1 ===
+
+[HEADER]
+timestamp=2026-08-23 03:30:04
+ede_version=1
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[IDENTITY]
+username=userland
+uid=2000
+gid=2000
+groups=userland
+
+[KERNEL]
+kernel_name=Linux
+kernel_version=5.10.209-android12-9-00016-g7c6bbcca33e1-ab12029497
+architecture=aarch64
+
+[ENVIRONMENT]
+home=/home/userland
+pwd=/storage/emulated/0/Alfa_device_ctrl
+shell=/bin/bash
+
+[TOOLCHAIN]
+git=PRESENT
+python3=PRESENT
+java=ABSENT
+javac=ABSENT
+gradle=ABSENT
+
+[STORAGE]
+android_shared_storage=PRESENT
+writable_shared_storage=YES
+private_storage=/home/userland
+
+[CLASSIFICATION]
+android_host=DETECTED
+container_environment=DETECTED
+toolchain_status=WARNING
+storage_status=PASS
+
+[CDE]
+=== CDE V1 ===
+
+[REGISTRY]
+registry=CAPABILITY_REGISTRY_V1
+
+[CAPABILITIES]
+STORAGE_READ=PASS | verification=Read test | scope=current_environment
+STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment
+evidence=/storage/emulated/0/.cde_write_test.30955
+EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment
+EXEC_SHARED=PASS | verification=Execution test | scope=current_environment
+NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment
+
+[TOOLCHAIN]
+GIT=PASS | verification=command discovery | scope=current_environment
+PYTHON3=PASS | verification=command discovery | scope=current_environment
+JAVA=ERROR | verification=command discovery | scope=current_environment
+JAVAC=ERROR | verification=command discovery | scope=current_environment
+GRADLE=ERROR | verification=command discovery | scope=current_environment
+
+[END]
+
+=== END ===
+
+===== END FILE: artifacts/runtime/runtime_20260823_033004.txt =====
+
+===== BEGIN FILE: artifacts/session/session_20260823_034205.txt =====
+=== ALFA RUNTIME SESSION V1 ===
+timestamp=2026-08-23 03:42:05
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[BOOTSTRAP]
+bootstrap_status=PASS
+
+[SESSION]
+session_status=PASS
+
+[END]
+
+===== END FILE: artifacts/session/session_20260823_034205.txt =====
+
+===== BEGIN FILE: artifacts/task/task_20260823_055739.txt =====
+=== ALFA RUNTIME TASK V1 ===
+timestamp=2026-08-23 05:57:40
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[SESSION]
+session_status=PASS
+
+[TASK]
+task_name=runtime_self_test
+task_status=PASS
+
+[END]
+
+===== END FILE: artifacts/task/task_20260823_055739.txt =====
+
+===== BEGIN FILE: artifacts/validation/validation_20260823_061213.txt =====
+=== ALFA RUNTIME COMMAND VALIDATION V1 ===
+timestamp=2026-08-23 06:12:13
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[KERNEL]
+kernel_status=PASS
+
+[VALIDATION]
+command=pwd
+validation_status=ALLOWED
+
+[END]
+
+===== END FILE: artifacts/validation/validation_20260823_061213.txt =====
+
+===== BEGIN FILE: artifacts/workflow/workflow_20260823_060158.txt =====
+=== ALFA RUNTIME WORKFLOW V1 ===
+timestamp=2026-08-23 06:01:58
+execution_path=/storage/emulated/0/Alfa_device_ctrl
+
+[ACTION]
+action_status=PASS
+
+[WORKFLOW]
+workflow_name=runtime_self_workflow
+workflow_status=PASS
+
+[END]
+
+===== END FILE: artifacts/workflow/workflow_20260823_060158.txt =====
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ REPOSITORY-WIDE LEGACY REFERENCE SEARCH ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\SEARCH_TERMS_CASE_INSENSITIVE=Alfa Linux Platform | Alfa Linux | alfa_linux | alfa-linux | Alfa_Linux | /storage/emulated/0/Alfa_Linux | /home/ubuntu | /home/userland | Alpine
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\OUTPUT_ORDER=Deterministic lexical file order; each file is wrapped in BEGIN/END markers; current-run output is excluded by exact absolute path.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\PRIMARY_CLASSIFICATIONS=PATH_REFERENCE | NAMESPACE_REFERENCE | EXPLICIT_LEGACY_REFERENCE | ARCHITECTURAL_REFERENCE | BENIGN/PROHIBITED_REFERENCE
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\CONTEXT_RULE=Classification is based on matching text plus numbered surrounding context; final provenance remains an evidence review.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+----- MATCH BEGIN -----
+file=docs/ARCHITECTURE.md
+line_number=8
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=shared storage environment, without depending on Alpine Linux.
+context_begin=docs/ARCHITECTURE.md:8
+     5	Alfa Device Ctrl is a native Android device-control project.
+     6	
+     7	The project is designed from the beginning around the real Android device and
+     8	shared storage environment, without depending on Alpine Linux.
+     9	
+    10	## 2. Master / Execution Separation
+    11	
+context_end=docs/ARCHITECTURE.md:8
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=docs/ARCHITECTURE.md
+line_number=24
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=3. No Alpine dependency.
+context_begin=docs/ARCHITECTURE.md:24
+    21	
+    22	1. Android device is the primary platform.
+    23	2. Master source remains on Android shared storage.
+    24	3. No Alpine dependency.
+    25	4. No hidden workspace or mirror repository.
+    26	5. Every executable component must have attributable source.
+    27	6. Every build artifact must be traceable to source.
+context_end=docs/ARCHITECTURE.md:24
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=docs/PRODUCT_CONTRACT.md
+line_number=33
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line=- depend on Alpine Linux,
+context_begin=docs/PRODUCT_CONTRACT.md:33
+    30	
+    31	Alfa Device Ctrl must NOT:
+    32	
+    33	- depend on Alpine Linux,
+    34	- require a hidden Linux workspace,
+    35	- use an alternate project mirror,
+    36	- claim host/runtime capabilities as Alfa capabilities,
+context_end=docs/PRODUCT_CONTRACT.md:33
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=docs/PRODUCT_CONTRACT.md
+line_number=106
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=copy inside `/home/userland`.
+context_begin=docs/PRODUCT_CONTRACT.md:106
+   103	Ubuntu UserLAnd is an execution environment only.
+   104	
+   105	No project source may be intentionally maintained as a second authoritative
+   106	copy inside `/home/userland`.
+   107	
+   108	## 8. Auditability
+   109	
+context_end=docs/PRODUCT_CONTRACT.md:106
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/runtime/runtime_20260823_032839.txt
+line_number=23
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=home=/home/userland
+context_begin=artifacts/runtime/runtime_20260823_032839.txt:23
+    20	architecture=aarch64
+    21	
+    22	[ENVIRONMENT]
+    23	home=/home/userland
+    24	pwd=/storage/emulated/0/Alfa_device_ctrl
+    25	shell=/bin/bash
+    26	
+context_end=artifacts/runtime/runtime_20260823_032839.txt:23
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/runtime/runtime_20260823_032839.txt
+line_number=37
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=private_storage=/home/userland
+context_begin=artifacts/runtime/runtime_20260823_032839.txt:37
+    34	[STORAGE]
+    35	android_shared_storage=PRESENT
+    36	writable_shared_storage=YES
+    37	private_storage=/home/userland
+    38	
+    39	[CLASSIFICATION]
+    40	android_host=DETECTED
+context_end=artifacts/runtime/runtime_20260823_032839.txt:37
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/runtime/runtime_20260823_033004.txt
+line_number=23
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=home=/home/userland
+context_begin=artifacts/runtime/runtime_20260823_033004.txt:23
+    20	architecture=aarch64
+    21	
+    22	[ENVIRONMENT]
+    23	home=/home/userland
+    24	pwd=/storage/emulated/0/Alfa_device_ctrl
+    25	shell=/bin/bash
+    26	
+context_end=artifacts/runtime/runtime_20260823_033004.txt:23
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/runtime/runtime_20260823_033004.txt
+line_number=37
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=private_storage=/home/userland
+context_begin=artifacts/runtime/runtime_20260823_033004.txt:37
+    34	[STORAGE]
+    35	android_shared_storage=PRESENT
+    36	writable_shared_storage=YES
+    37	private_storage=/home/userland
+    38	
+    39	[CLASSIFICATION]
+    40	android_host=DETECTED
+context_end=artifacts/runtime/runtime_20260823_033004.txt:37
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=16
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT;PATH_CONTEXT
+exact_matching_line=- `/home/userland` is NOT a project workspace.
+context_begin=artifacts/gate0_provenance_evidence.txt:16
+    13	## Workspace Rule
+    14	
+    15	- Master project files MUST live on Android shared storage.
+    16	- `/home/userland` is NOT a project workspace.
+    17	- No Alpine workspace is used.
+    18	- No duplicate/mirror project tree is allowed.
+    19	- Ubuntu UserLAnd is only the execution environment.
+context_end=artifacts/gate0_provenance_evidence.txt:16
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=17
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=- No Alpine workspace is used.
+context_begin=artifacts/gate0_provenance_evidence.txt:17
+    14	
+    15	- Master project files MUST live on Android shared storage.
+    16	- `/home/userland` is NOT a project workspace.
+    17	- No Alpine workspace is used.
+    18	- No duplicate/mirror project tree is allowed.
+    19	- Ubuntu UserLAnd is only the execution environment.
+    20	- Scripts, source, tests, artifacts, and documentation must resolve back to the Master location.
+context_end=artifacts/gate0_provenance_evidence.txt:17
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=24
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line=Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+context_begin=artifacts/gate0_provenance_evidence.txt:24
+    21	
+    22	## Project Principle
+    23	
+    24	Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+    25	
+    26	Previous-case lessons may be reused as requirements and test cases, but previous implementation artifacts must not be copied blindly.
+    27	
+context_end=artifacts/gate0_provenance_evidence.txt:24
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=43
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=shared storage environment, without depending on Alpine Linux.
+context_begin=artifacts/gate0_provenance_evidence.txt:43
+    40	Alfa Device Ctrl is a native Android device-control project.
+    41	
+    42	The project is designed from the beginning around the real Android device and
+    43	shared storage environment, without depending on Alpine Linux.
+    44	
+    45	## 2. Master / Execution Separation
+    46	
+context_end=artifacts/gate0_provenance_evidence.txt:43
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=59
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=3. No Alpine dependency.
+context_begin=artifacts/gate0_provenance_evidence.txt:59
+    56	
+    57	1. Android device is the primary platform.
+    58	2. Master source remains on Android shared storage.
+    59	3. No Alpine dependency.
+    60	4. No hidden workspace or mirror repository.
+    61	5. Every executable component must have attributable source.
+    62	6. Every build artifact must be traceable to source.
+context_end=artifacts/gate0_provenance_evidence.txt:59
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=141
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line=- depend on Alpine Linux,
+context_begin=artifacts/gate0_provenance_evidence.txt:141
+   138	
+   139	Alfa Device Ctrl must NOT:
+   140	
+   141	- depend on Alpine Linux,
+   142	- require a hidden Linux workspace,
+   143	- use an alternate project mirror,
+   144	- claim host/runtime capabilities as Alfa capabilities,
+context_end=artifacts/gate0_provenance_evidence.txt:141
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=214
+classification=PATH_REFERENCE
+secondary_context_flags=NONE;PATH_CONTEXT
+exact_matching_line=copy inside `/home/userland`.
+context_begin=artifacts/gate0_provenance_evidence.txt:214
+   211	Ubuntu UserLAnd is an execution environment only.
+   212	
+   213	No project source may be intentionally maintained as a second authoritative
+   214	copy inside `/home/userland`.
+   215	
+   216	## 8. Auditability
+   217	
+context_end=artifacts/gate0_provenance_evidence.txt:214
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=1641
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line================= ALFA LINUX REFERENCE SEARCH ================
+context_begin=artifacts/gate0_provenance_evidence.txt:1641
+  1638	echo
+  1639	echo "[END]"
+  1640	
+  1641	================ ALFA LINUX REFERENCE SEARCH ================
+  1642	PROJECT.md:20:Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+  1643	
+  1644	================ GIT HISTORY ================
+context_end=artifacts/gate0_provenance_evidence.txt:1641
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=artifacts/gate0_provenance_evidence.txt
+line_number=1642
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line=PROJECT.md:20:Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+context_begin=artifacts/gate0_provenance_evidence.txt:1642
+  1639	echo "[END]"
+  1640	
+  1641	================ ALFA LINUX REFERENCE SEARCH ================
+  1642	PROJECT.md:20:Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+  1643	
+  1644	================ GIT HISTORY ================
+  1645	80f42c04c2547d90481a30c9da6d0034cfd124df | 2026-08-22 15:48:00 +0000 | Alfa Device Ctrl | chore: initialize alfa_device_ctrl master
+context_end=artifacts/gate0_provenance_evidence.txt:1642
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=PROJECT.md
+line_number=12
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT;PATH_CONTEXT
+exact_matching_line=- `/home/userland` is NOT a project workspace.
+context_begin=PROJECT.md:12
+     9	## Workspace Rule
+    10	
+    11	- Master project files MUST live on Android shared storage.
+    12	- `/home/userland` is NOT a project workspace.
+    13	- No Alpine workspace is used.
+    14	- No duplicate/mirror project tree is allowed.
+    15	- Ubuntu UserLAnd is only the execution environment.
+context_end=PROJECT.md:12
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=PROJECT.md
+line_number=13
+classification=BENIGN/PROHIBITED_REFERENCE
+secondary_context_flags=BENIGN/PROHIBITED_REFERENCE_CONTEXT
+exact_matching_line=- No Alpine workspace is used.
+context_begin=PROJECT.md:13
+    10	
+    11	- Master project files MUST live on Android shared storage.
+    12	- `/home/userland` is NOT a project workspace.
+    13	- No Alpine workspace is used.
+    14	- No duplicate/mirror project tree is allowed.
+    15	- Ubuntu UserLAnd is only the execution environment.
+    16	- Scripts, source, tests, artifacts, and documentation must resolve back to the Master location.
+context_end=PROJECT.md:13
+----- MATCH END -----
+
+----- MATCH BEGIN -----
+file=PROJECT.md
+line_number=20
+classification=ARCHITECTURAL_REFERENCE
+secondary_context_flags=NONE
+exact_matching_line=Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+context_begin=PROJECT.md:20
+    17	
+    18	## Project Principle
+    19	
+    20	Alfa Device Ctrl is a new project informed by lessons from the previous Alfa Linux Platform attempt.
+    21	
+    22	Previous-case lessons may be reused as requirements and test cases, but previous implementation artifacts must not be copied blindly.
+    23	
+context_end=PROJECT.md:20
+----- MATCH END -----
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ COMPLETE GIT LOG (ALL REFS) ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\5959d9f (HEAD -> master) feat: start gate 19 runtime result consumer engine
+041dc10 feat: start gate 18 runtime execution result engine
+cf78bd0 feat: start gate 17 runtime execution engine
+480845f feat: start gate 16 runtime execution authorization engine
+c69a5eb feat: start gate 15 runtime command policy engine
+37ae198 feat: start gate 15 runtime command policy engine
+f2362a5 feat: start gate 14 runtime command validation engine
+ad8c38b feat: start gate 13 runtime command engine
+5376082 feat: start gate 12 runtime kernel engine
+2d041d3 feat: start gate 11 runtime orchestrator engine
+dca8840 feat: start gate 10 runtime workflow engine
+db9d1a5 feat: start gate 9 runtime action engine
+9b4574e feat: start gate 8 runtime task engine
+96ac6fe feat: start gate 7 runtime session engine
+5250353 feat: start gate 6 runtime bootstrap engine
+c8364a2 feat: start gate 5 runtime decision engine
+c9c7482 feat: start gate 4 environment contract engine
+b1267ad feat: add gate 3 result header
+e2ab9af docs: define gate 3 execution result schema
+9cb17f8 feat: start gate 3 execution capability engine
+b70e1f2 fix: include cde results in runtime discovery
+b96cec0 feat: integrate ede and cde runtime discovery
+4cc0acf fix: normalize cde toolchain capability IDs
+ed26481 fix: report toolchain capabilities in cde artifacts
+6f04d49 fix: normalize cde capability result identifiers
+9d4791a feat: connect cde output to capability registry
+55f4a80 docs: define capability registry v1
+416ea91 feat: add cde evidence artifacts
+8457bd5 feat: implement cde v1
+1b60c1c docs: define capability discovery engine v1
+935403a feat: implement ede classifier v1
+7165d90 docs: define ede classification rules v1
+c7a46a1 feat: implement ede v1
+127988a docs: define ede result schema v1
+cbb4c6d docs: define environment discovery engine v1
+96a7b53 feat: initialize android application skeleton
+7a32c31 docs: define alfa_device_ctrl product contract
+e704955 docs: define initial alfa_device_ctrl architecture
+80f42c0 chore: initialize alfa_device_ctrl master
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ COMPLETE GIT NAME-STATUS HISTORY (ALL REFS, REVERSE) ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\commit 80f42c04c2547d90481a30c9da6d0034cfd124df
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sat Aug 22 15:48:00 2026 +0000
+
+    chore: initialize alfa_device_ctrl master
+
+A	PROJECT.md
+
+commit e70495515067e65661daef7c1a5fa91c30f17508
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sat Aug 22 15:49:10 2026 +0000
+
+    docs: define initial alfa_device_ctrl architecture
+
+A	docs/ARCHITECTURE.md
+
+commit 7a32c3102fcd232629a621cbc465986d0ced6216
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sat Aug 22 15:50:56 2026 +0000
+
+    docs: define alfa_device_ctrl product contract
+
+A	docs/PRODUCT_CONTRACT.md
+
+commit 96a7b534fa4988af3776865d5dfb69c44d0448d4
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sat Aug 22 15:52:11 2026 +0000
+
+    feat: initialize android application skeleton
+
+A	app/build.gradle
+A	app/src/main/AndroidManifest.xml
+A	app/src/main/java/com/alfa/device_ctrl/MainActivity.java
+A	build.gradle
+A	settings.gradle
+
+commit cbb4c6dce0488b8df99672891cca849bb80d6646
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:11:10 2026 +0000
+
+    docs: define environment discovery engine v1
+
+A	docs/EDE_SPEC_V1.md
+
+commit 127988aaf2ff200e061cea50db33e1fe0cdf83bc
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:11:46 2026 +0000
+
+    docs: define ede result schema v1
+
+A	docs/EDE_RESULT_SCHEMA_V1.md
+
+commit c7a46a1cdc56febe4b0bf9947b02fea51fc682b7
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:12:38 2026 +0000
+
+    feat: implement ede v1
+
+A	tools/ede.sh
+
+commit 7165d90174ea1b1e088a4052d786acc9a49e450f
+Author: Alfa Device Ctrl <alfa-device-ctrl@localhost>
+Date:   Sun Aug 23 03:13:37 2026 +0000
+
+    docs: define ede classification rules v1
+
+A	docs/EDE_CLASSIFICATION_V1.md
+
+commit 935403a6be4b2e05ea627fb1def019d06842600e

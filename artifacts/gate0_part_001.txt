@@ -1,0 +1,1000 @@
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\=== ALFA_DEVICE_CTRL GATE 0 — COMPLETE CONTENT-LEVEL PROVENANCE EVIDENCE ===
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\ROOT=/storage/emulated/0/Alfa_device_ctrl
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\EVIDENCE_ARTIFACT=/storage/emulated/0/Alfa_device_ctrl/artifacts/gate0_complete_provenance_evidence_20260823_072846_29475.txt
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\MODE=READ_ONLY_REPOSITORY_AUDIT; OUTPUT_ARTIFACT=NEW_AND_UNTRACKED
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\SELF_EXCLUSION=The exact current-run output path is excluded from artifact dump and reference search.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\SEARCH_MATCH_MODE=case-insensitive; matching lines are emitted with surrounding numbered context.
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ PRE-COLLECTION WORKTREE STATUS ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\## master
+?? artifacts/gate0_complete_provenance_evidence_20260823_072846_29475.txt
+?? artifacts/gate0_provenance_evidence.txt
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ CURRENT BRANCH AND SYMBOLIC HEAD ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\branch_name=]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\master
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\symbolic_head=]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\master
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\-- heads and tags --
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\5959d9ff9a141842ad00053a92af383f05efe547 refs/heads/master
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+================ COMPLETE TOOLS DUMP ================
+]3008;start=6faf7205-5dff-4537-9fa7-4e1c50fde7f5;machineid=d2877fd729304b2da32df17b4cd626df;user=userland;hostname=localhost;bootid=a1a543fe-a893-48a9-8433-0db124f32f99;pid=00000000000000029475;type=command;cwd=/storage/emulated/0/Alfa_device_ctrl\
+===== BEGIN FILE: tools/cde.sh =====
+#!/usr/bin/env bash
+
+TS=$(date +%Y%m%d_%H%M%S)
+OUT="artifacts/cde/cde_${TS}.txt"
+
+exec > "$OUT"
+
+echo "=== CDE V1 ==="
+echo
+
+echo "[REGISTRY]"
+echo "registry=CAPABILITY_REGISTRY_V1"
+echo
+echo "[CAPABILITIES]"
+
+if [ -r /storage/emulated/0 ]
+then
+    echo "STORAGE_READ=PASS | verification=Read test | scope=current_environment"
+else
+    echo "STORAGE_READ=ERROR | verification=Read test | scope=current_environment"
+fi
+
+TMP=/storage/emulated/0/.cde_write_test.$$
+
+if touch "$TMP" >/dev/null 2>&1
+then
+    echo "STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment"
+    echo "evidence=$TMP"
+    rm -f "$TMP"
+else
+    echo "STORAGE_WRITE=ERROR | verification=Write/delete test | scope=current_environment"
+fi
+
+PVT=/tmp/cde_exec_private.$$
+
+cat > "$PVT" <<'SH'
+#!/bin/sh
+exit 0
+SH
+
+chmod +x "$PVT"
+
+"$PVT" >/dev/null 2>&1
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "EXEC_PRIVATE=PASS | verification=Execution test | scope=current_environment"
+else
+    echo "EXEC_PRIVATE=ERROR | verification=Execution test | scope=current_environment"
+fi
+rm -f "$PVT"
+
+SHR=/storage/emulated/0/.cde_exec_shared.$$
+
+cat > "$SHR" <<'SH'
+#!/bin/sh
+exit 0
+SH
+
+chmod +x "$SHR"
+
+"$SHR" >/dev/null 2>&1
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "EXEC_SHARED=PASS | verification=Execution test | scope=current_environment"
+else
+    echo "EXEC_SHARED=ERROR | verification=Execution test | scope=current_environment"
+fi
+rm -f "$SHR"
+
+getent hosts google.com >/dev/null 2>&1
+RC=$?
+if [ "$RC" -eq 0 ]; then
+    echo "NETWORK_DNS=PASS | verification=DNS lookup | scope=current_environment"
+else
+    echo "NETWORK_DNS=ERROR | verification=DNS lookup | scope=current_environment"
+fi
+
+echo
+echo "[TOOLCHAIN]"
+
+for tool in git python3 java javac gradle
+do
+    if command -v "$tool" >/dev/null 2>&1
+    then
+        echo "$(printf "%s" "$tool" | tr "[:lower:]" "[:upper:]")=PASS | verification=command discovery | scope=current_environment"
+    else
+        echo "$(printf "%s" "$tool" | tr "[:lower:]" "[:upper:]")=ERROR | verification=command discovery | scope=current_environment"
+    fi
+done
+
+echo
+echo "[END]"
+
+===== END FILE: tools/cde.sh =====
+
+===== BEGIN FILE: tools/ede.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+echo "=== EDE V1 ==="
+echo
+
+echo "[HEADER]"
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "ede_version=1"
+echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
+echo
+
+echo "[IDENTITY]"
+echo "username=$(whoami 2>/dev/null || echo UNKNOWN)"
+echo "uid=$(id -u 2>/dev/null || echo UNKNOWN)"
+echo "gid=$(id -g 2>/dev/null || echo UNKNOWN)"
+echo "groups=$(id -Gn 2>/dev/null || echo UNKNOWN)"
+echo
+
+echo "[KERNEL]"
+echo "kernel_name=$(uname -s 2>/dev/null || echo UNKNOWN)"
+echo "kernel_version=$(uname -r 2>/dev/null || echo UNKNOWN)"
+echo "architecture=$(uname -m 2>/dev/null || echo UNKNOWN)"
+echo
+
+echo "[ENVIRONMENT]"
+echo "home=${HOME:-UNKNOWN}"
+echo "pwd=$(pwd 2>/dev/null || echo UNKNOWN)"
+echo "shell=${SHELL:-UNKNOWN}"
+echo
+
+echo "[TOOLCHAIN]"
+for tool in git python3 java javac gradle
+do
+    if command -v "$tool" >/dev/null 2>&1
+    then
+        echo "$tool=PRESENT"
+    else
+        echo "$tool=ABSENT"
+    fi
+done
+echo
+
+echo "[STORAGE]"
+
+if [ -d /storage/emulated/0 ]
+then
+    echo "android_shared_storage=PRESENT"
+else
+    echo "android_shared_storage=ABSENT"
+fi
+
+TMPFILE=/storage/emulated/0/.ede_write_test.$$ 2>/dev/null
+
+if touch /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+then
+    rm -f /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+    echo "writable_shared_storage=YES"
+else
+    echo "writable_shared_storage=NO"
+fi
+
+echo "private_storage=${HOME:-UNKNOWN}"
+echo
+
+echo "[CLASSIFICATION]"
+
+ANDROID_HOST="UNKNOWN"
+
+if uname -r 2>/dev/null | grep -qi android
+then
+    ANDROID_HOST="DETECTED"
+elif [ -d /storage/emulated/0 ]
+then
+    ANDROID_HOST="DETECTED"
+fi
+
+CONTAINER_ENVIRONMENT="UNKNOWN"
+
+if env | grep -qi userland
+then
+    CONTAINER_ENVIRONMENT="DETECTED"
+fi
+
+TOOLCHAIN_PRESENT=0
+for tool in git python3 java javac gradle
+do
+    command -v "$tool" >/dev/null 2>&1 && TOOLCHAIN_PRESENT=$((TOOLCHAIN_PRESENT+1))
+done
+
+if [ "$TOOLCHAIN_PRESENT" -eq 5 ]
+then
+    TOOLCHAIN_STATUS="PASS"
+elif [ "$TOOLCHAIN_PRESENT" -ge 2 ]
+then
+    TOOLCHAIN_STATUS="WARNING"
+else
+    TOOLCHAIN_STATUS="ERROR"
+fi
+
+if [ -d /storage/emulated/0 ]
+then
+    if touch /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+    then
+        rm -f /storage/emulated/0/.ede_write_test.$$ >/dev/null 2>&1
+        STORAGE_STATUS="PASS"
+    else
+        STORAGE_STATUS="WARNING"
+    fi
+else
+    STORAGE_STATUS="ERROR"
+fi
+
+echo "android_host=$ANDROID_HOST"
+echo "container_environment=$CONTAINER_ENVIRONMENT"
+echo "toolchain_status=$TOOLCHAIN_STATUS"
+echo "storage_status=$STORAGE_STATUS"
+
+===== END FILE: tools/ede.sh =====
+
+===== BEGIN FILE: tools/environment_contract.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+echo "=== ALFA ENVIRONMENT CONTRACT V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
+echo
+
+echo "[ENVIRONMENT]"
+
+if uname -r 2>/dev/null | grep -qi android || [ -d /storage/emulated/0 ]; then
+    echo "android_host=DETECTED"
+else
+    echo "android_host=UNKNOWN"
+fi
+
+if [ -d /storage/emulated/0 ] && [ -w /storage/emulated/0 ]; then
+    echo "shared_storage=READ_WRITE"
+else
+    echo "shared_storage=UNKNOWN"
+fi
+
+echo
+echo "[EXECUTION]"
+
+for id in EXEC_PRIVATE EXEC_SHARED SCRIPT_BASH SCRIPT_PYTHON PROCESS_SPAWN
+do
+    case "$id" in
+        EXEC_PRIVATE|EXEC_SHARED)
+            echo "$id=PASS"
+            ;;
+        SCRIPT_BASH)
+            command -v bash >/dev/null 2>&1 && echo "$id=PASS" || echo "$id=ERROR"
+            ;;
+        SCRIPT_PYTHON)
+            command -v python3 >/dev/null 2>&1 && echo "$id=PASS" || echo "$id=ERROR"
+            ;;
+        PROCESS_SPAWN)
+            sh -c true >/dev/null 2>&1 && echo "$id=PASS" || echo "$id=ERROR"
+            ;;
+    esac
+done
+
+echo
+echo "[NETWORK]"
+
+getent hosts google.com >/dev/null 2>&1 \
+    && echo "NETWORK_DNS=PASS" \
+    || echo "NETWORK_DNS=ERROR"
+
+echo
+echo "[TOOLCHAIN]"
+
+for tool in git python3 java javac gradle
+do
+    if command -v "$tool" >/dev/null 2>&1
+    then
+        echo "$(printf "%s" "$tool" | tr '[:lower:]' '[:upper:]')=PASS"
+    else
+        echo "$(printf "%s" "$tool" | tr '[:lower:]' '[:upper:]')=ERROR"
+    fi
+done
+
+echo
+echo "[END]"
+
+===== END FILE: tools/environment_contract.sh =====
+
+===== BEGIN FILE: tools/execution_capability.sh =====
+#!/usr/bin/env bash
+
+echo "=== ALFA EXECUTION CAPABILITY V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
+
+echo
+
+echo "[CAPABILITIES]"
+
+P="/tmp/alfa_exec_private.$$"
+printf '#!/bin/sh\nexit 0\n' > "$P"
+chmod +x "$P"
+"$P" >/dev/null 2>&1
+[ "$?" -eq 0 ] && echo "EXEC_PRIVATE=PASS | verification=execution test" || echo "EXEC_PRIVATE=ERROR | verification=execution test"
+rm -f "$P"
+
+S="/storage/emulated/0/.alfa_exec_shared.$$"
+printf '#!/bin/sh\nexit 0\n' > "$S"
+chmod +x "$S"
+"$S" >/dev/null 2>&1
+[ "$?" -eq 0 ] && echo "EXEC_SHARED=PASS | verification=execution test" || echo "EXEC_SHARED=ERROR | verification=execution test"
+rm -f "$S"
+
+printf 'echo SCRIPT_BASH_OK\n' | bash >/dev/null 2>&1
+[ "$?" -eq 0 ] && echo "SCRIPT_BASH=PASS | verification=bash execution" || echo "SCRIPT_BASH=ERROR | verification=bash execution"
+
+printf 'print("SCRIPT_PYTHON_OK")\n' | python3 >/dev/null 2>&1
+[ "$?" -eq 0 ] && echo "SCRIPT_PYTHON=PASS | verification=python execution" || echo "SCRIPT_PYTHON=ERROR | verification=python execution"
+
+sh -c 'true' >/dev/null 2>&1
+[ "$?" -eq 0 ] && echo "PROCESS_SPAWN=PASS | verification=process spawn" || echo "PROCESS_SPAWN=ERROR | verification=process spawn"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/execution_capability.sh =====
+
+===== BEGIN FILE: tools/runtime_action.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/task/task_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME ACTION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[TASK]"
+
+if [ -n "$LATEST" ] && grep -q '^task_status=PASS$' "$LATEST"
+then
+    echo "task_status=PASS"
+
+    echo
+    echo "[ACTION]"
+    echo "action_name=runtime_self_action"
+    echo "action_status=PASS"
+else
+    echo "task_status=BLOCKED"
+
+    echo
+    echo "[ACTION]"
+    echo "action_name=runtime_self_action"
+    echo "action_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_action.sh =====
+
+===== BEGIN FILE: tools/runtime_bootstrap.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/decision/decision_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME BOOTSTRAP V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[DECISION]"
+
+if [ -n "$LATEST" ] && grep -q '^decision=READY$' "$LATEST"
+then
+    echo "decision=READY"
+    BOOTSTRAP_STATUS="PASS"
+else
+    echo "decision=NOT_READY"
+    BOOTSTRAP_STATUS="BLOCKED"
+fi
+
+echo
+echo "[BOOTSTRAP]"
+echo "bootstrap_status=$BOOTSTRAP_STATUS"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_bootstrap.sh =====
+
+===== BEGIN FILE: tools/runtime_command.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/kernel/kernel_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME COMMAND V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[KERNEL]"
+
+if [ -n "$LATEST" ] && grep -q '^kernel_status=PASS$' "$LATEST"
+then
+    echo "kernel_status=PASS"
+
+    echo
+    echo "[COMMAND]"
+
+    CMD='pwd'
+    RESULT=$(pwd 2>/dev/null)
+
+    echo "command=$CMD"
+    echo "command_result=$RESULT"
+    echo "command_status=PASS"
+else
+    echo "kernel_status=BLOCKED"
+
+    echo
+    echo "[COMMAND]"
+    echo "command_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_command.sh =====
+
+===== BEGIN FILE: tools/runtime_command_policy.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/kernel/kernel_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME COMMAND POLICY V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[KERNEL]"
+
+if [ -n "$LATEST" ] && grep -q '^kernel_status=PASS$' "$LATEST"
+then
+    echo "kernel_status=PASS"
+
+    echo
+    echo "[POLICY]"
+
+    ALLOWED_CMD='pwd'
+    BLOCKED_CMD='uname'
+
+    echo "allowed_command=$ALLOWED_CMD"
+    echo "allowed_status=ALLOWED"
+
+    echo "blocked_command=$BLOCKED_CMD"
+    echo "blocked_status=BLOCKED"
+else
+    echo "kernel_status=BLOCKED"
+
+    echo
+    echo "[POLICY]"
+    echo "allowed_command=pwd"
+    echo "allowed_status=BLOCKED"
+    echo "blocked_command=uname"
+    echo "blocked_status=BLOCKED"
+fi
+
+echo
+echo "[EXECUTION CHECK]"
+echo "policy_execution=NONE"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_command_policy.sh =====
+
+===== BEGIN FILE: tools/runtime_command_validate.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/kernel/kernel_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME COMMAND VALIDATION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[KERNEL]"
+
+if [ -n "$LATEST" ] && grep -q '^kernel_status=PASS$' "$LATEST"
+then
+    echo "kernel_status=PASS"
+
+    echo
+    echo "[VALIDATION]"
+
+    CMD='pwd'
+    echo "command=$CMD"
+
+    case "$CMD" in
+        pwd)
+            echo "validation_status=ALLOWED"
+            ;;
+        *)
+            echo "validation_status=BLOCKED"
+            ;;
+    esac
+else
+    echo "kernel_status=BLOCKED"
+
+    echo
+    echo "[VALIDATION]"
+    echo "command=pwd"
+    echo "validation_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_command_validate.sh =====
+
+===== BEGIN FILE: tools/runtime_decision.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+echo "=== ALFA RUNTIME DECISION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
+echo
+
+echo "[REQUIRED]"
+
+FAIL=0
+
+for id in STORAGE_READ STORAGE_WRITE EXEC_PRIVATE EXEC_SHARED NETWORK_DNS
+do
+    if [ "$id" = "STORAGE_READ" ] || [ "$id" = "STORAGE_WRITE" ] ||
+       [ "$id" = "EXEC_PRIVATE" ] || [ "$id" = "EXEC_SHARED" ] ||
+       [ "$id" = "NETWORK_DNS" ]
+    then
+        :
+    fi
+done
+
+[ -r /storage/emulated/0 ] || FAIL=1
+[ -w /storage/emulated/0 ] || FAIL=1
+
+P="/tmp/.alfa_gate5.$$"
+printf '#!/bin/sh\nexit 0\n' > "$P"
+chmod +x "$P"
+"$P" >/dev/null 2>&1 || FAIL=1
+rm -f "$P"
+
+getent hosts google.com >/dev/null 2>&1 || FAIL=1
+
+echo "storage_read=$([ -r /storage/emulated/0 ] && echo PASS || echo ERROR)"
+echo "storage_write=$([ -w /storage/emulated/0 ] && echo PASS || echo ERROR)"
+echo "exec_private=$([ "$FAIL" -eq 0 ] && echo PASS || echo ERROR)"
+echo "network_dns=$(getent hosts google.com >/dev/null 2>&1 && echo PASS || echo ERROR)"
+
+echo
+echo "[DECISION]"
+
+if [ "$FAIL" -eq 0 ]
+then
+    echo "decision=READY"
+else
+    echo "decision=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_decision.sh =====
+
+===== BEGIN FILE: tools/runtime_discovery.sh =====
+#!/usr/bin/env bash
+
+echo "=== ALFA RUNTIME DISCOVERY V1 ==="
+echo
+echo "[EDE]"
+./tools/ede.sh
+
+echo
+echo "[CDE]"
+./tools/cde.sh
+LATEST_CDE=$(ls -1t artifacts/cde/cde_*.txt | head -1)
+cat "$LATEST_CDE"
+
+echo
+echo "=== END ==="
+
+===== END FILE: tools/runtime_discovery.sh =====
+
+===== BEGIN FILE: tools/runtime_execution.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+KERNEL=$(ls -1t artifacts/kernel/kernel_*.txt 2>/dev/null | head -1)
+AUTH=$(ls -1t artifacts/authorization/authorization_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME EXECUTION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[KERNEL]"
+
+if [ -n "$KERNEL" ] && grep -q '^kernel_status=PASS$' "$KERNEL"
+then
+    echo "kernel_status=PASS"
+else
+    echo "kernel_status=BLOCKED"
+fi
+
+echo
+echo "[AUTHORIZATION]"
+
+if [ -n "$AUTH" ] && grep -q '^authorization_status=AUTHORIZED$' "$AUTH"
+then
+    echo "authorization_status=AUTHORIZED"
+
+    echo
+    echo "[EXECUTION]"
+
+    CMD='pwd'
+    RESULT=$(pwd 2>/dev/null)
+
+    if [ -n "$RESULT" ]
+    then
+        echo "command=$CMD"
+        echo "command_result=$RESULT"
+        echo "execution_status=PASS"
+    else
+        echo "command=$CMD"
+        echo "command_result=ERROR"
+        echo "execution_status=ERROR"
+    fi
+else
+    echo "authorization_status=DENIED"
+
+    echo
+    echo "[EXECUTION]"
+    echo "command=pwd"
+    echo "command_result=NOT_EXECUTED"
+    echo "execution_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_execution.sh =====
+
+===== BEGIN FILE: tools/runtime_execution_authorize.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+KERNEL=$(ls -1t artifacts/kernel/kernel_*.txt 2>/dev/null | head -1)
+POLICY=$(ls -1t artifacts/policy/policy_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME EXECUTION AUTHORIZATION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[KERNEL]"
+
+if [ -n "$KERNEL" ] && grep -q '^kernel_status=PASS$' "$KERNEL"
+then
+    echo "kernel_status=PASS"
+else
+    echo "kernel_status=BLOCKED"
+fi
+
+echo
+echo "[POLICY]"
+
+if [ -n "$POLICY" ] && grep -q '^allowed_status=ALLOWED$' "$POLICY"
+then
+    echo "policy_status=ALLOWED"
+    echo "authorization_status=AUTHORIZED"
+elif [ -n "$POLICY" ] && grep -q '^blocked_status=BLOCKED$' "$POLICY"
+then
+    echo "policy_status=BLOCKED"
+    echo "authorization_status=DENIED"
+else
+    echo "policy_status=UNKNOWN"
+    echo "authorization_status=DENIED"
+fi
+
+echo
+echo "[EXECUTION CHECK]"
+echo "command_execution=NONE"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_execution_authorize.sh =====
+
+===== BEGIN FILE: tools/runtime_execution_result.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/execution/execution_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME EXECUTION RESULT V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[EXECUTION]"
+
+if [ -n "$LATEST" ]
+then
+    EXEC_STATUS=$(grep '^execution_status=' "$LATEST" | head -1 | cut -d= -f2-)
+    CMD=$(grep '^command=' "$LATEST" | head -1 | cut -d= -f2-)
+    RESULT=$(grep '^command_result=' "$LATEST" | head -1 | cut -d= -f2-)
+
+    echo "execution_status=${EXEC_STATUS:-UNKNOWN}"
+    echo "command=${CMD:-UNKNOWN}"
+    echo "command_result=${RESULT:-UNKNOWN}"
+
+    case "${EXEC_STATUS:-UNKNOWN}" in
+        PASS)
+            echo "result_status=PASS"
+            ;;
+        ERROR)
+            echo "result_status=ERROR"
+            ;;
+        BLOCKED)
+            echo "result_status=BLOCKED"
+            ;;
+        *)
+            echo "result_status=ERROR"
+            ;;
+    esac
+else
+    echo "execution_status=UNKNOWN"
+    echo "command=UNKNOWN"
+    echo "command_result=UNKNOWN"
+    echo "result_status=ERROR"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_execution_result.sh =====
+
+===== BEGIN FILE: tools/runtime_kernel.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/orchestrator/orchestrator_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME KERNEL V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[ORCHESTRATOR]"
+
+if [ -n "$LATEST" ] && grep -q '^orchestrator_status=PASS$' "$LATEST"
+then
+    echo "orchestrator_status=PASS"
+
+    echo
+    echo "[KERNEL]"
+    echo "kernel_name=runtime_self_kernel"
+    echo "kernel_status=PASS"
+else
+    echo "orchestrator_status=BLOCKED"
+
+    echo
+    echo "[KERNEL]"
+    echo "kernel_name=runtime_self_kernel"
+    echo "kernel_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_kernel.sh =====
+
+===== BEGIN FILE: tools/runtime_orchestrator.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/workflow/workflow_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME ORCHESTRATOR V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[WORKFLOW]"
+
+if [ -n "$LATEST" ] && grep -q '^workflow_status=PASS$' "$LATEST"
+then
+    echo "workflow_status=PASS"
+
+    echo
+    echo "[ORCHESTRATOR]"
+    echo "orchestrator_name=runtime_self_orchestrator"
+    echo "orchestrator_status=PASS"
+else
+    echo "workflow_status=BLOCKED"
+
+    echo
+    echo "[ORCHESTRATOR]"
+    echo "orchestrator_name=runtime_self_orchestrator"
+    echo "orchestrator_status=BLOCKED"
+fi
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_orchestrator.sh =====
+
+===== BEGIN FILE: tools/runtime_result_consumer.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/result/result_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME RESULT CONSUMER V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[RESULT]"
+
+if [ -n "$LATEST" ]
+then
+    RESULT_STATUS=$(grep '^result_status=' "$LATEST" | head -1 | cut -d= -f2-)
+    CMD=$(grep '^command=' "$LATEST" | head -1 | cut -d= -f2-)
+    RESULT=$(grep '^command_result=' "$LATEST" | head -1 | cut -d= -f2-)
+
+    echo "result_status=${RESULT_STATUS:-UNKNOWN}"
+    echo "command=${CMD:-UNKNOWN}"
+    echo "command_result=${RESULT:-UNKNOWN}"
+
+    case "${RESULT_STATUS:-UNKNOWN}" in
+        PASS)
+            echo "consume_status=ACCEPTED"
+            ;;
+        ERROR|BLOCKED)
+            echo "consume_status=REJECTED"
+            ;;
+        *)
+            echo "consume_status=REJECTED"
+            ;;
+    esac
+else
+    echo "result_status=UNKNOWN"
+    echo "command=UNKNOWN"
+    echo "command_result=UNKNOWN"
+    echo "consume_status=REJECTED"
+fi
+
+echo
+echo "[EXECUTION CHECK]"
+echo "consumer_execution=NONE"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_result_consumer.sh =====
+
+===== BEGIN FILE: tools/runtime_session.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/bootstrap/bootstrap_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME SESSION V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[BOOTSTRAP]"
+
+if [ -n "$LATEST" ] && grep -q '^bootstrap_status=PASS$' "$LATEST"
+then
+    echo "bootstrap_status=PASS"
+    SESSION_STATUS="PASS"
+else
+    echo "bootstrap_status=BLOCKED"
+    SESSION_STATUS="BLOCKED"
+fi
+
+echo
+echo "[SESSION]"
+echo "session_status=$SESSION_STATUS"
+
+echo
+echo "[END]"
+
+===== END FILE: tools/runtime_session.sh =====
+
+===== BEGIN FILE: tools/runtime_task.sh =====
+#!/usr/bin/env bash
+
+set -u
+
+ROOT=/storage/emulated/0/Alfa_device_ctrl
+cd "$ROOT"
+
+LATEST=$(ls -1t artifacts/session/session_*.txt 2>/dev/null | head -1)
+
+echo "=== ALFA RUNTIME TASK V1 ==="
+echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
+echo "execution_path=$(pwd)"
+
+echo
+echo "[SESSION]"
+
+if [ -n "$LATEST" ] && grep -q '^session_status=PASS$' "$LATEST"
+then
+    echo "session_status=PASS"
+
+    echo
+    echo "[TASK]"
+    echo "task_name=runtime_self_test"
+    echo "task_status=PASS"
+else
+    echo "session_status=BLOCKED"
+

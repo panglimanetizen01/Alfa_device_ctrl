@@ -8,11 +8,12 @@ echo
 
 echo "[CAPABILITIES]"
 
-P="/tmp/alfa_exec_private.$$"
-printf '#!/bin/sh\nexit 0\n' > "$P"
-chmod +x "$P"
-"$P" >/dev/null 2>&1
-[ "$?" -eq 0 ] && echo "EXEC_PRIVATE=PASS | verification=execution test" || echo "EXEC_PRIVATE=ERROR | verification=execution test"
+P="${TMPDIR:-${PREFIX:-$HOME}/tmp}/alfa_exec_private.$$"
+if printf '#!/bin/sh\nexit 0\n' > "$P" 2>/dev/null && chmod +x "$P" 2>/dev/null && "$P" >/dev/null 2>&1; then
+    echo "EXEC_PRIVATE=PASS | verification=execution test | scope=current_environment"
+else
+    echo "EXEC_PRIVATE=ERROR | verification=execution test | scope=current_environment"
+fi
 rm -f "$P"
 
 S="/storage/emulated/0/.alfa_exec_shared.$$"

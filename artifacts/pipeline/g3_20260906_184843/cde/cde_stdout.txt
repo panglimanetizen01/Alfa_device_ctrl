@@ -1,0 +1,1 @@
+./tools/runtime_discovery.sh: line 113: ./tools/cde.sh: Permission denied

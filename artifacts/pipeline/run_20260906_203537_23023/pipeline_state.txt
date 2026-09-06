@@ -1,0 +1,25 @@
+schema_version=pipeline-state.v1
+pipeline_run_id=run_20260906_203537_23023
+project_id=alfa_device_ctrl
+project_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+source_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+invocation_cwd=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+execution_cwd=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+stage_order=EDE,CDE,GATE3
+pipeline_status=SUCCESS
+ede_rc=0
+cde_rc=0
+gate3_rc=0
+ede_artifact=artifacts/pipeline/run_20260906_203537_23023/ede/artifact.txt
+cde_artifact=artifacts/pipeline/run_20260906_203537_23023/cde/artifact.txt
+gate3_artifact=artifacts/pipeline/run_20260906_203537_23023/gate3/artifact.txt
+failure_stage=NONE
+failure_reason=NONE
+completion_status=COMPLETE
+completed_at=2026-09-06 20:35:40
+state_artifact=artifacts/pipeline/run_20260906_203537_23023/pipeline_state.txt
+transcript_artifact=artifacts/pipeline/run_20260906_203537_23023/runtime_discovery_output.txt
+manifest_artifact=artifacts/pipeline/run_20260906_203537_23023/manifest.txt
+stage_completion=EDE:COMPLETE,CDE:COMPLETE,GATE3:COMPLETE
+artifact_hashes=ede=eaa13a82221e9420569e7ef87fc893255886dd7da62bbc2b99d52c26d9123faa,cde=f4ce9f0ab380e42a5cc8f6496181db16dc02e7c486c9bf2f26bc5d91c57c2c62,gate3=e4e45ad867ab25140bd2388dcc6f364897d172548690d5063552c8e6259211f8
+contract_result=VALID

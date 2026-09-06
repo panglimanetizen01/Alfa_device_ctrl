@@ -1,0 +1,22 @@
+PROFILE_VERSION=1
+DEVICE_CLASS=UNKNOWN
+ANDROID_HOST=DETECTED
+CONTAINER_ENVIRONMENT=UNKNOWN
+CPU_ARCH=aarch64
+STORAGE_READ=PASS | verification=Read test | scope=current_environment
+STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment
+EXEC_PRIVATE=ERROR | verification=execution test
+EXEC_SHARED=ERROR | verification=execution test
+NETWORK_DNS=ERROR | verification=DNS lookup | scope=current_environment
+PYTHON3=PASS | verification=command discovery | scope=current_environment
+GIT=PASS | verification=command discovery | scope=current_environment
+JAVA=PASS | verification=command discovery | scope=current_environment
+JAVAC=PASS | verification=command discovery | scope=current_environment
+GRADLE=PASS | verification=command discovery | scope=current_environment
+PIPELINE_STATUS=SUCCESS
+PIPELINE_RUN_ID=run_20260906_191721_23826
+SOURCE_COMMIT=82de18affdb69a40d144226b126eb1f1e32f589f
+EDE_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+CDE_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+GATE3_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+GENERATED_AT=2026-09-06 20:14:13

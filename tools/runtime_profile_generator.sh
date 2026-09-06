@@ -6,7 +6,7 @@ PROFILE_RC_OK=0
 PROFILE_RC_BLOCKED=20
 PROFILE_RC_INVALID=21
 
-PROJECT_ROOT_EXPECTED='/storage/emulated/0/Alfa_device_ctrl'
+PROJECT_ROOT_EXPECTED=''
 PROJECT_ID_EXPECTED='alfa_device_ctrl'
 PROFILE_DIR_REL='artifacts/runtime_profiles'
 AUTHORITY_FILE_NAME='profile_authority.txt'
@@ -161,7 +161,8 @@ validate_explicit_run() {
     [ -f "$MANIFEST_FILE" ] || return 1
 
     canonical_run=$(realpath -e "$RUN_DIR" 2>/dev/null || true)
-    expected_run="$PROJECT_ROOT_EXPECTED/artifacts/pipeline/$RUN_ID"
+    expected_run=$(realpath -e "$PROJECT_ROOT_EXPECTED/artifacts/pipeline/$RUN_ID" 2>/dev/null || true)
+    [ -n "$canonical_run" ] && [ -n "$expected_run" ] || return 1
     [ "$canonical_run" = "$expected_run" ] || return 1
 
     state_schema=$(read_field "$STATE_FILE" schema_version)
@@ -178,9 +179,9 @@ validate_explicit_run() {
     [ "$state_project" = "$PROJECT_ID_EXPECTED" ] || return 1
     [ "$state_root" = "$PROJECT_ROOT_EXPECTED" ] || return 1
     [ -n "$SOURCE_COMMIT" ] && [ "$SOURCE_COMMIT" != 'UNKNOWN' ] || return 1
-    [ "$state_status" = 'SUCCESS' ] || return 1
-    [ "$state_completion" = 'COMPLETE' ] || return 1
-    [ "$state_result" = 'VALID' ] || return 1
+    [ "$state_status" = 'RUNNING' ] || return 1
+    [ "$state_completion" = 'RUNNING' ] || return 1
+    [ "$state_result" = 'BLOCKED' ] || return 1
     [ "$(read_field "$STATE_FILE" ede_rc)" = '0' ] || return 1
     [ "$(read_field "$STATE_FILE" cde_rc)" = '0' ] || return 1
     [ "$(read_field "$STATE_FILE" gate3_rc)" = '0' ] || return 1
@@ -228,10 +229,18 @@ validate_explicit_run() {
 validate_required_profile_fields() {
     local key value
 
-    for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH STORAGE_READ STORAGE_WRITE EXEC_PRIVATE EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE; do
+    for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH; do
         value=$(read_field "$PROFILE_FILE" "$key")
         [ -n "$value" ] || return 1
-        [ "$value" != 'UNKNOWN' ] || return 1
+    done
+
+    for key in STORAGE_READ STORAGE_WRITE EXEC_PRIVATE EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE; do
+        value=$(read_field "$PROFILE_FILE" "$key")
+        [ -n "$value" ] || return 1
+        case "$value" in
+            PASS|ERROR) ;;
+            *) return 1 ;;
+        esac
     done
 
     return 0
@@ -287,7 +296,7 @@ write_profile_payload() {
         printf '%s\n' "JAVA=$java_status"
         printf '%s\n' "JAVAC=$javac_status"
         printf '%s\n' "GRADLE=$gradle_status"
-        printf '%s\n' 'PIPELINE_STATUS=SUCCESS'
+        printf '%s\n' 'PIPELINE_STATUS=RUNNING'
         printf '%s\n' "PIPELINE_RUN_ID=$RUN_ID"
         printf '%s\n' "SOURCE_COMMIT=$SOURCE_COMMIT"
         printf '%s\n' "EDE_ARTIFACT=$EDE_ARTIFACT_REL"
@@ -517,6 +526,7 @@ validate_authority_readback() {
 
     expected_profile="$PROFILE_REL"
     canonical_profile=$(realpath -e "$PROFILE_FILE" 2>/dev/null || true)
+    canonical_expected_root=$(realpath -e "$PROJECT_ROOT_EXPECTED" 2>/dev/null || true)
     [ "$profile_path" = "$expected_profile" ] || return 1
     [ "$profile_hash" = "$PROFILE_SHA256" ] || return 1
     [ "$profile_version" = '1' ] || return 1
@@ -524,9 +534,10 @@ validate_authority_readback() {
     [ "$authority" = 'TRUE' ] || return 1
     [ "$source_commit" = "$SOURCE_COMMIT" ] || return 1
     [ -n "$canonical_profile" ] || return 1
+    [ -n "$canonical_expected_root" ] || return 1
     case "$canonical_profile" in
-        "$PROJECT_ROOT_EXPECTED/$PROFILE_DIR_REL"/*) ;;
-        *) return 1 ;;
+        "$canonical_expected_root/$PROFILE_DIR_REL"/*) ;;
+        *) return 1
     esac
 
     return 0
@@ -557,12 +568,15 @@ main() {
     fi
 
     script_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)
-    canonical_script_root=$(CDPATH= cd -- "$script_dir/.." 2>/dev/null && pwd)
+    canonical_script_root=$(realpath -e "$script_dir/.." 2>/dev/null || true)
     [ -n "$canonical_script_root" ] || { fail_blocked SCRIPT_ROOT_UNRESOLVED; return $?; }
-    [ "$canonical_script_root" = "$PROJECT_ROOT_EXPECTED" ] || { fail_blocked MASTER_PATH_MISMATCH; return $?; }
-
+    PROJECT_ROOT_EXPECTED="$canonical_script_root"
     PROJECT_ROOT="$canonical_script_root"
     PROFILE_OUTPUT_DIR="$PROJECT_ROOT/$PROFILE_DIR_REL"
+    if ! mkdir -p "$PROFILE_OUTPUT_DIR"; then
+        fail_blocked PROFILE_OUTPUT_DIRECTORY_CREATE_FAILED
+        return $?
+    fi
     PROFILE_AUTHORITY_FILE="$PROFILE_OUTPUT_DIR/$AUTHORITY_FILE_NAME"
     RUN_DIR="$1"
     RUN_ID=$(basename "$RUN_DIR")

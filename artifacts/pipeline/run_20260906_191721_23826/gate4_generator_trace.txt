@@ -1,0 +1,965 @@
++ set -u
++ PROFILE_RC_OK=0
++ PROFILE_RC_BLOCKED=20
++ PROFILE_RC_INVALID=21
++ PROJECT_ROOT_EXPECTED=
++ PROJECT_ID_EXPECTED=alfa_device_ctrl
++ PROFILE_DIR_REL=artifacts/runtime_profiles
++ AUTHORITY_FILE_NAME=profile_authority.txt
++ PROJECT_ROOT=
++ PROFILE_OUTPUT_DIR=
++ PROFILE_AUTHORITY_FILE=
++ AUTHORITY_LOCK_DIR=
++ RUN_DIR=
++ RUN_ID=
++ STATE_FILE=
++ MANIFEST_FILE=
++ SOURCE_COMMIT=
++ PROFILE_FILE=
++ PROFILE_REL=
++ PROFILE_SHA256=
++ PROFILE_GENERATED_AT=
++ main /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
++ local script_dir canonical_script_root
++ '[' 1 -ne 1 ']'
++++ dirname -- tools/runtime_profile_generator.sh
+++ CDPATH=
+++ cd -- tools
+++ pwd
++ script_dir=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools
+++ CDPATH=
+++ cd -- /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/tools/..
+++ pwd
++ canonical_script_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++ '[' -n /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++ PROJECT_ROOT_EXPECTED=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++ PROJECT_ROOT=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
++ PROFILE_OUTPUT_DIR=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++ mkdir -p /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles
++ PROFILE_AUTHORITY_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_authority.txt
++ RUN_DIR=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
+++ basename /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
++ RUN_ID=run_20260906_191721_23826
++ STATE_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++ MANIFEST_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++ case "$RUN_DIR" in
++ '[' run_20260906_191721_23826 '!=' . ']'
++ '[' run_20260906_191721_23826 '!=' .. ']'
++ '[' -d /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles ']'
++ validate_explicit_run
++ local state_schema state_run state_project state_root state_status state_completion state_result
++ local manifest_run manifest_commit manifest_schema
++ local ede_rel cde_rel gate3_rel ede_env cde_env gate3_env
++ local ede_hash cde_hash gate3_hash
++ local ede_stage cde_stage gate3_stage
++ local canonical_run expected_run
++ '[' -d /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826 ']'
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt ']'
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt ']'
+++ realpath -e /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
++ canonical_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
+++ realpath -e /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
++ expected_run=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826
++ '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826 ']'
++ '[' -n /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826 ']'
++ '[' /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826 = /storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826 ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt schema_version
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=schema_version
+++ local value
++++ sed -n -e 's/^schema_version=[[:space:]]*//p' -e 's/^schema_version:[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*schema_version[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=pipeline-state.v1
+++ trim_value pipeline-state.v1
+++ printf %s pipeline-state.v1
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_schema=pipeline-state.v1
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt pipeline_run_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=pipeline_run_id
+++ local value
++++ sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=run_20260906_191721_23826
+++ trim_value run_20260906_191721_23826
+++ printf %s run_20260906_191721_23826
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_run=run_20260906_191721_23826
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt project_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=project_id
+++ local value
++++ sed -n -e 's/^project_id=[[:space:]]*//p' -e 's/^project_id:[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=alfa_device_ctrl
+++ trim_value alfa_device_ctrl
+++ printf %s alfa_device_ctrl
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_project=alfa_device_ctrl
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt project_root
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=project_root
+++ local value
++++ sed -n -e 's/^project_root=[[:space:]]*//p' -e 's/^project_root:[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ trim_value /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ printf %s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_root=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt source_commit
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=source_commit
+++ local value
++++ sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=82de18affdb69a40d144226b126eb1f1e32f589f
+++ trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++ printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ SOURCE_COMMIT=82de18affdb69a40d144226b126eb1f1e32f589f
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt pipeline_status
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=pipeline_status
+++ local value
++++ sed -n -e 's/^pipeline_status=[[:space:]]*//p' -e 's/^pipeline_status:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=SUCCESS
+++ trim_value SUCCESS
+++ printf %s SUCCESS
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_status=SUCCESS
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt completion_status
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=completion_status
+++ local value
++++ sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=COMPLETE
+++ trim_value COMPLETE
+++ printf %s COMPLETE
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_completion=COMPLETE
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt contract_result
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=contract_result
+++ local value
++++ sed -n -e 's/^contract_result=[[:space:]]*//p' -e 's/^contract_result:[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*contract_result[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=VALID
+++ trim_value VALID
+++ printf %s VALID
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ state_result=VALID
++ '[' pipeline-state.v1 = pipeline-state.v1 ']'
++ '[' run_20260906_191721_23826 = run_20260906_191721_23826 ']'
++ '[' alfa_device_ctrl = alfa_device_ctrl ']'
++ '[' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl = /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
++ '[' -n 82de18affdb69a40d144226b126eb1f1e32f589f ']'
++ '[' 82de18affdb69a40d144226b126eb1f1e32f589f '!=' UNKNOWN ']'
++ '[' SUCCESS = SUCCESS ']'
++ '[' COMPLETE = COMPLETE ']'
++ '[' VALID = VALID ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt ede_rc
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=ede_rc
+++ local value
++++ sed -n -e 's/^ede_rc=[[:space:]]*//p' -e 's/^ede_rc:[[:space:]]*//p' -e 's/^[[:space:]]*ede_rc[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_rc[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=0
+++ trim_value 0
+++ printf %s 0
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ '[' 0 = 0 ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt cde_rc
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=cde_rc
+++ local value
++++ sed -n -e 's/^cde_rc=[[:space:]]*//p' -e 's/^cde_rc:[[:space:]]*//p' -e 's/^[[:space:]]*cde_rc[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*cde_rc[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=0
+++ trim_value 0
+++ printf %s 0
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ '[' 0 = 0 ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt gate3_rc
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
+++ local key=gate3_rc
+++ local value
++++ sed -n -e 's/^gate3_rc=[[:space:]]*//p' -e 's/^gate3_rc:[[:space:]]*//p' -e 's/^[[:space:]]*gate3_rc[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*gate3_rc[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/pipeline_state.txt
++++ sed -n 1p
+++ value=0
+++ trim_value 0
+++ printf %s 0
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ '[' 0 = 0 ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt manifest_schema_version
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=manifest_schema_version
+++ local value
++++ sed -n -e 's/^manifest_schema_version=[[:space:]]*//p' -e 's/^manifest_schema_version:[[:space:]]*//p' -e 's/^[[:space:]]*manifest_schema_version[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*manifest_schema_version[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=manifest.v1
+++ trim_value manifest.v1
+++ printf %s manifest.v1
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ manifest_schema=manifest.v1
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt pipeline_run_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=pipeline_run_id
+++ local value
++++ sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=run_20260906_191721_23826
+++ trim_value run_20260906_191721_23826
+++ printf %s run_20260906_191721_23826
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ manifest_run=run_20260906_191721_23826
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt source_commit
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=source_commit
+++ local value
++++ sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=82de18affdb69a40d144226b126eb1f1e32f589f
+++ trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++ printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ manifest_commit=82de18affdb69a40d144226b126eb1f1e32f589f
++ '[' manifest.v1 = manifest.v1 ']'
++ '[' run_20260906_191721_23826 = run_20260906_191721_23826 ']'
++ '[' 82de18affdb69a40d144226b126eb1f1e32f589f = 82de18affdb69a40d144226b126eb1f1e32f589f ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt project_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=project_id
+++ local value
++++ sed -n -e 's/^project_id=[[:space:]]*//p' -e 's/^project_id:[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=alfa_device_ctrl
+++ trim_value alfa_device_ctrl
+++ printf %s alfa_device_ctrl
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ '[' alfa_device_ctrl = alfa_device_ctrl ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt project_root
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=project_root
+++ local value
++++ sed -n -e 's/^project_root=[[:space:]]*//p' -e 's/^project_root:[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*project_root[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ trim_value /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ printf %s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ '[' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl = /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt ede_artifact
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=ede_artifact
+++ local value
++++ sed -n -e 's/^ede_artifact=[[:space:]]*//p' -e 's/^ede_artifact:[[:space:]]*//p' -e 's/^[[:space:]]*ede_artifact[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_artifact[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ ede_rel=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt cde_artifact
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=cde_artifact
+++ local value
++++ sed -n -e 's/^cde_artifact=[[:space:]]*//p' -e 's/^cde_artifact:[[:space:]]*//p' -e 's/^[[:space:]]*cde_artifact[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*cde_artifact[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ cde_rel=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt gate3_artifact
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=gate3_artifact
+++ local value
++++ sed -n -e 's/^gate3_artifact=[[:space:]]*//p' -e 's/^gate3_artifact:[[:space:]]*//p' -e 's/^[[:space:]]*gate3_artifact[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*gate3_artifact[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ gate3_rel=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt ede_envelope
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=ede_envelope
+++ local value
++++ sed -n -e 's/^ede_envelope=[[:space:]]*//p' -e 's/^ede_envelope:[[:space:]]*//p' -e 's/^[[:space:]]*ede_envelope[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_envelope[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ ede_env=artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt cde_envelope
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=cde_envelope
+++ local value
++++ sed -n -e 's/^cde_envelope=[[:space:]]*//p' -e 's/^cde_envelope:[[:space:]]*//p' -e 's/^[[:space:]]*cde_envelope[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*cde_envelope[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ cde_env=artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt gate3_envelope
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=gate3_envelope
+++ local value
++++ sed -n -e 's/^gate3_envelope=[[:space:]]*//p' -e 's/^gate3_envelope:[[:space:]]*//p' -e 's/^[[:space:]]*gate3_envelope[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*gate3_envelope[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ gate3_env=artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt ede_sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=ede_sha256
+++ local value
++++ sed -n -e 's/^ede_sha256=[[:space:]]*//p' -e 's/^ede_sha256:[[:space:]]*//p' -e 's/^[[:space:]]*ede_sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ trim_value 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ printf %s 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ ede_hash=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt cde_sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=cde_sha256
+++ local value
++++ sed -n -e 's/^cde_sha256=[[:space:]]*//p' -e 's/^cde_sha256:[[:space:]]*//p' -e 's/^[[:space:]]*cde_sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*cde_sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ trim_value 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ printf %s 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ cde_hash=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt gate3_sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=gate3_sha256
+++ local value
++++ sed -n -e 's/^gate3_sha256=[[:space:]]*//p' -e 's/^gate3_sha256:[[:space:]]*//p' -e 's/^[[:space:]]*gate3_sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*gate3_sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ trim_value 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ printf %s 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ gate3_hash=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt ede_stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=ede_stage_id
+++ local value
++++ sed -n -e 's/^ede_stage_id=[[:space:]]*//p' -e 's/^ede_stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*ede_stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*ede_stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=ede
+++ trim_value ede
+++ printf %s ede
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ ede_stage=ede
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt cde_stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=cde_stage_id
+++ local value
++++ sed -n -e 's/^cde_stage_id=[[:space:]]*//p' -e 's/^cde_stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*cde_stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*cde_stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=cde
+++ trim_value cde
+++ printf %s cde
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ cde_stage=cde
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt gate3_stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
+++ local key=gate3_stage_id
+++ local value
++++ sed -n -e 's/^gate3_stage_id=[[:space:]]*//p' -e 's/^gate3_stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*gate3_stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*gate3_stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/manifest.txt
++++ sed -n 1p
+++ value=gate3
+++ trim_value gate3
+++ printf %s gate3
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ gate3_stage=gate3
++ '[' ede = ede ']'
++ '[' cde = cde ']'
++ '[' gate3 = gate3 ']'
++ validate_stage ede artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 tools/ede.sh
++ local stage=ede
++ local artifact_rel=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ local envelope_rel=artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ local manifest_hash=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
++ local expected_producer=tools/ede.sh
++ local artifact_abs envelope_abs
++ local envelope_stage envelope_run envelope_commit envelope_status envelope_path envelope_producer
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ case "$value" in
++ return 0
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ case "$value" in
++ return 0
++ artifact_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ envelope_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt ']'
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=stage_id
+++ local value
++++ sed -n -e 's/^stage_id=[[:space:]]*//p' -e 's/^stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=ede
+++ trim_value ede
+++ printf %s ede
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_stage=ede
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt pipeline_run_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=pipeline_run_id
+++ local value
++++ sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=run_20260906_191721_23826
+++ trim_value run_20260906_191721_23826
+++ printf %s run_20260906_191721_23826
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_run=run_20260906_191721_23826
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt source_commit
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=source_commit
+++ local value
++++ sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=82de18affdb69a40d144226b126eb1f1e32f589f
+++ trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++ printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt completion_status
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=completion_status
+++ local value
++++ sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=COMPLETE
+++ trim_value COMPLETE
+++ printf %s COMPLETE
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_status=COMPLETE
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt artifact_path
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=artifact_path
+++ local value
++++ sed -n -e 's/^artifact_path=[[:space:]]*//p' -e 's/^artifact_path:[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_path=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt producer
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=producer
+++ local value
++++ sed -n -e 's/^producer=[[:space:]]*//p' -e 's/^producer:[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=tools/ede.sh
+++ trim_value tools/ede.sh
+++ printf %s tools/ede.sh
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_producer=tools/ede.sh
++ '[' ede = ede ']'
++ '[' run_20260906_191721_23826 = run_20260906_191721_23826 ']'
++ '[' 82de18affdb69a40d144226b126eb1f1e32f589f = 82de18affdb69a40d144226b126eb1f1e32f589f ']'
++ '[' COMPLETE = COMPLETE ']'
++ '[' artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt = artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt ']'
++ '[' tools/ede.sh = tools/ede.sh ']'
++ hash_matches /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
++ local payload=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ local envelope=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++ local expected_manifest_hash=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
++ local envelope_hash computed
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt ']'
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
+++ local key=sha256
+++ local value
++++ sed -n -e 's/^sha256=[[:space:]]*//p' -e 's/^sha256:[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/envelope.txt
++++ sed -n 1p
+++ value=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ trim_value 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ printf %s 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_hash=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
+++ sha256sum /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ cut -d ' ' -f1
++ computed=21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4
++ '[' -n 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 ']'
++ '[' 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 = 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 ']'
++ '[' 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 = 21bc7ff43b917f999f2f6a4e343ea966e655589e28580b5f65838fe04be282a4 ']'
++ return 0
++ validate_stage cde artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 tools/cde.sh
++ local stage=cde
++ local artifact_rel=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ local envelope_rel=artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ local manifest_hash=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
++ local expected_producer=tools/cde.sh
++ local artifact_abs envelope_abs
++ local envelope_stage envelope_run envelope_commit envelope_status envelope_path envelope_producer
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ case "$value" in
++ return 0
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ case "$value" in
++ return 0
++ artifact_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ envelope_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt ']'
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=stage_id
+++ local value
++++ sed -n -e 's/^stage_id=[[:space:]]*//p' -e 's/^stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=cde
+++ trim_value cde
+++ printf %s cde
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_stage=cde
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt pipeline_run_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=pipeline_run_id
+++ local value
++++ sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=run_20260906_191721_23826
+++ trim_value run_20260906_191721_23826
+++ printf %s run_20260906_191721_23826
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_run=run_20260906_191721_23826
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt source_commit
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=source_commit
+++ local value
++++ sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=82de18affdb69a40d144226b126eb1f1e32f589f
+++ trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++ printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt completion_status
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=completion_status
+++ local value
++++ sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=COMPLETE
+++ trim_value COMPLETE
+++ printf %s COMPLETE
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_status=COMPLETE
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt artifact_path
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=artifact_path
+++ local value
++++ sed -n -e 's/^artifact_path=[[:space:]]*//p' -e 's/^artifact_path:[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_path=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt producer
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=producer
+++ local value
++++ sed -n -e 's/^producer=[[:space:]]*//p' -e 's/^producer:[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=tools/cde.sh
+++ trim_value tools/cde.sh
+++ printf %s tools/cde.sh
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_producer=tools/cde.sh
++ '[' cde = cde ']'
++ '[' run_20260906_191721_23826 = run_20260906_191721_23826 ']'
++ '[' 82de18affdb69a40d144226b126eb1f1e32f589f = 82de18affdb69a40d144226b126eb1f1e32f589f ']'
++ '[' COMPLETE = COMPLETE ']'
++ '[' artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt = artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt ']'
++ '[' tools/cde.sh = tools/cde.sh ']'
++ hash_matches /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
++ local payload=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ local envelope=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++ local expected_manifest_hash=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
++ local envelope_hash computed
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt ']'
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
+++ local key=sha256
+++ local value
++++ sed -n -e 's/^sha256=[[:space:]]*//p' -e 's/^sha256:[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/envelope.txt
++++ sed -n 1p
+++ value=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ trim_value 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ printf %s 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_hash=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
+++ sha256sum /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ cut -d ' ' -f1
++ computed=2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2
++ '[' -n 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 ']'
++ '[' 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 = 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 ']'
++ '[' 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 = 2962038bccd47c6a5b9efb65d89ba28bed3b0fc59254ca86dc97f4ae6d72f7b2 ']'
++ return 0
++ validate_stage gate3 artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b tools/execution_capability.sh
++ local stage=gate3
++ local artifact_rel=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ local envelope_rel=artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ local manifest_hash=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
++ local expected_producer=tools/execution_capability.sh
++ local artifact_abs envelope_abs
++ local envelope_stage envelope_run envelope_commit envelope_status envelope_path envelope_producer
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ case "$value" in
++ return 0
++ path_is_safe_relative artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ case "$value" in
++ return 0
++ path_is_current_run_artifact artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ local value=artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ case "$value" in
++ return 0
++ artifact_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ envelope_abs=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt ']'
++ '[' -f /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt stage_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=stage_id
+++ local value
++++ sed -n -e 's/^stage_id=[[:space:]]*//p' -e 's/^stage_id:[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*stage_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=gate3
+++ trim_value gate3
+++ printf %s gate3
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_stage=gate3
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt pipeline_run_id
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=pipeline_run_id
+++ local value
++++ sed -n -e 's/^pipeline_run_id=[[:space:]]*//p' -e 's/^pipeline_run_id:[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*pipeline_run_id[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=run_20260906_191721_23826
+++ trim_value run_20260906_191721_23826
+++ printf %s run_20260906_191721_23826
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_run=run_20260906_191721_23826
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt source_commit
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=source_commit
+++ local value
++++ sed -n -e 's/^source_commit=[[:space:]]*//p' -e 's/^source_commit:[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*source_commit[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=82de18affdb69a40d144226b126eb1f1e32f589f
+++ trim_value 82de18affdb69a40d144226b126eb1f1e32f589f
+++ printf %s 82de18affdb69a40d144226b126eb1f1e32f589f
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_commit=82de18affdb69a40d144226b126eb1f1e32f589f
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt completion_status
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=completion_status
+++ local value
++++ sed -n -e 's/^completion_status=[[:space:]]*//p' -e 's/^completion_status:[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*completion_status[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=COMPLETE
+++ trim_value COMPLETE
+++ printf %s COMPLETE
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_status=COMPLETE
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt artifact_path
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=artifact_path
+++ local value
++++ sed -n -e 's/^artifact_path=[[:space:]]*//p' -e 's/^artifact_path:[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*artifact_path[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ trim_value artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ printf %s artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_path=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt producer
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=producer
+++ local value
++++ sed -n -e 's/^producer=[[:space:]]*//p' -e 's/^producer:[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*producer[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=tools/execution_capability.sh
+++ trim_value tools/execution_capability.sh
+++ printf %s tools/execution_capability.sh
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_producer=tools/execution_capability.sh
++ '[' gate3 = gate3 ']'
++ '[' run_20260906_191721_23826 = run_20260906_191721_23826 ']'
++ '[' 82de18affdb69a40d144226b126eb1f1e32f589f = 82de18affdb69a40d144226b126eb1f1e32f589f ']'
++ '[' COMPLETE = COMPLETE ']'
++ '[' artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt = artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt ']'
++ '[' tools/execution_capability.sh = tools/execution_capability.sh ']'
++ hash_matches /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
++ local payload=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ local envelope=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++ local expected_manifest_hash=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
++ local envelope_hash computed
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt ']'
++ '[' -s /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt ']'
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt sha256
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
+++ local key=sha256
+++ local value
++++ sed -n -e 's/^sha256=[[:space:]]*//p' -e 's/^sha256:[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*sha256[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/envelope.txt
++++ sed -n 1p
+++ value=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ trim_value 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ printf %s 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ envelope_hash=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
+++ sha256sum /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ cut -d ' ' -f1
++ computed=1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b
++ '[' -n 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b ']'
++ '[' 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b = 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b ']'
++ '[' 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b = 1079b00cede3e76803e89dfbc41a1dafbaa7df5a3a211a5950419c288c13a66b ']'
++ return 0
++ EDE_ARTIFACT_REL=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ CDE_ARTIFACT_REL=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ GATE3_ARTIFACT_REL=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ EDE_ARTIFACT=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ CDE_ARTIFACT=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ GATE3_ARTIFACT=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ return 0
++ write_profile_payload
++ local ede_file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ local cde_file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ local gate3_file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ local device_class android_host container_environment cpu_arch
++ local storage_read storage_write exec_private exec_shared network_dns
++ local python3_status git_status java_status javac_status gradle_status
++ local tmp_file
+++ profile_value android_host /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ local key=android_host
+++ shift
+++ local value
++++ read_payload_field android_host /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ value=DETECTED
+++ '[' -n DETECTED ']'
+++ printf %s DETECTED
++ android_host=DETECTED
+++ profile_value container_environment /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ local key=container_environment
+++ shift
+++ local value
++++ read_payload_field container_environment /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ value=UNKNOWN
+++ '[' -n UNKNOWN ']'
+++ printf %s UNKNOWN
++ container_environment=UNKNOWN
+++ profile_value architecture /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ local key=architecture
+++ shift
+++ local value
++++ read_payload_field architecture /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ value=aarch64
+++ '[' -n aarch64 ']'
+++ printf %s aarch64
++ cpu_arch=aarch64
+++ profile_value STORAGE_READ /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=STORAGE_READ
+++ shift
+++ local value
++++ read_payload_field STORAGE_READ /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=Read test | scope=current_environment'
+++ '[' -n 'PASS | verification=Read test | scope=current_environment' ']'
+++ printf %s 'PASS | verification=Read test | scope=current_environment'
++ storage_read='PASS | verification=Read test | scope=current_environment'
+++ profile_value STORAGE_WRITE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=STORAGE_WRITE
+++ shift
+++ local value
++++ read_payload_field STORAGE_WRITE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=Write/delete test | scope=current_environment'
+++ '[' -n 'PASS | verification=Write/delete test | scope=current_environment' ']'
+++ printf %s 'PASS | verification=Write/delete test | scope=current_environment'
++ storage_write='PASS | verification=Write/delete test | scope=current_environment'
+++ profile_value EXEC_PRIVATE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ local key=EXEC_PRIVATE
+++ shift
+++ local value
++++ read_payload_field EXEC_PRIVATE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ value='ERROR | verification=execution test'
+++ '[' -n 'ERROR | verification=execution test' ']'
+++ printf %s 'ERROR | verification=execution test'
++ exec_private='ERROR | verification=execution test'
+++ profile_value EXEC_SHARED /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ local key=EXEC_SHARED
+++ shift
+++ local value
++++ read_payload_field EXEC_SHARED /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
+++ value='ERROR | verification=execution test'
+++ '[' -n 'ERROR | verification=execution test' ']'
+++ printf %s 'ERROR | verification=execution test'
++ exec_shared='ERROR | verification=execution test'
+++ profile_value NETWORK_DNS /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=NETWORK_DNS
+++ shift
+++ local value
++++ read_payload_field NETWORK_DNS /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='ERROR | verification=DNS lookup | scope=current_environment'
+++ '[' -n 'ERROR | verification=DNS lookup | scope=current_environment' ']'
+++ printf %s 'ERROR | verification=DNS lookup | scope=current_environment'
++ network_dns='ERROR | verification=DNS lookup | scope=current_environment'
+++ profile_value PYTHON3 /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=PYTHON3
+++ shift
+++ local value
++++ read_payload_field PYTHON3 /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=command discovery | scope=current_environment'
+++ '[' -n 'PASS | verification=command discovery | scope=current_environment' ']'
+++ printf %s 'PASS | verification=command discovery | scope=current_environment'
++ python3_status='PASS | verification=command discovery | scope=current_environment'
+++ profile_value GIT /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=GIT
+++ shift
+++ local value
++++ read_payload_field GIT /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=command discovery | scope=current_environment'
+++ '[' -n 'PASS | verification=command discovery | scope=current_environment' ']'
+++ printf %s 'PASS | verification=command discovery | scope=current_environment'
++ git_status='PASS | verification=command discovery | scope=current_environment'
+++ profile_value JAVA /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=JAVA
+++ shift
+++ local value
++++ read_payload_field JAVA /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=command discovery | scope=current_environment'
+++ '[' -n 'PASS | verification=command discovery | scope=current_environment' ']'
+++ printf %s 'PASS | verification=command discovery | scope=current_environment'
++ java_status='PASS | verification=command discovery | scope=current_environment'
+++ profile_value JAVAC /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=JAVAC
+++ shift
+++ local value
++++ read_payload_field JAVAC /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=command discovery | scope=current_environment'
+++ '[' -n 'PASS | verification=command discovery | scope=current_environment' ']'
+++ printf %s 'PASS | verification=command discovery | scope=current_environment'
++ javac_status='PASS | verification=command discovery | scope=current_environment'
+++ profile_value GRADLE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ local key=GRADLE
+++ shift
+++ local value
++++ read_payload_field GRADLE /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
+++ value='PASS | verification=command discovery | scope=current_environment'
+++ '[' -n 'PASS | verification=command discovery | scope=current_environment' ']'
+++ printf %s 'PASS | verification=command discovery | scope=current_environment'
++ gradle_status='PASS | verification=command discovery | scope=current_environment'
++ '[' DETECTED = DETECTED ']'
++ '[' UNKNOWN = DETECTED ']'
+++ profile_value DEVICE_CLASS /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
+++ local key=DEVICE_CLASS
+++ shift
+++ local value
++++ read_payload_field DEVICE_CLASS /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++++ true
+++ value=
+++ '[' -n '' ']'
+++ printf %s UNKNOWN
++ device_class=UNKNOWN
+++ date '+%Y-%m-%d %H:%M:%S'
++ PROFILE_GENERATED_AT='2026-09-06 20:14:13'
+++ date +%Y%m%d_%H%M%S
++ PROFILE_FILE=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt
+++ basename /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt
++ PROFILE_REL=artifacts/runtime_profiles/profile_20260906_201413_16338.txt
++ tmp_file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt.partial
++ printf '%s\n' PROFILE_VERSION=1
++ printf '%s\n' DEVICE_CLASS=UNKNOWN
++ printf '%s\n' ANDROID_HOST=DETECTED
++ printf '%s\n' CONTAINER_ENVIRONMENT=UNKNOWN
++ printf '%s\n' CPU_ARCH=aarch64
++ printf '%s\n' 'STORAGE_READ=PASS | verification=Read test | scope=current_environment'
++ printf '%s\n' 'STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment'
++ printf '%s\n' 'EXEC_PRIVATE=ERROR | verification=execution test'
++ printf '%s\n' 'EXEC_SHARED=ERROR | verification=execution test'
++ printf '%s\n' 'NETWORK_DNS=ERROR | verification=DNS lookup | scope=current_environment'
++ printf '%s\n' 'PYTHON3=PASS | verification=command discovery | scope=current_environment'
++ printf '%s\n' 'GIT=PASS | verification=command discovery | scope=current_environment'
++ printf '%s\n' 'JAVA=PASS | verification=command discovery | scope=current_environment'
++ printf '%s\n' 'JAVAC=PASS | verification=command discovery | scope=current_environment'
++ printf '%s\n' 'GRADLE=PASS | verification=command discovery | scope=current_environment'
++ printf '%s\n' PIPELINE_STATUS=SUCCESS
++ printf '%s\n' PIPELINE_RUN_ID=run_20260906_191721_23826
++ printf '%s\n' SOURCE_COMMIT=82de18affdb69a40d144226b126eb1f1e32f589f
++ printf '%s\n' EDE_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/ede/artifact.txt
++ printf '%s\n' CDE_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/cde/artifact.txt
++ printf '%s\n' GATE3_ARTIFACT=artifacts/pipeline/run_20260906_191721_23826/gate3/artifact.txt
++ printf '%s\n' 'GENERATED_AT=2026-09-06 20:14:13'
++ mv /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt.partial /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt
++ validate_required_profile_fields
++ local key value
++ for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH STORAGE_READ STORAGE_WRITE EXEC_PRIVATE EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE
+++ read_field /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt DEVICE_CLASS
+++ local file=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt
+++ local key=DEVICE_CLASS
+++ local value
++++ sed -n -e 's/^DEVICE_CLASS=[[:space:]]*//p' -e 's/^DEVICE_CLASS:[[:space:]]*//p' -e 's/^[[:space:]]*DEVICE_CLASS[[:space:]]*=[[:space:]]*//p' -e 's/^[[:space:]]*DEVICE_CLASS[[:space:]]*:[[:space:]]*//p' /data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/runtime_profiles/profile_20260906_201413_16338.txt
++++ sed -n 1p
+++ value=UNKNOWN
+++ trim_value UNKNOWN
+++ printf %s UNKNOWN
+++ sed 's/^[[:space:]]*//; s/[[:space:]]*$//'
++ value=UNKNOWN
++ '[' -n UNKNOWN ']'
++ '[' UNKNOWN '!=' UNKNOWN ']'
++ return 1
++ return 1
++ fail_blocked PROFILE_PAYLOAD_VALIDATION_OR_WRITE_FAILED
++ local reason=PROFILE_PAYLOAD_VALIDATION_OR_WRITE_FAILED
++ printf '%s\n' PROFILE_AUTHORITY_STATUS=BLOCKED
+PROFILE_AUTHORITY_STATUS=BLOCKED
++ printf '%s\n' PROFILE_AUTHORITY_FAILURE_REASON=PROFILE_PAYLOAD_VALIDATION_OR_WRITE_FAILED
+PROFILE_AUTHORITY_FAILURE_REASON=PROFILE_PAYLOAD_VALIDATION_OR_WRITE_FAILED
++ printf '%s\n' PROFILE_AUTHORITATIVE=FALSE
+PROFILE_AUTHORITATIVE=FALSE
++ return 20
++ return 20

@@ -20,7 +20,7 @@ main() {
         return 10
     fi
 
-    PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." 2>/dev/null && pwd)
+    PROJECT_ROOT=$(realpath -e "$SCRIPT_DIR/.." 2>/dev/null || true)
     if [ -z "$PROJECT_ROOT" ] || [ ! -d "$PROJECT_ROOT" ]; then
         printf '%s\n' 'RUNTIME_DISCOVERY_STATUS=ERROR'
         printf '%s\n' 'RUNTIME_DISCOVERY_ERROR=PROJECT_ROOT_UNRESOLVED'
@@ -85,7 +85,7 @@ main() {
     printf '%s\n' "execution_cwd=$EXECUTION_PATH"
     printf '%s\n' 'stage_order=EDE,CDE,GATE3'
 
-    if ./tools/ede.sh > "$EDE_TMP" 2>&1; then
+    if bash ./tools/ede.sh > "$EDE_TMP" 2>&1; then
         EDE_RC=0
     else
         EDE_RC=$?
@@ -108,9 +108,15 @@ main() {
     printf '%s\n' "EDE_RC=$EDE_RC"
     printf '%s\n' "EDE_ARTIFACT=$EDE_PAYLOAD"
 
+    if ! mkdir -p "$PROJECT_ROOT/artifacts/cde"; then
+        printf '%s\n' 'RUNTIME_DISCOVERY_STATUS=ERROR'
+        printf '%s\n' 'RUNTIME_DISCOVERY_ERROR=CDE_ARTIFACT_DIRECTORY_CREATE_FAILED'
+        return 16
+    fi
+
     find "$PROJECT_ROOT/artifacts/cde" -maxdepth 1 -type f -name 'cde_*.txt' -printf '%f\n' 2>/dev/null | sort > "$CDE_BEFORE"
 
-    if ./tools/cde.sh > "$RUN_DIR/cde/cde_stdout.txt" 2>&1; then
+    if bash ./tools/cde.sh > "$RUN_DIR/cde/cde_stdout.txt" 2>&1; then
         CDE_RC=0
     else
         CDE_RC=$?
@@ -145,7 +151,7 @@ main() {
     printf '%s\n' "CDE_ARTIFACT=$CDE_PAYLOAD"
     printf '%s\n' "CDE_SOURCE_ARTIFACT=${CDE_SOURCE:-UNRESOLVED}"
 
-    if ./tools/execution_capability.sh > "$GATE3_TMP" 2>&1; then
+    if bash ./tools/execution_capability.sh > "$GATE3_TMP" 2>&1; then
         GATE3_RC=0
     else
         GATE3_RC=$?
