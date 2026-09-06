@@ -67,11 +67,19 @@ read_payload_field() {
 profile_value() {
     local key="$1"
     shift
-    local value
+    local value status
 
     value=$(read_payload_field "$key" "$@" 2>/dev/null || true)
     if [ -n "$value" ]; then
-        printf '%s' "$value"
+        status="${value%% |*}"
+        case "$status" in
+            PASS|ERROR)
+                printf '%s' "$status"
+                ;;
+            *)
+                printf '%s' "$value"
+                ;;
+        esac
     else
         printf '%s' 'UNKNOWN'
     fi

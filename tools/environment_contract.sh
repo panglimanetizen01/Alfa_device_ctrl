@@ -119,10 +119,14 @@ allowed_profile_value() {
     local value="$2"
     case "$key" in
         DEVICE_CLASS)
-            [ "$value" = 'ANDROID_USERLAND' ] || is_non_unknown "$value"
+            [ "$value" = 'ANDROID_USERLAND' ] ||
+            [ "$value" = 'UNKNOWN' ] ||
+            is_non_unknown "$value"
             ;;
         ANDROID_HOST|CONTAINER_ENVIRONMENT)
-            [ "$value" = 'DETECTED' ] || [ "$value" = 'NOT_DETECTED' ]
+            [ "$value" = 'DETECTED' ] ||
+            [ "$value" = 'NOT_DETECTED' ] ||
+            [ "$value" = 'UNKNOWN' ]
             ;;
         CPU_ARCH)
             is_non_unknown "$value"
@@ -236,7 +240,13 @@ validate_ede_payload() {
                 allowed_ede_value "$key" "$value" || return 1
                 ;;
         esac
-        [ "$value" != 'UNKNOWN' ] || return 1
+        case "$key" in
+            android_host|container_environment)
+                ;;
+            *)
+                [ "$value" != 'UNKNOWN' ] || return 1
+                ;;
+        esac
     done
 
     CURRENT_STAGE_ID='ede'
@@ -476,7 +486,14 @@ validate_profile_authority() {
         count=$(field_count "$PROFILE_FILE" "$key")
         [ "$count" = '1' ] || return 1
         value=$(read_field "$PROFILE_FILE" "$key")
-        [ "$value" != 'UNKNOWN' ] && [ -n "$value" ] || return 1
+        case "$key" in
+            DEVICE_CLASS|ANDROID_HOST|CONTAINER_ENVIRONMENT)
+                [ -n "$value" ] || return 1
+                ;;
+            *)
+                [ "$value" != 'UNKNOWN' ] && [ -n "$value" ] || return 1
+                ;;
+        esac
         allowed_profile_value "$key" "$value" || return 1
     done
 
