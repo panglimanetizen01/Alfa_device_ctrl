@@ -1,0 +1,28 @@
+=== GATE 5 V1 SELFTEST ===
+=== ALFA GATE 5 V1 DECISION ===
+pipeline_run_id=run_20260907_005151_18430
+request_id=gate5-self-test
+REQUEST_STATUS=READY_FOR_DECISION
+GATE5_STATUS=VALID
+GATE5_RESULT=DECISION_ALLOW
+decision=ALLOW
+decision_artifact=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate5/decisions/gate5-self-test.txt
+request_artifact=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate5/requests/gate5-self-test.txt
+decision_reason=Gate 4 VALID and Gate 5 self-test policy matched
+authorization_status=AUTHORIZED
+authorization_reason=all identity and freshness checks passed
+authorization_artifact=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate5/authorizations/gate5-self-test.txt
+execution_status=EXECUTED
+result_status=PASS
+execution_artifact=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate5/executions/gate5-self-test.txt
+valid_gate4_to_allow=PASS
+wrong_pipeline_run_id=PASS
+wrong_source_commit=PASS
+wrong_gate4_hash=PASS
+wrong_profile_hash=PASS
+wrong_request_id=PASS
+missing_decision=PASS
+invalid_decision=PASS
+stale_decision=PASS
+SELFTEST_STATUS=PASS
+gate5_artifacts=/data/data/com.termux/files/home/storage/shared/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate5

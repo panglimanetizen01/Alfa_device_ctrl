@@ -1,0 +1,6 @@
+GATE4_STATUS=PASS
+GATE4_RESULT=VALID
+GATE4_RUN_ID=run_20260907_005151_18430
+ENVIRONMENT_CONTRACT=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate4/environment_contract.txt
+ENVIRONMENT_CONTRACT_ENVELOPE=/storage/emulated/0/Alfa_device_ctrl_HOST/Alfa_device_ctrl/artifacts/pipeline/run_20260907_005151_18430/gate4/environment_contract.envelope.txt
+PROBING_REEXECUTED=NO
