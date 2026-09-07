@@ -1,0 +1,67 @@
+{
+  "schema_version": "runtime-registry.v1",
+  "engine_contract": "multi-distro-linux-runtime.v1",
+  "target_architecture": "arm64-v8a",
+  "runtimes": [
+    {
+      "runtime_id": "debian",
+      "family": "Debian",
+      "version": null,
+      "architecture": "aarch64",
+      "archive_format": null,
+      "rootfs_uri": null,
+      "rootfs_sha256": null,
+      "shell_path": "/bin/sh",
+      "acceptance_status": "PLANNED",
+      "acceptance_order": 1
+    },
+    {
+      "runtime_id": "ubuntu",
+      "family": "Ubuntu",
+      "version": null,
+      "architecture": "aarch64",
+      "archive_format": null,
+      "rootfs_uri": null,
+      "rootfs_sha256": null,
+      "shell_path": "/bin/sh",
+      "acceptance_status": "PLANNED",
+      "acceptance_order": 2
+    },
+    {
+      "runtime_id": "alpine",
+      "family": "Alpine",
+      "version": null,
+      "architecture": "aarch64",
+      "archive_format": null,
+      "rootfs_uri": null,
+      "rootfs_sha256": null,
+      "shell_path": "/bin/sh",
+      "acceptance_status": "PLANNED",
+      "acceptance_order": 3
+    },
+    {
+      "runtime_id": "kali",
+      "family": "Kali Linux",
+      "version": null,
+      "architecture": "aarch64",
+      "archive_format": null,
+      "rootfs_uri": null,
+      "rootfs_sha256": null,
+      "shell_path": "/bin/sh",
+      "acceptance_status": "PLANNED",
+      "acceptance_order": 4
+    },
+    {
+      "runtime_id": "generic",
+      "family": "Generic Linux",
+      "version": null,
+      "architecture": "aarch64",
+      "archive_format": null,
+      "rootfs_uri": null,
+      "rootfs_sha256": null,
+      "shell_path": "/bin/sh",
+      "acceptance_status": "PLANNED",
+      "acceptance_order": 5
+    }
+  ]
+}
