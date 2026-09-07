@@ -6,16 +6,17 @@ main() {
     local SHARED_ROOT="${ALFA_EXEC_SHARED_ROOT:-/storage/emulated/0}"
     local PRIVATE_ROOT="${TMPDIR:-${PREFIX:-$HOME}/tmp}"
     local P S
-    local EXEC_PRIVATE_STATUS EXEC_SHARED_STATUS SCRIPT_BASH_STATUS SCRIPT_PYTHON_STATUS PROCESS_SPAWN_STATUS
+    local EXEC_PRIVATE_STATUS SHARED_STORAGE_IO_STATUS SCRIPT_BASH_STATUS SCRIPT_PYTHON_STATUS PROCESS_SPAWN_STATUS
     local OVERALL_STATUS=PASS
 
-    echo "=== ALFA EXECUTION CAPABILITY V1 ==="
+    echo "=== ALFA EXECUTION CAPABILITY V2 ==="
     echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
     echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
     echo "shared_root=$SHARED_ROOT"
     echo
     echo "[CAPABILITIES]"
 
+    # Execution semantics are tested only in the private execution-capable workspace.
     P="$PRIVATE_ROOT/alfa_exec_private.$$"
     if printf '%s\n' '#!/bin/sh' 'printf "%s\\n" EXEC_PRIVATE_OK' > "$P" 2>/dev/null \
        && chmod +x "$P" 2>/dev/null \
@@ -26,20 +27,23 @@ main() {
         OVERALL_STATUS=ERROR
     fi
     rm -f "$P" 2>/dev/null || true
-    echo "EXEC_PRIVATE=$EXEC_PRIVATE_STATUS | verification=private file execution | scope=current_environment"
+    echo "EXEC_PRIVATE=$EXEC_PRIVATE_STATUS | verification=private file execution | scope=current_execution_workspace"
 
-    S="$SHARED_ROOT/.alfa_exec_shared.$$"
+    # Shared storage is deliberately tested as data I/O, never as executable code.
+    S="$SHARED_ROOT/.alfa_storage_io.$$"
+    SHARED_VALUE='ALFA_SHARED_STORAGE_IO_OK'
     if [ -d "$SHARED_ROOT" ] \
-       && printf '%s\n' '#!/bin/sh' 'printf "%s\\n" EXEC_SHARED_OK' > "$S" 2>/dev/null \
-       && chmod +x "$S" 2>/dev/null \
-       && [ "$("$S" 2>/dev/null)" = 'EXEC_SHARED_OK' ]; then
-        EXEC_SHARED_STATUS=PASS
+       && printf '%s\\n' "$SHARED_VALUE" > "$S" 2>/dev/null \
+       && [ "$(cat "$S" 2>/dev/null)" = "$SHARED_VALUE" ] \
+       && rm -f "$S" 2>/dev/null \
+       && [ ! -e "$S" ]; then
+        SHARED_STORAGE_IO_STATUS=PASS
     else
-        EXEC_SHARED_STATUS=ERROR
+        SHARED_STORAGE_IO_STATUS=ERROR
         OVERALL_STATUS=ERROR
+        rm -f "$S" 2>/dev/null || true
     fi
-    rm -f "$S" 2>/dev/null || true
-    echo "EXEC_SHARED=$EXEC_SHARED_STATUS | verification=shared-storage file execution | scope=current_environment"
+    echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=shared_storage_data_only"
 
     if printf '%s\n' 'printf "%s\\n" SCRIPT_BASH_OK' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
         SCRIPT_BASH_STATUS=PASS
