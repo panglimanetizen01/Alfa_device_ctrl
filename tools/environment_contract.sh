@@ -23,7 +23,10 @@ count_field(){ grep -c "^$2=" "$1" 2>/dev/null || true; }
 sha_ok(){ local f="$1" e="$2" expected="$3" actual; [ -s "$f" ]&&[ -s "$e" ]||return 1; actual=$(sha256sum "$f"|cut -d' ' -f1); [ "$actual" = "$(read_field "$e" sha256)" ]&&[ "$actual" = "$expected" ]; }
 
 validate_stage(){
-    local stage="$1" rel="$2" env="$3" hash="$4" producer="$5" f="$ROOT/$rel" e="$ROOT/$env"
+    local stage rel env hash producer f e
+    [ "$#" -eq 5 ] || return 1
+    stage=$1; rel=$2; env=$3; hash=$4; producer=$5
+    f="$ROOT/$rel"; e="$ROOT/$env"
     [ -n "$rel" ]&&[ -n "$env" ]&&[ -n "$hash" ] || return 1
     case "$rel" in artifacts/pipeline/$RUN_ID/*) ;; *) return 1;; esac
     case "$env" in artifacts/pipeline/$RUN_ID/*) ;; *) return 1;; esac
@@ -74,15 +77,14 @@ validate_gate3(){
 }
 
 validate_profile(){
-    local count key value authority_count authority_path authority_hash authority_source authority_run authority_status
+    local count key value authority_count authority_path authority_hash authority_source authority_run
     [ -f "$AUTHORITY_FILE" ] || return 1
     authority_count=$(awk -v target="$RUN_ID" 'BEGIN{RS="";n=0}{r=0;a=0;s=0;for(i=1;i<=NF;i++){if($i=="pipeline_run_id="target)r=1;if($i=="authoritative=TRUE")a=1;if($i=="profile_status=VALID")s=1}if(r&&a&&s)n++}END{print n}' "$AUTHORITY_FILE")
     [ "$authority_count" = 1 ] || return 1
     authority_path=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="profile_path")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
     authority_hash=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="profile_sha256")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
-    authority_source=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="source_commit")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
-    authority_run=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;for(i=1;i<=NF;i++){if($i=="pipeline_run_id="target)r=1;if($i=="authoritative=TRUE")a=1}if(r&&a)print target}' "$AUTHORITY_FILE"|sed -n '1p')
-    authority_status=VALID
+    authority_source=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="source_commit"&&v=="")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
+    authority_run="$RUN_ID"
     case "$authority_path" in artifacts/runtime_profiles/profile_*.txt) ;; *) return 1;; esac
     [ "$authority_run" = "$RUN_ID" ]&&[ "$authority_source" = "$SOURCE_COMMIT" ]&&[ -n "$authority_hash" ] || return 1
     PROFILE_FILE="$ROOT/$authority_path"
