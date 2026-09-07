@@ -37,14 +37,6 @@ jobs:
           test "$(sed -n 's/^gate_status=//p' artifacts/gates/g1/foundation-contract.txt)" = GREEN
           test "$(sed -n 's/^source_commit=//p' artifacts/gates/g1/foundation-contract.txt)" = "${GITHUB_SHA}"
 
-      - name: Run G2 canonical boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          bash tools/gate2_canonical_source_build_boundary.sh
-          test "$(sed -n 's/^gate_status=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = GREEN
-          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = "${GITHUB_SHA}"
-
       - name: Negative stale-source test
         shell: bash
         run: |
@@ -60,6 +52,14 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/test_gate2_contract.sh
+
+      - name: Run G2 canonical boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/gate2_canonical_source_build_boundary.sh
+          test "$(sed -n 's/^gate_status=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = GREEN
+          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = "${GITHUB_SHA}"
 
       - name: Upload G2 evidence
         uses: actions/upload-artifact@v5
