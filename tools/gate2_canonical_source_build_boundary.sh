@@ -31,7 +31,10 @@ if git show-ref --verify --quiet refs/remotes/origin/master; then ORIGIN_MASTER=
 [ "$(sed -n 's/^source_commit=//p' "$G1_EVIDENCE" | head -n1)" = "$SOURCE_COMMIT" ] || { fail 'g1-source-commit-mismatch'; exit 1; }
 [ "$(sed -n 's/^schema_version=//p' "$G1_EVIDENCE" | head -n1)" = g1-foundation-contract.v2 ] || { fail 'g1-schema-mismatch'; exit 1; }
 for f in settings.gradle build.gradle gradlew gradle/wrapper/gradle-wrapper.properties app/build.gradle; do [ -f "$f" ] || { fail "required-build-file-missing:$f"; exit 1; }; done
-[ -x gradlew ] || { fail 'gradlew-not-executable'; exit 1; }
+# Validate executable intent from the canonical Git index, not the mounted working-tree mode.
+# Android shared/external storage can expose repository files without POSIX execute permission.
+GRADLEW_INDEX_MODE="$(git ls-files --stage -- gradlew | awk 'NR==1 {print $1}')"
+[ "$GRADLEW_INDEX_MODE" = 100755 ] || { fail 'gradlew-git-mode-not-executable'; exit 1; }
 WRAPPER_URL="$(sed -n 's/^distributionUrl=//p' gradle/wrapper/gradle-wrapper.properties | head -n1)"
 WRAPPER_URL="${WRAPPER_URL//\\:/\:}"
 case "$WRAPPER_URL" in https://services.gradle.org/distributions/gradle-*.zip) ;; *) fail 'invalid-gradle-wrapper-url'; exit 1 ;; esac
@@ -63,6 +66,7 @@ APP_BUILD_SHA256="$(sha256sum app/build.gradle | awk '{print $1}')"
   echo 'git_object_integrity=PASS'
   echo 'worktree_clean=PASS'
   echo 'build_boundary=PASS'
+  echo 'gradlew_git_mode=100755'
   echo "gradle_wrapper_distribution=$WRAPPER_URL"
   echo "gradle_wrapper_sha256=$WRAPPER_SHA256"
   echo "app_build_gradle_sha256=$APP_BUILD_SHA256"
