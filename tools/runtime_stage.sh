@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Deterministic Gate 6-19 stage engine. All inputs and outputs are explicit.
+# G14 is intentionally not implemented here; use gate14_runtime_command_validation.sh.
 
 set -u
 
@@ -57,9 +58,6 @@ main() {
         gate13)
             COMMAND='pwd'
             ;;
-        gate14)
-            if [ "$STATUS" = 'PASS' ] && [ "$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')" != 'pwd' ]; then STATUS=BLOCKED; REASON='command is not the V1 pwd command'; fi
-            ;;
         gate15)
             if [ "$STATUS" = 'PASS' ] && [ "$(chain_field "$INPUT1" validation_status 2>/dev/null || printf '%s' '')" != 'ALLOWED' ]; then STATUS=BLOCKED; REASON='command validation is not ALLOWED'; fi
             ;;
@@ -80,7 +78,7 @@ main() {
             ;;
         *)
             STATUS=BLOCKED
-            REASON='unknown runtime gate'
+            REASON='unknown or non-authoritative runtime gate'
             ;;
     esac
 
@@ -127,7 +125,6 @@ main() {
             gate11) printf '%s\n' "workflow_status=$(chain_field "$INPUT1" workflow_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "orchestrator_status=$STATUS"; printf '%s\n' 'orchestrator_name=runtime_self_orchestrator' ;;
             gate12) printf '%s\n' "orchestrator_status=$(chain_field "$INPUT1" orchestrator_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "kernel_status=$STATUS"; printf '%s\n' 'kernel_name=runtime_self_kernel' ;;
             gate13) printf '%s\n' "kernel_status=$(chain_field "$INPUT1" kernel_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$COMMAND"; printf '%s\n' "command_status=$STATUS" ;;
-            gate14) printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"; printf '%s\n' "validation_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'ALLOWED' || printf '%s' 'BLOCKED')" ;;
             gate15) printf '%s\n' "validation_status=$(chain_field "$INPUT1" validation_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "policy_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'ALLOWED' || printf '%s' 'BLOCKED')" ;;
             gate16) printf '%s\n' "policy_status=$(chain_field "$INPUT1" policy_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "authorization_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'AUTHORIZED' || printf '%s' 'DENIED')"; printf '%s\n' "decision_id=$(chain_field "$INPUT2" decision_id 2>/dev/null || printf '%s' '')" ;;
             gate17) printf '%s\n' "authorization_status=$(chain_field "$INPUT1" authorization_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=pwd"; printf '%s\n' "execution_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'PASS' || printf '%s' "$STATUS")"; if [ "$STATUS" = 'PASS' ]; then printf '%s\n' "command_result=$COMMAND_RESULT"; printf '%s\n' "command_returncode=$RETURN_CODE"; else printf '%s\n' 'command_result=NOT_EXECUTED'; fi ;;
