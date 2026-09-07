@@ -11,14 +11,19 @@ mkdir -p "$(dirname "$EVIDENCE")"
 fail() { reason="$1"; { echo "schema_version=$SCHEMA"; echo 'gate=G2'; echo 'gate_status=RED'; echo "source_commit=${SOURCE_COMMIT:-UNKNOWN}"; echo "repository=$EXPECTED_REPO"; echo "reason=$reason"; } > "$EVIDENCE"; echo 'G2_STATUS=RED'; echo "G2_REASON=$reason"; echo "G2_EVIDENCE=$ROOT/$EVIDENCE"; return 1; }
 SOURCE_COMMIT="$(git rev-parse HEAD 2>/dev/null)" || { fail 'missing-head'; exit 1; }
 case "$SOURCE_COMMIT" in
-  [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+  [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
   *) fail 'malformed-source-commit'; exit 1 ;;
 esac
 if [ -n "${G2_EXPECT_SOURCE_COMMIT:-}" ] && [ "$SOURCE_COMMIT" != "$G2_EXPECT_SOURCE_COMMIT" ]; then fail 'stale-source-commit'; exit 1; fi
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
 case "$ORIGIN_URL" in https://github.com/$EXPECTED_REPO.git|https://github.com/$EXPECTED_REPO|git@github.com:$EXPECTED_REPO.git) ;; *) fail 'repository-identity-mismatch'; exit 1 ;; esac
 BRANCH="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
-[ "$BRANCH" = "$EXPECTED_BRANCH" ] || { fail 'branch-mismatch'; exit 1; }
+if [ "$BRANCH" != "$EXPECTED_BRANCH" ]; then
+  if [ "${GITHUB_REF:-}" != "refs/heads/$EXPECTED_BRANCH" ] || [ "${GITHUB_SHA:-}" != "$SOURCE_COMMIT" ]; then
+    fail 'branch-mismatch'; exit 1
+  fi
+  BRANCH='master(detached-ci)'
+fi
 git fsck --full --no-progress >/dev/null 2>&1 || { fail 'git-object-integrity-failed'; exit 1; }
 if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
   if git status --porcelain=v1 --untracked-files=all | grep -v '^?? artifacts/gates/g2/' | grep -q .; then fail 'worktree-not-clean'; exit 1; fi
