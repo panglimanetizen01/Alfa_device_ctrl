@@ -67,3 +67,5 @@ jobs:
           name: alfa-g2-canonical-source-build-boundary-${{ github.sha }}
           path: artifacts/gates/g2/canonical-source-build-boundary.txt
           if-no-files-found: error
+
+      # Canonical verification marker: this workflow is intentionally self-triggered by master pushes.
