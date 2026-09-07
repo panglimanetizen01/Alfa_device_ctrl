@@ -53,13 +53,9 @@ main() {
     fi
 
     case "$STAGE" in
-        gate6)
-            ;;
-        gate7|gate8|gate9|gate10|gate11|gate12)
-            ;;
-        gate13)
-            COMMAND='pwd'
-            ;;
+        gate6) ;;
+        gate7|gate8|gate9|gate10|gate11|gate12) ;;
+        gate13) COMMAND='pwd' ;;
         gate16)
             STATUS=BLOCKED
             REASON='G16 is non-authoritative in runtime_stage.sh; use gate16_runtime_execution_authorization.sh'
@@ -69,10 +65,8 @@ main() {
             if [ "$STATUS" = 'PASS' ] && [ ! -f "$INPUT2" ]; then STATUS=BLOCKED; REASON='command artifact missing'; fi
             if [ "$STATUS" = 'PASS' ] && [ "$(chain_field "$INPUT2" command 2>/dev/null || printf '%s' '')" != 'pwd' ]; then STATUS=BLOCKED; REASON='command is not pwd'; fi
             ;;
-        gate18)
-            ;;
-        gate19)
-            ;;
+        gate18) ;;
+        gate19) ;;
         *)
             STATUS=BLOCKED
             REASON='unknown or non-authoritative runtime gate'
@@ -118,7 +112,7 @@ main() {
             gate7) printf '%s\n' "bootstrap_status=$(chain_field "$INPUT1" bootstrap_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "session_status=$STATUS" ;;
             gate8) printf '%s\n' "session_status=$(chain_field "$INPUT1" session_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "task_status=$STATUS"; printf '%s\n' 'task_name=runtime_self_test' ;;
             gate9) printf '%s\n' "task_status=$(chain_field "$INPUT1" task_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "action_status=$STATUS"; printf '%s\n' 'action_name=runtime_self_action' ;;
-            gate10) printf '%s\n' "action_status=$(chain_field "$INPUT1" action_status 2>/dev/null || printf '%s' '')"; printf '%s\n' 'workflow_status='$STATUS; printf '%s\n' 'workflow_name=runtime_self_workflow' ;;
+            gate10) printf '%s\n' "action_status=$(chain_field "$INPUT1" action_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "workflow_status=$STATUS"; printf '%s\n' 'workflow_name=runtime_self_workflow' ;;
             gate11) printf '%s\n' "workflow_status=$(chain_field "$INPUT1" workflow_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "orchestrator_status=$STATUS"; printf '%s\n' 'orchestrator_name=runtime_self_orchestrator' ;;
             gate12) printf '%s\n' "orchestrator_status=$(chain_field "$INPUT1" orchestrator_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "kernel_status=$STATUS"; printf '%s\n' 'kernel_name=runtime_self_kernel' ;;
             gate13) printf '%s\n' "kernel_status=$(chain_field "$INPUT1" kernel_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$COMMAND"; printf '%s\n' "command_status=$STATUS" ;;
