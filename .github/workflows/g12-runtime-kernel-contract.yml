@@ -1,0 +1,33 @@
+name: G12 Runtime Kernel Contract
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  g12:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash syntax
+        run: |
+          bash -n tools/gate12_runtime_kernel.sh
+          bash -n tools/runtime_kernel.sh
+          bash -n tools/test_gate12_contract.sh
+      - name: G12 contract
+        run: bash tools/test_gate12_contract.sh
+      - name: G1-G11 protection
+        run: |
+          test -f tools/gate1_foundation_v2.sh
+          test -f tools/gate2_canonical_source_build_boundary.sh
+          test -f tools/execution_capability.sh
+          test -f tools/gate3_execution_capability.sh
+          test -f tools/environment_contract.sh
+          test -f tools/gate5_common.sh
+          test -f tools/runtime_bootstrap.sh
+          test -f tools/gate7_runtime_session.sh
+          test -f tools/gate8_runtime_task.sh
+          test -f tools/gate9_runtime_action.sh
+          test -f tools/gate10_runtime_workflow.sh
+          test -f tools/gate11_runtime_orchestrator.sh
