@@ -17,7 +17,7 @@ main() {
     echo "[CAPABILITIES]"
 
     P="$PRIVATE_ROOT/alfa_exec_private.$$"
-    if printf '#!/bin/sh\nprintf EXEC_PRIVATE_OK\\n\n' > "$P" 2>/dev/null \
+    if printf '%s\n' '#!/bin/sh' 'printf "%s\\n" EXEC_PRIVATE_OK' > "$P" 2>/dev/null \
        && chmod +x "$P" 2>/dev/null \
        && [ "$("$P" 2>/dev/null)" = 'EXEC_PRIVATE_OK' ]; then
         EXEC_PRIVATE_STATUS=PASS
@@ -30,7 +30,7 @@ main() {
 
     S="$SHARED_ROOT/.alfa_exec_shared.$$"
     if [ -d "$SHARED_ROOT" ] \
-       && printf '#!/bin/sh\nprintf EXEC_SHARED_OK\\n\n' > "$S" 2>/dev/null \
+       && printf '%s\n' '#!/bin/sh' 'printf "%s\\n" EXEC_SHARED_OK' > "$S" 2>/dev/null \
        && chmod +x "$S" 2>/dev/null \
        && [ "$("$S" 2>/dev/null)" = 'EXEC_SHARED_OK' ]; then
         EXEC_SHARED_STATUS=PASS
@@ -41,7 +41,7 @@ main() {
     rm -f "$S" 2>/dev/null || true
     echo "EXEC_SHARED=$EXEC_SHARED_STATUS | verification=shared-storage file execution | scope=current_environment"
 
-    if printf 'printf SCRIPT_BASH_OK\\n\n' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
+    if printf '%s\n' 'printf "%s\\n" SCRIPT_BASH_OK' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
         SCRIPT_BASH_STATUS=PASS
     else
         SCRIPT_BASH_STATUS=ERROR
@@ -59,7 +59,7 @@ main() {
     echo "SCRIPT_PYTHON=$SCRIPT_PYTHON_STATUS | verification=python3 script execution | scope=current_environment"
 
     if command -v sh >/dev/null 2>&1 \
-       && [ "$(sh -c 'printf PROCESS_SPAWN_OK' 2>/dev/null)" = 'PROCESS_SPAWN_OK' ]; then
+       && [ "$(sh -c 'printf "%s" PROCESS_SPAWN_OK' 2>/dev/null)" = 'PROCESS_SPAWN_OK' ]; then
         PROCESS_SPAWN_STATUS=PASS
     else
         PROCESS_SPAWN_STATUS=ERROR
