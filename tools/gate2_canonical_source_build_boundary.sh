@@ -10,10 +10,7 @@ SCHEMA='g2-canonical-source-build-boundary.v1'
 mkdir -p "$(dirname "$EVIDENCE")"
 fail() { reason="$1"; { echo "schema_version=$SCHEMA"; echo 'gate=G2'; echo 'gate_status=RED'; echo "source_commit=${SOURCE_COMMIT:-UNKNOWN}"; echo "repository=$EXPECTED_REPO"; echo "reason=$reason"; } > "$EVIDENCE"; echo 'G2_STATUS=RED'; echo "G2_REASON=$reason"; echo "G2_EVIDENCE=$ROOT/$EVIDENCE"; return 1; }
 SOURCE_COMMIT="$(git rev-parse HEAD 2>/dev/null)" || { fail 'missing-head'; exit 1; }
-case "$SOURCE_COMMIT" in
-  [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
-  *) fail 'malformed-source-commit'; exit 1 ;;
-esac
+if ! printf '%s\n' "$SOURCE_COMMIT" | grep -Eq '^[0-9a-f]{40}$'; then fail 'malformed-source-commit'; exit 1; fi
 if [ -n "${G2_EXPECT_SOURCE_COMMIT:-}" ] && [ "$SOURCE_COMMIT" != "$G2_EXPECT_SOURCE_COMMIT" ]; then fail 'stale-source-commit'; exit 1; fi
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
 case "$ORIGIN_URL" in https://github.com/$EXPECTED_REPO.git|https://github.com/$EXPECTED_REPO|git@github.com:$EXPECTED_REPO.git) ;; *) fail 'repository-identity-mismatch'; exit 1 ;; esac
