@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # Runtime discovery integration boundary.
-# The stage records objective evidence for EDE/CDE/G3 and binds each artifact
-# to one explicit pipeline run and source commit. G3 is consumed according to
-# its current semantic contract: shared storage is DATA I/O, never execution.
+# Records objective evidence for EDE/CDE/G3 and binds each artifact to one
+# explicit pipeline run and source commit. G3 is consumed according to its
+# current semantic contract: shared storage is DATA I/O, never execution.
 set -u
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
@@ -44,13 +44,11 @@ printf '%s\n' "invocation_cwd=$INVOCATION_CWD"
 printf '%s\n' "execution_cwd=$EXECUTION_PATH"
 printf '%s\n' 'stage_order=EDE,CDE,GATE3'
 
-# Stage EDE.
 if (CDPATH= cd -- "$ROOT" && bash ./tools/ede.sh) > "$EDE" 2>&1; then EDE_RC=0; else EDE_RC=$?; fi
 [ -s "$EDE" ] || printf '%s\n' 'EDE_OUTPUT=EMPTY' > "$EDE"
 printf '%s\n' "EDE_RC=$EDE_RC"
 printf '%s\n' "EDE_ARTIFACT=$EDE"
 
-# Stage CDE: identify exactly one new current-run artifact.
 CDE_BEFORE="$RUN_DIR/cde/.before.list"
 CDE_AFTER="$RUN_DIR/cde/.after.list"
 find "$ROOT/artifacts/cde" -maxdepth 1 -type f -name 'cde_*.txt' -printf '%f\n' 2>/dev/null | sort > "$CDE_BEFORE"
@@ -74,10 +72,8 @@ printf '%s\n' "CDE_RC=$CDE_RC"
 printf '%s\n' "CDE_ARTIFACT=$CDE"
 printf '%s\n' "CDE_SOURCE_ARTIFACT=${CDE_SOURCE:-UNRESOLVED}"
 
-# Stage G3 producer. The integration contract must match G3 V2 exactly.
 if (CDPATH= cd -- "$ROOT" && bash ./tools/execution_capability.sh) > "$G3" 2>&1; then G3_RC=0; else G3_RC=$?; fi
 [ -s "$G3" ] || printf '%s\n' 'GATE3_OUTPUT=EMPTY' > "$G3"
-
 valid_g3_field() { grep -Eq "^$1=(PASS|ERROR)([[:space:]]|$)" "$G3"; }
 if ! valid_g3_field EXEC_PRIVATE \
    || ! valid_g3_field SHARED_STORAGE_IO \
@@ -93,7 +89,6 @@ printf '%s\n' "GATE3_ARTIFACT=$G3"
 EDE_STATUS=PARTIAL; [ "$EDE_RC" -eq 0 ] && [ -s "$EDE" ] && EDE_STATUS=COMPLETE
 CDE_STATUS=PARTIAL; [ "$CDE_RC" -eq 0 ] && [ -s "$CDE" ] && CDE_STATUS=COMPLETE
 G3_STATUS=PARTIAL; [ "$G3_RC" -eq 0 ] && [ -s "$G3" ] && G3_STATUS=COMPLETE
-
 EDE_HASH=$(sha256sum "$EDE" 2>/dev/null | cut -d ' ' -f1)
 CDE_HASH=$(sha256sum "$CDE" 2>/dev/null | cut -d ' ' -f1)
 G3_HASH=$(sha256sum "$G3" 2>/dev/null | cut -d ' ' -f1)
@@ -188,6 +183,4 @@ printf '%s\n' "MANIFEST_ARTIFACT=$MANIFEST"
 printf '%s\n' "SOURCE_COMMIT=$SOURCE_COMMIT"
 printf '%s\n' "RUNTIME_DISCOVERY_STATUS=$RUNTIME_STATUS"
 printf '%s\n' "runtime_discovery_success_rc=$OVERALL_RC"
-return "$OVERALL_RC"
-
-main "$@"
+if [ "$OVERALL_RC" -eq 0 ]; then exit 0; else exit 1; fi
