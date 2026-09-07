@@ -10,10 +10,10 @@ G5_TMPDIR="${TMPDIR:-$PROJECT_ROOT/artifacts/.tmp}"
 if [ -z "$RUN_ID" ]; then
     printf '%s\n' 'SELFTEST_STATUS=FAIL'
     printf '%s\n' 'SELFTEST_REASON=EXPLICIT_PIPELINE_RUN_ID_REQUIRED'
-    return 2 2>/dev/null || true
+    exit 2
 fi
 RUN_DIR="$PROJECT_ROOT/artifacts/pipeline/$RUN_ID/gate5"
-mkdir -p "$G5_TMPDIR" || return 1 2>/dev/null || true
+mkdir -p "$G5_TMPDIR" || exit 1
 REQUEST="$RUN_DIR/requests/gate5-self-test.txt"
 DECISION="$RUN_DIR/decisions/gate5-self-test.txt"
 AUTH="$RUN_DIR/authorizations/gate5-self-test.txt"
