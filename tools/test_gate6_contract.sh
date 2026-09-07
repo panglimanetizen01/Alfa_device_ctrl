@@ -5,6 +5,14 @@ set -u
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 RUN_ID=${1:-}
 FAIL=0
+TMP_DIR="$ROOT/artifacts/.g6-test-tmp-$$"
+POSITIVE_LOG="$TMP_DIR/g6-positive.log"
+NEGATIVE_LOG="$TMP_DIR/g6-negative.log"
+
+cleanup() {
+    rm -rf "$TMP_DIR" "$ROOT/artifacts/pipeline/g6-negative-${RUN_ID}-$$" 2>/dev/null || true
+}
+trap cleanup EXIT HUP INT TERM
 
 if [ -z "$RUN_ID" ]; then
     printf '%s\n' 'G6_CONTRACT_TEST=BLOCKED'
@@ -14,8 +22,14 @@ fi
 
 printf '%s\n' '=== GATE 6 CONTRACT TEST ==='
 
-if bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" >/tmp/g6-positive.$$ 2>&1; then
-    if grep -q '^GATE6_STATUS=PASS$' /tmp/g6-positive.$$; then
+if ! mkdir -p "$TMP_DIR"; then
+    printf '%s\n' 'G6_CONTRACT_TEST=FAIL'
+    printf '%s\n' 'G6_CONTRACT_REASON=test temporary directory creation failed'
+    exit 1
+fi
+
+if bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" >"$POSITIVE_LOG" 2>&1; then
+    if grep -q '^GATE6_STATUS=PASS$' "$POSITIVE_LOG"; then
         printf '%s\n' 'POSITIVE_CURRENT_RUN=PASS'
     else
         printf '%s\n' 'POSITIVE_CURRENT_RUN=FAIL'
@@ -34,8 +48,8 @@ cp "$ROOT/artifacts/pipeline/$RUN_ID/gate4/environment_contract.txt" "$BAD_ROOT/
 cp "$ROOT/artifacts/pipeline/$RUN_ID/gate5/decisions/gate5-self-test.txt" "$BAD_ROOT/gate5/decisions/gate5-self-test.txt" 2>/dev/null || true
 cp "$ROOT/artifacts/pipeline/$RUN_ID/gate5/authorizations/gate5-self-test.txt" "$BAD_ROOT/gate5/authorizations/gate5-self-test.txt" 2>/dev/null || true
 
-if ! bash "$ROOT/tools/runtime_bootstrap.sh" "$BAD_RUN" >/tmp/g6-negative.$$ 2>&1; then
-    if grep -q '^GATE6_STATUS=BLOCKED$' /tmp/g6-negative.$$; then
+if ! bash "$ROOT/tools/runtime_bootstrap.sh" "$BAD_RUN" >"$NEGATIVE_LOG" 2>&1; then
+    if grep -q '^GATE6_STATUS=BLOCKED$' "$NEGATIVE_LOG"; then
         printf '%s\n' 'NEGATIVE_CROSS_RUN=PASS'
     else
         printf '%s\n' 'NEGATIVE_CROSS_RUN=FAIL'
@@ -45,8 +59,6 @@ else
     printf '%s\n' 'NEGATIVE_CROSS_RUN=FAIL'
     FAIL=1
 fi
-
-rm -rf "$BAD_ROOT" /tmp/g6-positive.$$ /tmp/g6-negative.$$ 2>/dev/null || true
 
 if [ "$FAIL" -eq 0 ]; then
     printf '%s\n' 'G6_CONTRACT_TEST=PASS'
