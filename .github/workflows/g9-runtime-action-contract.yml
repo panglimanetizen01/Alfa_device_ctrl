@@ -1,0 +1,54 @@
+name: G9 Runtime Action Contract
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  g9-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Bash syntax
+        shell: bash
+        run: |
+          bash -n tools/gate9_runtime_action.sh
+          bash -n tools/runtime_action.sh
+          bash -n tools/test_gate9_contract.sh
+
+      - name: G9 contract test
+        shell: bash
+        run: bash tools/test_gate9_contract.sh
+
+      - name: Protected gate source boundary
+        shell: bash
+        run: |
+          changed=$(git diff-tree --no-commit-id --name-only -r HEAD^ HEAD)
+          for path in $changed; do
+            case "$path" in
+              tools/gate1_*|tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*|tools/runtime_bootstrap.sh|tools/gate7_*|tools/gate8_*)
+                echo "PROTECTED_SOURCE_CHANGED=$path"
+                exit 1
+                ;;
+            esac
+          done
+          echo 'G1_G8_SOURCE_BOUNDARY=PASS'
+
+      - name: No propagation or execution fallback
+        shell: bash
+        run: |
+          ! grep -q 'runtime_stage.sh' tools/gate9_runtime_action.sh
+          ! grep -q 'runtime_stage.sh' tools/runtime_action.sh
+          ! grep -q 'run_20260823_171233_30513' tools/gate9_runtime_action.sh
+          ! grep -q 'run_20260823_171233_30513' tools/runtime_action.sh
+          grep -q '^    printf.*execution_status=DEFERRED' tools/gate9_runtime_action.sh
+          grep -q '^    printf.*execution_authority=G17' tools/gate9_runtime_action.sh
