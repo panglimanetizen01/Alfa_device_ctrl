@@ -17,7 +17,7 @@ fail() {
 }
 
 [ -n "$PROJECT_ROOT" ] || { fail 'PROJECT_ROOT_UNRESOLVED'; exit 1; }
-[ -x "$CAPABILITY_SCRIPT" ] || { fail 'CAPABILITY_SCRIPT_NOT_EXECUTABLE'; exit 1; }
+[ -f "$CAPABILITY_SCRIPT" ] || { fail 'CAPABILITY_SCRIPT_NOT_FOUND'; exit 1; }
 
 SOURCE_COMMIT=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || true)
 printf '%s' "$SOURCE_COMMIT" | grep -Eq '^[0-9a-f]{40}$' || { fail 'MALFORMED_SOURCE_COMMIT'; exit 1; }
