@@ -32,13 +32,18 @@ printf '%s\n' \
 
 ALFA_EXEC_SHARED_ROOT="$TMP/shared" bash tools/execution_capability.sh > "$TMP/pass.txt" 2>&1
 PASS_RC=$?
+if [ "$PASS_RC" -ne 0 ]; then
+    echo '=== G3 POSITIVE PRODUCER FAILURE ===' >&2
+    cat "$TMP/pass.txt" >&2
+    echo '=== END G3 POSITIVE PRODUCER FAILURE ===' >&2
+    exit 1
+fi
 grep -q '^EXEC_PRIVATE=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^SHARED_STORAGE_IO=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^SCRIPT_BASH=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^SCRIPT_PYTHON=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^PROCESS_SPAWN=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^GATE3_STATUS=PASS$' "$TMP/pass.txt" || exit 1
-[ "$PASS_RC" -eq 0 ] || exit 1
 
 if ALFA_EXEC_SHARED_ROOT="$TMP/does-not-exist" bash tools/execution_capability.sh > "$TMP/fail.txt" 2>&1; then
     exit 1
