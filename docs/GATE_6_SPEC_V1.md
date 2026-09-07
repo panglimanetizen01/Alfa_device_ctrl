@@ -25,7 +25,8 @@ The implementation must perform all of these operations against a run-scoped boo
 2. create a bootstrap marker containing the exact run identity;
 3. read the marker back and compare its content exactly;
 4. remove the marker and verify that it is no longer present;
-5. emit an atomic Gate 6 evidence artifact containing provenance, inputs, execution path, timestamp, probe result, and final status.
+5. publish a run-scoped `bootstrap.ready` state atomically;
+6. emit an atomic Gate 6 evidence artifact containing upstream provenance, implementation configuration identity, inputs, execution path, timestamp, probe result, and final status.
 
 A successful bootstrap therefore proves **control-plane bootstrap readiness**, not guest Linux execution.
 
@@ -46,7 +47,8 @@ schema_version=gate6-bootstrap.v1
 gate=gate6
 gate_status=PASS|BLOCKED|ERROR
 pipeline_run_id=<explicit run>
-source_commit=<Gate 4 source commit>
+source_commit=<Gate 4 upstream source commit>
+implementation_commit=<exact Gate 6 implementation HEAD>
 gate4_contract_sha256=<exact Gate 4 contract hash>
 profile_sha256=<exact Gate 4 profile hash>
 decision_id=<Gate 5 decision id>
@@ -60,6 +62,8 @@ execution_path=<canonical project root>
 stage_reason=<auditable reason>
 ```
 
+`source_commit` identifies the upstream configuration consumed by Gate 6. `implementation_commit` identifies the exact Gate 6 implementation configuration being verified. Both are required so that downstream evidence cannot confuse upstream provenance with the code under test.
+
 ## Verification Requirements
 
 The Gate 6 verification set must prove at minimum:
@@ -70,7 +74,7 @@ The Gate 6 verification set must prove at minimum:
 - malformed or non-ALLOW decision is blocked;
 - non-AUTHORIZED authorization is blocked;
 - failed bootstrap I/O cannot produce `PASS`;
-- the produced artifact is atomic and contains the exact current input identity.
+- the produced artifact is atomic and contains the exact current input identity and implementation configuration identity.
 
 ## NASA-Informed Verification Boundary
 
