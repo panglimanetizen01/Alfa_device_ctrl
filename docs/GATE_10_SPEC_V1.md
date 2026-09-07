@@ -2,24 +2,36 @@
 
 ## Purpose
 
-Menggabungkan action menjadi workflow runtime Alfa.
+Gate 10 constructs and admits exactly one runtime workflow from one verified Gate 9 action. It does not execute the guest command.
 
 ## Rules
 
-1. Workflow hanya boleh dibuat jika action_status=PASS.
-2. Workflow wajib menghasilkan evidence artifact.
-3. Workflow wajib mencatat timestamp dan execution path.
-4. Workflow tidak boleh mengubah capability status.
-5. Status workflow:
-   - PASS
-   - ERROR
-   - BLOCKED
+1. Workflow is admitted only when the exact Gate 9 artifact has `gate_status=PASS` and `action_status=PASS`.
+2. Gate 9 provenance must match the current Gate 4 contract, pipeline run, source HEAD, and profile hash.
+3. Workflow identity is deterministic and run-scoped: `workflow_id=workflow-<pipeline_run_id>`.
+4. Workflow evidence records timestamp and canonical execution path.
+5. Gate 10 must not mutate capability status or invent capability results.
+6. Gate 10 must not execute the guest command; `execution_status=DEFERRED` and `execution_authority=G17` are mandatory.
+7. Missing, malformed, stale, cross-run, cross-contract, or UNKNOWN provenance is BLOCKED.
+8. No historical run defaults, newest-artifact discovery, `ls -1t`, or `head -1` selection.
+9. Publication is atomic: write a partial artifact, then rename it to the final path.
 
-## Initial State
+## Status
 
 Specification: DEFINED
-Implementation: NOT STARTED
-Verification: NOT STARTED
+Implementation: IMPLEMENTED
+Verification: IMPLEMENTED — LIVE GATE 10 VERIFICATION REQUIRED
+
+## Implementation boundary
+
+- `tools/gate10_runtime_workflow.sh` is the authoritative G10 producer/validator.
+- `tools/runtime_workflow.sh` is only a thin explicit-run entry point and cannot fall back to `runtime_stage.sh`.
+- `tools/test_gate10_contract.sh` provides positive workflow construction and negative provenance/execution tests.
+- `.github/workflows/g10-runtime-workflow-contract.yml` verifies the contract and protects G1-G9 source boundaries.
+
+## Verification boundary
+
+G10 GREEN requires objective evidence that a valid Gate 9 action produces a valid G10 workflow artifact and that wrong-run, stale-source, non-PASS action, invalid action identity, and attempted execution inputs are rejected. A G10 PASS is construction/admission evidence only; actual guest execution remains G17.
 
 ## Gate 6-19 implementation contract
 
