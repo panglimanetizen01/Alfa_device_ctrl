@@ -5,6 +5,7 @@ cd "$ROOT" || exit 1
 EXPECTED_REPO='panglimanetizen01/Alfa_device_ctrl'
 EXPECTED_BRANCH='master'
 EVIDENCE='artifacts/gates/g2/canonical-source-build-boundary.txt'
+G1_EVIDENCE='artifacts/gates/g1/foundation-contract.txt'
 SCHEMA='g2-canonical-source-build-boundary.v1'
 mkdir -p "$(dirname "$EVIDENCE")"
 fail() { reason="$1"; { echo "schema_version=$SCHEMA"; echo 'gate=G2'; echo 'gate_status=RED'; echo "source_commit=${SOURCE_COMMIT:-UNKNOWN}"; echo "repository=$EXPECTED_REPO"; echo "reason=$reason"; } > "$EVIDENCE"; echo 'G2_STATUS=RED'; echo "G2_REASON=$reason"; echo "G2_EVIDENCE=$ROOT/$EVIDENCE"; return 1; }
@@ -23,6 +24,10 @@ if [ -n "$(git status --porcelain=v1 --untracked-files=all)" ]; then
   if git status --porcelain=v1 --untracked-files=all | grep -v '^?? artifacts/gates/g2/' | grep -q .; then fail 'worktree-not-clean'; exit 1; fi
 fi
 if git show-ref --verify --quiet refs/remotes/origin/master; then ORIGIN_MASTER="$(git rev-parse refs/remotes/origin/master)"; [ "$SOURCE_COMMIT" = "$ORIGIN_MASTER" ] || { fail 'origin-master-mismatch'; exit 1; }; else ORIGIN_MASTER='UNAVAILABLE'; fi
+[ -f "$G1_EVIDENCE" ] || { fail 'g1-evidence-missing'; exit 1; }
+[ "$(sed -n 's/^gate_status=//p' "$G1_EVIDENCE" | head -n1)" = GREEN ] || { fail 'g1-not-green'; exit 1; }
+[ "$(sed -n 's/^source_commit=//p' "$G1_EVIDENCE" | head -n1)" = "$SOURCE_COMMIT" ] || { fail 'g1-source-commit-mismatch'; exit 1; }
+[ "$(sed -n 's/^schema_version=//p' "$G1_EVIDENCE" | head -n1)" = g1-foundation-contract.v2 ] || { fail 'g1-schema-mismatch'; exit 1; }
 for f in settings.gradle build.gradle gradlew gradle/wrapper/gradle-wrapper.properties app/build.gradle; do [ -f "$f" ] || { fail "required-build-file-missing:$f"; exit 1; }; done
 [ -x gradlew ] || { fail 'gradlew-not-executable'; exit 1; }
 WRAPPER_URL="$(sed -n 's/^distributionUrl=//p' gradle/wrapper/gradle-wrapper.properties | head -n1)"
@@ -51,6 +56,7 @@ APP_BUILD_SHA256="$(sha256sum app/build.gradle | awk '{print $1}')"
   echo "branch=$BRANCH"
   echo "origin_master=$ORIGIN_MASTER"
   echo "source_tree_sha256=$SOURCE_TREE_SHA256"
+  echo 'g1_evidence=PASS'
   echo 'git_object_integrity=PASS'
   echo 'worktree_clean=PASS'
   echo 'build_boundary=PASS'
