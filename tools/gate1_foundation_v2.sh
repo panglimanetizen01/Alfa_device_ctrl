@@ -26,6 +26,33 @@ spec = pathlib.Path(sys.argv[3]).read_text(encoding="utf-8")
 registry = json.loads(pathlib.Path(sys.argv[4]).read_text(encoding="utf-8"))
 errors = []
 
+# G1 must prove that CI/local execution is against a complete, internally
+# readable Git source tree. A missing/corrupt object must never be allowed to
+# produce GREEN evidence.
+fsck = subprocess.run(
+    ["git", "-C", str(root), "fsck", "--full", "--no-progress"],
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+)
+if fsck.returncode != 0 or any(
+    token in fsck.stdout.lower()
+    for token in ("missing blob", "missing tree", "missing commit", "corrupt", "error:")
+):
+    errors.append("git-object-integrity-failed")
+
+head = subprocess.run(
+    ["git", "-C", str(root), "rev-parse", "HEAD"],
+    text=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+if head.returncode != 0:
+    errors.append("git-head-unreadable")
+    source_commit = "UNKNOWN"
+else:
+    source_commit = head.stdout.strip()
+
 for marker in [
     "Multi-Distro Linux Runtime Foundation",
     "Linux runtime foundation",
@@ -84,12 +111,11 @@ else:
         if item.get("shell_path") != "/bin/sh":
             errors.append(f"runtime-shell-invalid:{item.get('runtime_id')}")
 
-source_commit = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
 status = "GREEN" if not errors else "RED"
 out = root / "artifacts/gates/g1/foundation-contract.txt"
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text("\n".join([
-    "schema_version=g1-foundation-contract.v1",
+    "schema_version=g1-foundation-contract.v2",
     "gate=G1",
     f"gate_status={status}",
     f"source_commit={source_commit}",
