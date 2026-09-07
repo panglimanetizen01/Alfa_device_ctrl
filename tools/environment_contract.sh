@@ -68,25 +68,24 @@ validate_state(){
 
 validate_gate3(){
     local f="$ROOT/$G3_REL" key v
+    [ "$(read_field "$f" GATE3_STATUS)" = PASS ] || return 1
     for key in EXEC_PRIVATE SHARED_STORAGE_IO SCRIPT_BASH SCRIPT_PYTHON PROCESS_SPAWN; do
         [ "$(count_field "$f" "$key")" = 1 ] || return 1
         v=$(read_field "$f" "$key")
-        case "${v%% |*}" in PASS|ERROR) ;; *) return 1;; esac
-        [ "${v%% |*}" != UNKNOWN ] || return 1
+        [ "${v%% |*}" = PASS ] || return 1
     done
 }
 
 validate_profile(){
-    local count key value authority_count authority_path authority_hash authority_source authority_run
+    local count key value authority_count authority_path authority_hash authority_source
     [ -f "$AUTHORITY_FILE" ] || return 1
     authority_count=$(awk -v target="$RUN_ID" 'BEGIN{RS="";n=0}{r=0;a=0;s=0;for(i=1;i<=NF;i++){if($i=="pipeline_run_id="target)r=1;if($i=="authoritative=TRUE")a=1;if($i=="profile_status=VALID")s=1}if(r&&a&&s)n++}END{print n}' "$AUTHORITY_FILE")
     [ "$authority_count" = 1 ] || return 1
     authority_path=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="profile_path")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
     authority_hash=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="profile_sha256")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
     authority_source=$(awk -v target="$RUN_ID" 'BEGIN{RS=""}{r=0;a=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if($i=="authoritative=TRUE")a=1;if(p[1]=="source_commit"&&v=="")v=p[2]}if(r&&a)print v}' "$AUTHORITY_FILE"|sed -n '1p')
-    authority_run="$RUN_ID"
     case "$authority_path" in artifacts/runtime_profiles/profile_*.txt) ;; *) return 1;; esac
-    [ "$authority_run" = "$RUN_ID" ]&&[ "$authority_source" = "$SOURCE_COMMIT" ]&&[ -n "$authority_hash" ] || return 1
+    [ "$authority_source" = "$SOURCE_COMMIT" ]&&[ -n "$authority_hash" ] || return 1
     PROFILE_FILE="$ROOT/$authority_path"
     [ -f "$PROFILE_FILE" ] || return 1
     [ "$(sha256sum "$PROFILE_FILE"|cut -d' ' -f1)" = "$authority_hash" ] || return 1
@@ -95,7 +94,7 @@ validate_profile(){
     for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH STORAGE_READ STORAGE_WRITE EXEC_PRIVATE SHARED_STORAGE_IO EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE; do
         count=$(count_field "$PROFILE_FILE" "$key"); [ "$count" = 1 ] || return 1
         value=$(read_field "$PROFILE_FILE" "$key"); [ -n "$value" ]&&[ "$value" != UNKNOWN ] || return 1
-        case "$key" in DEVICE_CLASS|ANDROID_HOST|CONTAINER_ENVIRONMENT|CPU_ARCH) ;; *) case "${value%% |*}" in PASS|ERROR) ;; *) return 1;; esac;; esac
+        case "$key" in DEVICE_CLASS|ANDROID_HOST|CONTAINER_ENVIRONMENT|CPU_ARCH) ;; *) [ "${value%% |*}" = PASS ] || return 1;; esac
     done
 }
 
