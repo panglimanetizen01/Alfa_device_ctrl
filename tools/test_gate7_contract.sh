@@ -53,15 +53,19 @@ rootfs_path=/app/runtime/rootfs
 runtime_evidence=/app/runtime/READY.evidence
 EOF
 
-expect_green() {
-    if ! bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi
-}
-expect_blocked() {
-    if bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi
-}
+expect_green() { if ! bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi; }
+expect_blocked() { if bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi; }
+
+printf '%s\n' '=== G7 STATIC BOUNDARY CHECK ==='
+if grep -q 'runtime_stage.sh' "$ROOT/tools/runtime_session.sh"; then printf '%s\n' 'NO_G7_PROPAGATION=FAIL'; exit 1; fi
+if ! grep -q 'ReleaseStringUTFChars(env, cwd, cmd_cwd)' "$ROOT/terminal-emulator/src/main/jni/termux.c"; then printf '%s\n' 'JNI_CWD_RELEASE=FAIL'; exit 1; fi
+if grep -q 'ReleaseStringUTFChars(env, cmd, cmd_cwd)' "$ROOT/terminal-emulator/src/main/jni/termux.c"; then printf '%s\n' 'JNI_WRONG_CWD_RELEASE=FAIL'; exit 1; fi
+if ! grep -q 'gate7-launch.properties' "$ROOT/app/src/main/java/com/alfa/device_ctrl/InteractiveSessionContract.java"; then printf '%s\n' 'ANDROID_LAUNCH_PROVENANCE=FAIL'; exit 1; fi
+printf '%s\n' 'NO_G7_PROPAGATION=PASS'
+printf '%s\n' 'JNI_CWD_RELEASE=PASS'
+printf '%s\n' 'ANDROID_LAUNCH_PROVENANCE=PASS'
 
 printf '%s\n' '=== G7 CONTRACT TEST ==='
-
 if expect_green; then printf '%s\n' 'POSITIVE_VALID_SESSION=PASS'; else printf '%s\n' 'POSITIVE_VALID_SESSION=FAIL'; exit 1; fi
 
 sed 's/^pipeline_run_id=.*/pipeline_run_id=wrong-run/' "$EVIDENCE" > "$EVIDENCE.bad"
@@ -87,5 +91,4 @@ if git -C "$ROOT" diff --name-only 5579319cec083cb8122c23f538a965510c6bf7c9 "$SO
     exit 1
 fi
 printf '%s\n' 'G1_G6_PROTECTION=PASS'
-
 printf '%s\n' 'G7_CONTRACT_TEST=PASS'
