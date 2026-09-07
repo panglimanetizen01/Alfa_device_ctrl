@@ -7,6 +7,6 @@ OUTPUT=${3:-}
 if [ -z "$RUN_ID" ] || [ -z "$INPUT" ] || [ -z "$OUTPUT" ]; then
     printf '%s\n' 'G12_STATUS=BLOCKED'
     printf '%s\n' 'G12_REASON=explicit run id, G11 artifact, and output are required'
-    return 0 2>/dev/null || true
+    exit 1
 fi
 bash "$ROOT/tools/gate12_runtime_kernel.sh" "$RUN_ID" "$INPUT" "$OUTPUT"
