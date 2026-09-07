@@ -4,7 +4,7 @@
 set -u
 
 main() {
-    local ROOT RUN_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP
+    local ROOT RUN_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT
     local CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA DECISION_ID REQUEST_ID
     local AUTH_STATUS AUTH_DECISION_ID AUTH_REQUEST_ID AUTH_RUN AUTH_SOURCE AUTH_PROFILE AUTH_CONTRACT
     local STATUS REASON PROBE NOW MARKER_CONTENT MARKER_READ
@@ -17,6 +17,7 @@ main() {
         return 1
     fi
 
+    IMPLEMENTATION_COMMIT=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || printf '%s' 'UNKNOWN')
     DECISION="$ROOT/artifacts/pipeline/$RUN_ID/gate5/decisions/gate5-self-test.txt"
     AUTH="$ROOT/artifacts/pipeline/$RUN_ID/gate5/authorizations/gate5-self-test.txt"
     OUTPUT="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap.txt"
@@ -101,6 +102,7 @@ main() {
         printf '%s\n' "gate_status=$STATUS"
         printf '%s\n' "pipeline_run_id=$RUN_ID"
         printf '%s\n' "source_commit=$SOURCE_COMMIT"
+        printf '%s\n' "implementation_commit=$IMPLEMENTATION_COMMIT"
         printf '%s\n' "gate4_contract_sha256=$CONTRACT_SHA"
         printf '%s\n' "profile_sha256=$PROFILE_SHA"
         printf '%s\n' "decision_id=$DECISION_ID"
