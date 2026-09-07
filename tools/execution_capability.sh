@@ -7,6 +7,7 @@ main() {
     local PRIVATE_ROOT="${TMPDIR:-${PREFIX:-$HOME}/tmp}"
     local P S
     local EXEC_PRIVATE_STATUS SHARED_STORAGE_IO_STATUS SCRIPT_BASH_STATUS SCRIPT_PYTHON_STATUS PROCESS_SPAWN_STATUS
+    local SHARED_STORAGE_IO_REASON=PASS
     local OVERALL_STATUS=PASS
 
     echo "=== ALFA EXECUTION CAPABILITY V2 ==="
@@ -32,18 +33,30 @@ main() {
     # Shared storage is deliberately tested as data I/O, never as executable code.
     S="$SHARED_ROOT/.alfa_storage_io.$$"
     SHARED_VALUE='ALFA_SHARED_STORAGE_IO_OK'
-    if [ -d "$SHARED_ROOT" ] \
-       && printf '%s\\n' "$SHARED_VALUE" > "$S" 2>/dev/null \
-       && [ "$(cat "$S" 2>/dev/null)" = "$SHARED_VALUE" ] \
-       && rm -f "$S" 2>/dev/null \
-       && [ ! -e "$S" ]; then
-        SHARED_STORAGE_IO_STATUS=PASS
-    else
+    if [ ! -d "$SHARED_ROOT" ]; then
         SHARED_STORAGE_IO_STATUS=ERROR
+        SHARED_STORAGE_IO_REASON=ROOT_NOT_DIRECTORY
+    elif ! printf '%s\n' "$SHARED_VALUE" > "$S" 2>/dev/null; then
+        SHARED_STORAGE_IO_STATUS=ERROR
+        SHARED_STORAGE_IO_REASON=WRITE_FAILED
+    elif [ "$(cat "$S" 2>/dev/null)" != "$SHARED_VALUE" ]; then
+        SHARED_STORAGE_IO_STATUS=ERROR
+        SHARED_STORAGE_IO_REASON=READ_OR_CONTENT_MISMATCH
+    elif ! rm -f "$S" 2>/dev/null; then
+        SHARED_STORAGE_IO_STATUS=ERROR
+        SHARED_STORAGE_IO_REASON=DELETE_FAILED
+    elif [ -e "$S" ]; then
+        SHARED_STORAGE_IO_STATUS=ERROR
+        SHARED_STORAGE_IO_REASON=DELETE_NOT_OBSERVED
+    else
+        SHARED_STORAGE_IO_STATUS=PASS
+    fi
+    if [ "$SHARED_STORAGE_IO_STATUS" = ERROR ]; then
         OVERALL_STATUS=ERROR
         rm -f "$S" 2>/dev/null || true
     fi
     echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=shared_storage_data_only"
+    echo "SHARED_STORAGE_IO_REASON=$SHARED_STORAGE_IO_REASON"
 
     if printf '%s\n' 'printf "%s\\n" SCRIPT_BASH_OK' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
         SCRIPT_BASH_STATUS=PASS
