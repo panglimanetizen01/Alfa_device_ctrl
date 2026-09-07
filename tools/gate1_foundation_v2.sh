@@ -74,13 +74,16 @@ if "without depending on Alpine Linux" in arch:
 if "EXECUTION ENVIRONMENT:\nUbuntu UserLAnd" in arch:
     errors.append("userland-still-described-as-product-runtime")
 
+# The foundation specification expresses the fail-closed sequence as
+# "G1 GREEN → ... → G19 GREEN". Validate that exact contract wording rather
+# than requiring a stale shorthand that is not present in the specification.
 for marker in [
     "G1 Contract",
     "distribution-neutral",
     "source_commit",
     "G1 GREEN",
     "G1 does **not** claim",
-    "G1 → G2 → G3 → ... → G19",
+    "G1 GREEN → G2 GREEN → G3 GREEN → ... → G19 GREEN",
     "Debian",
     "Ubuntu",
     "Alpine",
