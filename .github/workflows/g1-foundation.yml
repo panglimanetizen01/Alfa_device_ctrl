@@ -1,0 +1,43 @@
+name: Alfa G1 Foundation
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  g1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Capture source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          printf 'SOURCE_COMMIT=%s\n' "$(git rev-parse HEAD)"
+
+      - name: Run G1 foundation contract
+        run: |
+          set -euo pipefail
+          bash tools/gate1_foundation_v2.sh
+          test "$(sed -n 's/^gate_status=//p' artifacts/gates/g1/foundation-contract.txt)" = GREEN
+          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g1/foundation-contract.txt)" = "${GITHUB_SHA}"
+
+      - name: Upload G1 evidence
+        uses: actions/upload-artifact@v5
+        with:
+          name: alfa-g1-foundation-${{ github.sha }}
+          path: artifacts/gates/g1/foundation-contract.txt
+          if-no-files-found: error
