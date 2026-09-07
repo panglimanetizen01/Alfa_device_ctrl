@@ -5,14 +5,19 @@ set -u
 main() {
     local ROOT RUN_ID GATE5_AUTH RC FINAL
     ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
-    RUN_ID=${1:-run_20260823_171233_30513}
+    RUN_ID=${1:-}
+    if [ -z "$RUN_ID" ]; then
+        printf '%s\n' 'FULL_CHAIN_STATUS=BLOCKED'
+        printf '%s\n' 'FULL_CHAIN_REASON=explicit pipeline_run_id is required'
+        return 1
+    fi
     GATE5_AUTH="$ROOT/artifacts/pipeline/$RUN_ID/gate5/authorizations/gate5-self-test.txt"
     printf '%s\n' '=== ALFA DEVICE CTRL FULL RUNTIME CHAIN GATE 6-19 ==='
     printf '%s\n' "pipeline_run_id=$RUN_ID"
     if [ ! -f "$GATE5_AUTH" ]; then
         printf '%s\n' 'FULL_CHAIN_STATUS=BLOCKED'
         printf '%s\n' 'FULL_CHAIN_REASON=Gate 5 authorization artifact missing'
-        return 0
+        return 1
     fi
     bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
     bash "$ROOT/tools/runtime_session.sh" "$RUN_ID"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
