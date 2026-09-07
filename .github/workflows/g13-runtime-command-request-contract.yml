@@ -1,0 +1,77 @@
+name: G13 Runtime Command Request Contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/gate13_runtime_command_request.sh'
+      - 'tools/test_gate13_contract.sh'
+      - 'docs/GATE_13_SPEC_V1.md'
+      - 'docs/GATE_13_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g13-runtime-command-request-contract.yml'
+  pull_request:
+    paths:
+      - 'tools/gate13_runtime_command_request.sh'
+      - 'tools/test_gate13_contract.sh'
+      - 'docs/GATE_13_SPEC_V1.md'
+      - 'docs/GATE_13_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g13-runtime-command-request-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  g13-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -u
+          EXPECTED='${{ github.sha }}'
+          ACTUAL=$(git rev-parse HEAD)
+          test "$EXPECTED" = "$ACTUAL"
+          git fsck --full --no-progress
+
+      - name: Verify G1-G12 protection surface
+        shell: bash
+        run: |
+          set -u
+          for p in \
+            tools/gate1_foundation_v2.sh \
+            tools/gate2_canonical_source_build_boundary.sh \
+            tools/execution_capability.sh \
+            tools/gate3_execution_capability.sh \
+            tools/environment_contract.sh \
+            tools/gate5_common.sh \
+            tools/runtime_bootstrap.sh \
+            tools/gate7_runtime_session.sh \
+            tools/gate8_runtime_task.sh \
+            tools/gate9_runtime_action.sh \
+            tools/gate10_runtime_workflow.sh \
+            tools/gate11_runtime_orchestrator.sh \
+            tools/gate12_runtime_kernel.sh \
+            tools/test_gate12_contract.sh; do
+            test -f "$p"
+          done
+          echo G1_G12_PROTECTION=PASS
+
+      - name: Run G13 contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate13_contract.sh
+
+      - name: Validate G13 schema and boundary text
+        shell: bash
+        run: |
+          set -u
+          grep -Fqx 'schema_version=gate13-runtime-command-request.v1' docs/GATE_13_RESULT_SCHEMA_V1.md
+          grep -Fqx 'command=pwd' tools/gate13_runtime_command_request.sh
+          grep -Fqx 'execution_status=DEFERRED' tools/gate13_runtime_command_request.sh
+          grep -Fqx 'execution_authority=G17' tools/gate13_runtime_command_request.sh
+          ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh|/bin/sh[[:space:]]+-c|[[:space:]]eval[[:space:]]' tools/gate13_runtime_command_request.sh
+          echo G13_SCHEMA_BOUNDARY=PASS
