@@ -25,6 +25,14 @@ G2 is a provenance/integrity gate. It does not prove Linux guest execution and i
 13. UNKNOWN or missing provenance is not PASS.
 14. APK build/install is outside G2 and forbidden before G19.
 
+## Gradle Wrapper executable semantics
+
+The canonical executable requirement is evaluated from the Git index/tree mode, not from the mounted working-tree POSIX mode. `gradlew` MUST be recorded by Git as mode `100755`.
+
+This distinction is mandatory for Android shared/external-storage development environments: the working-tree mount may expose a tracked file without a usable POSIX execute bit even though the canonical Git tree correctly records `100755`. Such a mount-level permission difference is not a source-provenance failure and must not make G2 RED.
+
+A Git mode other than `100755` is a canonical source defect and MUST make G2 RED.
+
 ## Build transformation boundary
 
 A CI build may require a deterministic, declared runner-only transformation for externally built runtime components. Such a transformation is not part of the canonical source tree and must never be silently presented as canonical source.
@@ -72,7 +80,8 @@ The G2 validator must fail for:
 - dirty unignored worktree;
 - Git object corruption/failure;
 - missing or malformed source identity;
-- repository identity mismatch.
+- repository identity mismatch;
+- canonical `gradlew` Git mode not equal to `100755`.
 
 ## Gate dependency
 
