@@ -1,0 +1,91 @@
+name: g16-runtime-execution-authorization-contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/gate16_runtime_execution_authorization.sh'
+      - 'tools/test_gate16_contract.sh'
+      - 'tools/runtime_stage.sh'
+      - 'docs/GATE_16_SPEC_V1.md'
+      - 'docs/GATE_16_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g16-runtime-execution-authorization-contract.yml'
+  pull_request:
+    paths:
+      - 'tools/gate16_runtime_execution_authorization.sh'
+      - 'tools/test_gate16_contract.sh'
+      - 'tools/runtime_stage.sh'
+      - 'docs/GATE_16_SPEC_V1.md'
+      - 'docs/GATE_16_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g16-runtime-execution-authorization-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  g16-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -u
+          EXPECTED='${{ github.sha }}'
+          ACTUAL=$(git rev-parse HEAD)
+          test "$EXPECTED" = "$ACTUAL"
+          git fsck --full --no-progress
+
+      - name: Verify G1-G15 protection surface
+        shell: bash
+        run: |
+          set -u
+          for p in \
+            tools/gate1_foundation_v2.sh \
+            tools/gate2_canonical_source_build_boundary.sh \
+            tools/execution_capability.sh \
+            tools/gate3_execution_capability.sh \
+            tools/environment_contract.sh \
+            tools/gate5_common.sh \
+            tools/runtime_bootstrap.sh \
+            tools/gate7_runtime_session.sh \
+            tools/gate8_runtime_task.sh \
+            tools/gate9_runtime_action.sh \
+            tools/gate10_runtime_workflow.sh \
+            tools/gate11_runtime_orchestrator.sh \
+            tools/gate12_runtime_kernel.sh \
+            tools/gate13_runtime_command_request.sh \
+            tools/gate14_runtime_command_validation.sh \
+            tools/gate15_runtime_command_policy.sh \
+            tools/test_gate15_contract.sh; do
+            test -f "$p"
+          done
+          echo G1_G15_PROTECTION=PASS
+
+      - name: Verify legacy G16 path is not authoritative
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'G16 is intentionally not implemented here' tools/runtime_stage.sh
+          grep -Fq "G16 is non-authoritative in runtime_stage.sh" tools/runtime_stage.sh
+          echo LEGACY_G16_PROPAGATION=REMOVED
+
+      - name: Run G16 contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate16_contract.sh
+
+      - name: Validate G16 schema and execution boundary
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'schema_version=gate16-runtime-execution-authorization.v1' docs/GATE_16_RESULT_SCHEMA_V1.md
+          grep -Fq 'authorization_status=AUTHORIZED' tools/gate16_runtime_execution_authorization.sh
+          grep -Fq 'execution_status=DEFERRED' tools/gate16_runtime_execution_authorization.sh
+          grep -Fq 'execution_authority=G17' tools/gate16_runtime_execution_authorization.sh
+          ! grep -Eq 'runtime_stage\\.sh|runtime_execution\\.sh|/bin/sh[[:space:]]+-c|[[:space:]]eval[[:space:]]' tools/gate16_runtime_execution_authorization.sh
+          ! grep -Eq 'command_result=|command_returncode=|guest_stdout=|guest_stderr=' tools/gate16_runtime_execution_authorization.sh
+          echo G16_SCHEMA_BOUNDARY=PASS
