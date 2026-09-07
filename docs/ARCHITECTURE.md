@@ -46,7 +46,7 @@ Android device
         └── Generic compatible rootfs
 ```
 
-The Android kernel remains the kernel. PRoot provides userspace path/syscall mediation and does not replace the kernel or create a virtual machine. PRoot's documented model is a user-space implementation of chroot/mount-bind/binfmt_misc using ptrace. cite-placeholder
+The Android kernel remains the kernel. PRoot provides userspace path/syscall mediation and does not replace the kernel or create a virtual machine. The primary PRoot documentation describes it as a user-space implementation of chroot, mount-bind, and binfmt_misc that relies on ptrace.
 
 ## 4. Non-Negotiable Boundaries
 
@@ -181,7 +181,7 @@ Opening the Android Activity, displaying a terminal widget, starting a PRoot pro
 
 Private runtime state belongs inside the app-private runtime vault. User-exportable data belongs in Android shared storage through Android-supported storage APIs. The Linux rootfs itself is an application-managed runtime artifact and must not depend on a UserLAnd home directory.
 
-Android's scoped-storage model distinguishes app-specific storage from shared storage; files intended for other apps/users should use the appropriate shared-storage mechanism. cite-placeholder
+Android's scoped-storage model distinguishes app-specific storage from shared storage; files intended for other apps/users should use the appropriate shared-storage mechanism.
 
 ## 11. Current State Declaration
 
