@@ -1,6 +1,8 @@
 package com.alfa.device_ctrl;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 /** Android-side representation of interactive-session.v1 with Gate 6 provenance binding. */
 public final class InteractiveSessionContract {
@@ -37,19 +39,49 @@ public final class InteractiveSessionContract {
             File runtimeRoot,
             File hostCwd,
             String[] environment) {
+        Properties launch = readLaunchContract(runtimeReadyEvidence);
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
-        this.pipelineRunId = requireToken(pipelineRunId, "pipelineRunId");
-        this.runtimeId = requireToken(runtimeId, "runtimeId");
-        this.sourceCommit = requireHex(sourceCommit, 40, "sourceCommit");
-        this.gate4ContractSha256 = requireHex(gate4ContractSha256, 64, "gate4ContractSha256");
-        this.profileSha256 = requireHex(profileSha256, 64, "profileSha256");
-        this.implementationCommit = requireHex(implementationCommit, 40, "implementationCommit");
+        this.pipelineRunId = requireToken(launch.getProperty("pipeline_run_id", pipelineRunId), "pipelineRunId");
+        this.runtimeId = requireToken(launch.getProperty("runtime_id", runtimeId), "runtimeId");
+        this.sourceCommit = requireHex(launch.getProperty("source_commit", sourceCommit), 40, "sourceCommit");
+        this.gate4ContractSha256 = requireHex(launch.getProperty("gate4_contract_sha256", gate4ContractSha256), 64, "gate4ContractSha256");
+        this.profileSha256 = requireHex(launch.getProperty("profile_sha256", profileSha256), 64, "profileSha256");
+        this.implementationCommit = requireHex(launch.getProperty("implementation_commit", implementationCommit), 40, "implementationCommit");
         this.runtimeReadyEvidence = requireFile(runtimeReadyEvidence, "runtimeReadyEvidence");
         this.prootExecutable = requireFile(prootExecutable, "prootExecutable");
         this.runtimeRoot = requireFile(runtimeRoot, "runtimeRoot");
         this.hostCwd = requireFile(hostCwd, "hostCwd");
         this.environment = environment == null ? new String[0] : environment.clone();
+    }
+
+    private static Properties readLaunchContract(File runtimeReadyEvidence) {
+        if (runtimeReadyEvidence == null || runtimeReadyEvidence.getParentFile() == null) {
+            throw new IllegalArgumentException("runtimeReadyEvidence is invalid");
+        }
+        File runtimeVault = runtimeReadyEvidence.getParentFile().getParentFile().getParentFile();
+        if (runtimeVault == null) throw new IllegalArgumentException("runtime vault is invalid");
+        File launchFile = new File(runtimeVault, "gate7-launch.properties");
+        if (!launchFile.isFile()) throw new IllegalStateException("Gate 7 launch contract is missing");
+        Properties p = new Properties();
+        try (FileInputStream in = new FileInputStream(launchFile)) {
+            p.load(in);
+            requireProperty(p, "pipeline_run_id");
+            requireProperty(p, "runtime_id");
+            requireProperty(p, "source_commit");
+            requireProperty(p, "gate4_contract_sha256");
+            requireProperty(p, "profile_sha256");
+            requireProperty(p, "implementation_commit");
+            return p;
+        } catch (Exception error) {
+            throw new IllegalStateException("Gate 7 launch contract is unreadable", error);
+        }
+    }
+
+    private static void requireProperty(Properties p, String key) {
+        if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) {
+            throw new IllegalStateException("Gate 7 launch contract missing " + key);
+        }
     }
 
     public boolean isAuthorizedForInteractiveRuntime() {
@@ -76,18 +108,13 @@ public final class InteractiveSessionContract {
             }
         }
         if (value == null || value.isEmpty()) return false;
-
         try {
             File tmp = new File(value).getCanonicalFile();
             File runtime = runtimeRoot.getCanonicalFile();
-            return tmp.isDirectory()
-                    && tmp.canWrite()
-                    && tmp.canExecute()
+            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
                     && !tmp.getAbsolutePath().startsWith("/home/userland")
                     && tmp.toPath().startsWith(runtime.toPath());
-        } catch (Exception error) {
-            return false;
-        }
+        } catch (Exception error) { return false; }
     }
 
     private boolean hasUnsafeEnvironmentPath() {
@@ -116,33 +143,24 @@ public final class InteractiveSessionContract {
         return new String[] {
                 "-0", "-r", runtimeRoot.getAbsolutePath(),
                 "-b", "/dev", "-b", "/proc", "-b", "/sys",
-                "-w", "/root",
-                "/usr/bin/env", "-i",
-                "HOME=/root",
-                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-                "TERM=xterm-256color",
-                "/bin/sh", "-i"
+                "-w", "/root", "/usr/bin/env", "-i",
+                "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "TERM=xterm-256color", "/bin/sh", "-i"
         };
     }
 
     private static String requireToken(String value, String name) {
-        if (value == null || value.trim().isEmpty() || value.indexOf('\0') >= 0) {
-            throw new IllegalArgumentException(name + " is invalid");
-        }
+        if (value == null || value.trim().isEmpty() || value.indexOf('\0') >= 0) throw new IllegalArgumentException(name + " is invalid");
         return value;
     }
 
     private static String requireHex(String value, int length, String name) {
-        if (value == null || !value.matches("[0-9a-fA-F]{" + length + "}")) {
-            throw new IllegalArgumentException(name + " is invalid");
-        }
+        if (value == null || !value.matches("[0-9a-fA-F]{" + length + "}")) throw new IllegalArgumentException(name + " is invalid");
         return value.toLowerCase();
     }
 
     private static File requireFile(File value, String name) {
-        if (value == null || value.getAbsolutePath().startsWith("/home/userland")) {
-            throw new IllegalArgumentException(name + " is outside Alfa boundary");
-        }
+        if (value == null || value.getAbsolutePath().startsWith("/home/userland")) throw new IllegalArgumentException(name + " is outside Alfa boundary");
         return value;
     }
 }
