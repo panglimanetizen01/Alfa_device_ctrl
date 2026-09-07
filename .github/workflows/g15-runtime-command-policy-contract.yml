@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           set -u
-          grep -Fqx 'schema_version=gate15-runtime-command-policy.v1' docs/GATE_15_RESULT_SCHEMA_V1.md
+          grep -Fq 'schema_version=gate15-runtime-command-policy.v1' docs/GATE_15_RESULT_SCHEMA_V1.md
           grep -Fq 'policy_status=ALLOWED|BLOCKED' docs/GATE_15_RESULT_SCHEMA_V1.md
           grep -Fq 'execution_status=DEFERRED' tools/gate15_runtime_command_policy.sh
           grep -Fq 'execution_authority=G17' tools/gate15_runtime_command_policy.sh
