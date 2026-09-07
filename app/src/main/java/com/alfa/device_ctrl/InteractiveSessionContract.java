@@ -25,6 +25,19 @@ public final class InteractiveSessionContract {
     private final File hostCwd;
     private final String[] environment;
 
+    /** Backward-compatible constructor: provenance is still mandatory through gate7-launch.properties. */
+    public InteractiveSessionContract(
+            String sessionId, String requestId, String pipelineRunId, String runtimeId,
+            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd,
+            String[] environment) {
+        this(sessionId, requestId, pipelineRunId, runtimeId,
+                "0000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000",
+                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment);
+    }
+
     public InteractiveSessionContract(
             String sessionId,
             String requestId,
@@ -56,9 +69,7 @@ public final class InteractiveSessionContract {
     }
 
     private static Properties readLaunchContract(File runtimeReadyEvidence) {
-        if (runtimeReadyEvidence == null || runtimeReadyEvidence.getParentFile() == null) {
-            throw new IllegalArgumentException("runtimeReadyEvidence is invalid");
-        }
+        if (runtimeReadyEvidence == null || runtimeReadyEvidence.getParentFile() == null) throw new IllegalArgumentException("runtimeReadyEvidence is invalid");
         File runtimeVault = runtimeReadyEvidence.getParentFile().getParentFile().getParentFile();
         if (runtimeVault == null) throw new IllegalArgumentException("runtime vault is invalid");
         File launchFile = new File(runtimeVault, "gate7-launch.properties");
@@ -79,41 +90,26 @@ public final class InteractiveSessionContract {
     }
 
     private static void requireProperty(Properties p, String key) {
-        if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) {
-            throw new IllegalStateException("Gate 7 launch contract missing " + key);
-        }
+        if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) throw new IllegalStateException("Gate 7 launch contract missing " + key);
     }
 
     public boolean isAuthorizedForInteractiveRuntime() {
-        return POLICY_ID.equals("interactive-runtime.v1")
-                && POLICY_VERSION == 1
+        return POLICY_ID.equals("interactive-runtime.v1") && POLICY_VERSION == 1
                 && POLICY_SCOPE.equals("full-user-access-inside-selected-rootless-runtime")
                 && RuntimeEvidence.verify(runtimeReadyEvidence, runtimeId, prootExecutable, runtimeRoot)
-                && prootExecutable.isFile()
-                && prootExecutable.canExecute()
-                && runtimeRoot.isDirectory()
-                && hostCwd.isDirectory()
-                && !runtimeRoot.getAbsolutePath().startsWith("/home/userland")
-                && !hostCwd.getAbsolutePath().startsWith("/home/userland")
-                && hasValidProotTmpDir()
-                && !hasUnsafeEnvironmentPath();
+                && prootExecutable.isFile() && prootExecutable.canExecute() && runtimeRoot.isDirectory() && hostCwd.isDirectory()
+                && !runtimeRoot.getAbsolutePath().startsWith("/home/userland") && !hostCwd.getAbsolutePath().startsWith("/home/userland")
+                && hasValidProotTmpDir() && !hasUnsafeEnvironmentPath();
     }
 
     private boolean hasValidProotTmpDir() {
         String value = null;
-        for (String entry : environment) {
-            if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) {
-                value = entry.substring("PROOT_TMP_DIR=".length());
-                break;
-            }
-        }
+        for (String entry : environment) if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) { value = entry.substring("PROOT_TMP_DIR=".length()); break; }
         if (value == null || value.isEmpty()) return false;
         try {
             File tmp = new File(value).getCanonicalFile();
             File runtime = runtimeRoot.getCanonicalFile();
-            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
-                    && !tmp.getAbsolutePath().startsWith("/home/userland")
-                    && tmp.toPath().startsWith(runtime.toPath());
+            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland") && tmp.toPath().startsWith(runtime.toPath());
         } catch (Exception error) { return false; }
     }
 
@@ -140,13 +136,7 @@ public final class InteractiveSessionContract {
     public String[] environment() { return environment.clone(); }
 
     public String[] prootArguments() {
-        return new String[] {
-                "-0", "-r", runtimeRoot.getAbsolutePath(),
-                "-b", "/dev", "-b", "/proc", "-b", "/sys",
-                "-w", "/root", "/usr/bin/env", "-i",
-                "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-                "TERM=xterm-256color", "/bin/sh", "-i"
-        };
+        return new String[] { "-0", "-r", runtimeRoot.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "/bin/sh", "-i" };
     }
 
     private static String requireToken(String value, String name) {
