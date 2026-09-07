@@ -5,16 +5,21 @@ set -u
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)
 PROJECT_ROOT=$(CDPATH= cd -- "$ROOT/.." 2>/dev/null && pwd)
-RUN_ID=${1:-run_20260823_171233_30513}
-RUN_DIR="$PROJECT_ROOT/artifacts/pipeline/$RUN_ID/gate5"
+RUN_ID=${1:-}
 G5_TMPDIR="${TMPDIR:-$PROJECT_ROOT/artifacts/.tmp}"
-mkdir -p "$G5_TMPDIR" || exit 1
+if [ -z "$RUN_ID" ]; then
+    printf '%s\n' 'SELFTEST_STATUS=FAIL'
+    printf '%s\n' 'SELFTEST_REASON=EXPLICIT_PIPELINE_RUN_ID_REQUIRED'
+    return 2 2>/dev/null || true
+fi
+RUN_DIR="$PROJECT_ROOT/artifacts/pipeline/$RUN_ID/gate5"
+mkdir -p "$G5_TMPDIR" || return 1 2>/dev/null || true
 REQUEST="$RUN_DIR/requests/gate5-self-test.txt"
 DECISION="$RUN_DIR/decisions/gate5-self-test.txt"
 AUTH="$RUN_DIR/authorizations/gate5-self-test.txt"
 EXEC="$RUN_DIR/executions/gate5-self-test.txt"
 
-    SELFTEST_FAIL=0
+SELFTEST_FAIL=0
 printf '%s\n' '=== GATE 5 V1 SELFTEST ==='
 if ! bash "$PROJECT_ROOT/tools/runtime_decision.sh" "$RUN_ID" gate5-self-test local-runtime pwd runtime purpose=self-test >"${G5_TMPDIR}/gate5_decision_selftest.$$.out" 2>&1; then
     SELFTEST_FAIL=1
