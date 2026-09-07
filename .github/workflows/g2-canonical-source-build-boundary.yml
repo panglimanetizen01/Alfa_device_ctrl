@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          test "$(git symbolic-ref --short HEAD)" = master
+          test "${GITHUB_REF}" = refs/heads/master
 
       - name: Run G1 prerequisite
         shell: bash
