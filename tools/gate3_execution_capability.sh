@@ -51,7 +51,7 @@ get_status() {
 }
 
 EXEC_PRIVATE=$(get_status EXEC_PRIVATE)
-EXEC_SHARED=$(get_status EXEC_SHARED)
+SHARED_STORAGE_IO=$(get_status SHARED_STORAGE_IO)
 SCRIPT_BASH=$(get_status SCRIPT_BASH)
 SCRIPT_PYTHON=$(get_status SCRIPT_PYTHON)
 PROCESS_SPAWN=$(get_status PROCESS_SPAWN)
@@ -61,7 +61,7 @@ EXECUTION_PATH=$(grep '^execution_path=' "$TMP_OUTPUT" 2>/dev/null | sed 's/^exe
 if [ "$PRODUCER_RC" -eq 0 ] \
    && [ "$PRODUCER_STATUS" = 'PASS' ] \
    && [ "$EXEC_PRIVATE" = 'PASS' ] \
-   && [ "$EXEC_SHARED" = 'PASS' ] \
+   && [ "$SHARED_STORAGE_IO" = 'PASS' ] \
    && [ "$SCRIPT_BASH" = 'PASS' ] \
    && [ "$SCRIPT_PYTHON" = 'PASS' ] \
    && [ "$PROCESS_SPAWN" = 'PASS' ]; then
@@ -72,7 +72,7 @@ fi
 
 CREATED_AT=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf '%s' UNKNOWN)
 {
-    printf '%s\n' 'schema_version=g3-execution-capability.v1'
+    printf '%s\n' 'schema_version=g3-execution-capability.v2'
     printf '%s\n' 'gate=G3'
     printf '%s\n' "gate_status=$GATE_STATUS"
     printf '%s\n' "source_commit=$SOURCE_COMMIT"
@@ -81,7 +81,7 @@ CREATED_AT=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || printf '%s' UNKNOWN)
     printf '%s\n' "execution_path=${EXECUTION_PATH:-UNKNOWN}"
     printf '%s\n' "shared_root=$SHARED_ROOT"
     printf '%s\n' "exec_private=${EXEC_PRIVATE:-UNKNOWN}"
-    printf '%s\n' "exec_shared=${EXEC_SHARED:-UNKNOWN}"
+    printf '%s\n' "shared_storage_io=${SHARED_STORAGE_IO:-UNKNOWN}"
     printf '%s\n' "script_bash=${SCRIPT_BASH:-UNKNOWN}"
     printf '%s\n' "script_python=${SCRIPT_PYTHON:-UNKNOWN}"
     printf '%s\n' "process_spawn=${PROCESS_SPAWN:-UNKNOWN}"
@@ -96,7 +96,7 @@ printf '%s\n' "G3_STATUS=$GATE_STATUS"
 printf '%s\n' "G3_SOURCE_COMMIT=$SOURCE_COMMIT"
 printf '%s\n' "G3_EVIDENCE=$EVIDENCE_FILE"
 printf '%s\n' "EXEC_PRIVATE=${EXEC_PRIVATE:-UNKNOWN}"
-printf '%s\n' "EXEC_SHARED=${EXEC_SHARED:-UNKNOWN}"
+printf '%s\n' "SHARED_STORAGE_IO=${SHARED_STORAGE_IO:-UNKNOWN}"
 printf '%s\n' "SCRIPT_BASH=${SCRIPT_BASH:-UNKNOWN}"
 printf '%s\n' "SCRIPT_PYTHON=${SCRIPT_PYTHON:-UNKNOWN}"
 printf '%s\n' "PROCESS_SPAWN=${PROCESS_SPAWN:-UNKNOWN}"
