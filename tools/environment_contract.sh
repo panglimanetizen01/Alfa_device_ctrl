@@ -93,8 +93,11 @@ validate_profile(){
     [ "$(read_field "$PROFILE_FILE" PIPELINE_RUN_ID)" = "$RUN_ID" ]&&[ "$(read_field "$PROFILE_FILE" SOURCE_COMMIT)" = "$SOURCE_COMMIT" ] || return 1
     for key in DEVICE_CLASS ANDROID_HOST CONTAINER_ENVIRONMENT CPU_ARCH STORAGE_READ STORAGE_WRITE EXEC_PRIVATE SHARED_STORAGE_IO EXEC_SHARED NETWORK_DNS PYTHON3 GIT JAVA JAVAC GRADLE; do
         count=$(count_field "$PROFILE_FILE" "$key"); [ "$count" = 1 ] || return 1
-        value=$(read_field "$PROFILE_FILE" "$key"); [ -n "$value" ]&&[ "$value" != UNKNOWN ] || return 1
-        case "$key" in DEVICE_CLASS|ANDROID_HOST|CONTAINER_ENVIRONMENT|CPU_ARCH) ;; *) [ "${value%% |*}" = PASS ] || return 1;; esac
+        value=$(read_field "$PROFILE_FILE" "$key"); [ -n "$value" ] || return 1
+        case "$key" in
+            DEVICE_CLASS|ANDROID_HOST|CONTAINER_ENVIRONMENT|CPU_ARCH) ;;
+            *) [ "$value" != UNKNOWN ] && [ "${value%% |*}" = PASS ] || return 1 ;;
+        esac
     done
 }
 
