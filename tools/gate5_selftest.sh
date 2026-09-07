@@ -7,6 +7,8 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)
 PROJECT_ROOT=$(CDPATH= cd -- "$ROOT/.." 2>/dev/null && pwd)
 RUN_ID=${1:-run_20260823_171233_30513}
 RUN_DIR="$PROJECT_ROOT/artifacts/pipeline/$RUN_ID/gate5"
+G5_TMPDIR="${TMPDIR:-$PROJECT_ROOT/artifacts/.tmp}"
+mkdir -p "$G5_TMPDIR" || exit 1
 REQUEST="$RUN_DIR/requests/gate5-self-test.txt"
 DECISION="$RUN_DIR/decisions/gate5-self-test.txt"
 AUTH="$RUN_DIR/authorizations/gate5-self-test.txt"
@@ -14,11 +16,11 @@ EXEC="$RUN_DIR/executions/gate5-self-test.txt"
 
     SELFTEST_FAIL=0
 printf '%s\n' '=== GATE 5 V1 SELFTEST ==='
-if ! bash "$PROJECT_ROOT/tools/runtime_decision.sh" "$RUN_ID" gate5-self-test local-runtime pwd runtime purpose=self-test >/tmp/gate5_decision_selftest.$$.out 2>&1; then
+if ! bash "$PROJECT_ROOT/tools/runtime_decision.sh" "$RUN_ID" gate5-self-test local-runtime pwd runtime purpose=self-test >"${G5_TMPDIR}/gate5_decision_selftest.$$.out" 2>&1; then
     SELFTEST_FAIL=1
     printf '%s\n' 'valid_gate4_to_allow=FAIL'
 else
-    cat /tmp/gate5_decision_selftest.$$.out
+    cat "${G5_TMPDIR}/gate5_decision_selftest.$$.out"
 fi
 bash "$PROJECT_ROOT/tools/runtime_execution_authorize.sh" "$REQUEST" "$DECISION" "$AUTH"
 bash "$PROJECT_ROOT/tools/runtime_execution.sh" "$REQUEST" "$DECISION" "$AUTH" "$EXEC"
@@ -38,14 +40,14 @@ run_negative() {
     local NAME MUTATION REQUEST_COPY DECISION_COPY AUTH_COPY EXEC_COPY A E R
     NAME=$1
     MUTATION=$2
-    REQUEST_COPY="/tmp/gate5-$NAME-request.$$"
-    DECISION_COPY="/tmp/gate5-$NAME-decision.$$"
-    AUTH_COPY="/tmp/gate5-$NAME-auth.$$"
-    EXEC_COPY="/tmp/gate5-$NAME-exec.$$"
+    REQUEST_COPY="${G5_TMPDIR}/gate5-$NAME-request.$$"
+    DECISION_COPY="${G5_TMPDIR}/gate5-$NAME-decision.$$"
+    AUTH_COPY="${G5_TMPDIR}/gate5-$NAME-auth.$$"
+    EXEC_COPY="${G5_TMPDIR}/gate5-$NAME-exec.$$"
     cp "$REQUEST" "$REQUEST_COPY" 2>/dev/null
     cp "$DECISION" "$DECISION_COPY" 2>/dev/null
     if [ "$MUTATION" = 'missing_decision' ]; then
-        DECISION_COPY="/tmp/gate5-$NAME-missing.$$"
+        DECISION_COPY="${G5_TMPDIR}/gate5-$NAME-missing.$$"
     elif [ "$MUTATION" = 'invalid_decision' ]; then
         sed -i 's/^decision=ALLOW$/decision=READY/' "$DECISION_COPY"
     elif [ "$MUTATION" = 'stale_decision' ]; then
@@ -61,8 +63,8 @@ run_negative() {
     elif [ "$MUTATION" = 'wrong_profile_hash' ]; then
         sed -i 's/^profile_sha256=.*/profile_sha256=0000000000000000000000000000000000000000000000000000000000000000/' "$REQUEST_COPY"
     fi
-    bash "$PROJECT_ROOT/tools/runtime_execution_authorize.sh" "$REQUEST_COPY" "$DECISION_COPY" "$AUTH_COPY" >/tmp/gate5-$NAME-auth-out.$$ 2>&1
-    bash "$PROJECT_ROOT/tools/runtime_execution.sh" "$REQUEST_COPY" "$DECISION_COPY" "$AUTH_COPY" "$EXEC_COPY" >/tmp/gate5-$NAME-exec-out.$$ 2>&1
+    bash "$PROJECT_ROOT/tools/runtime_execution_authorize.sh" "$REQUEST_COPY" "$DECISION_COPY" "$AUTH_COPY" >"${G5_TMPDIR}/gate5-$NAME-auth-out.$$" 2>&1
+    bash "$PROJECT_ROOT/tools/runtime_execution.sh" "$REQUEST_COPY" "$DECISION_COPY" "$AUTH_COPY" "$EXEC_COPY" >"${G5_TMPDIR}/gate5-$NAME-exec-out.$$" 2>&1
     A=$(grep '^authorization_status=' "$AUTH_COPY" 2>/dev/null | awk -F= '{print $2}')
     E=$(grep '^execution_status=' "$EXEC_COPY" 2>/dev/null | awk -F= '{print $2}')
     R=$(grep '^result_status=' "$EXEC_COPY" 2>/dev/null | awk -F= '{print $2}')
