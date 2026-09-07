@@ -9,7 +9,8 @@ OUT="$TMP/g14.txt"
 HEAD=$(git -C "$ROOT" rev-parse HEAD)
 G4=$(printf '%064d' 1)
 PROFILE=$(printf '%064d' 2)
-KERNEL_SHA=$(printf '%064d' 3)
+printf 'kernel\n' > "$TMP/g12.txt"
+KERNEL_SHA=$(sha256sum "$TMP/g12.txt" | awk '{print $1}')
 COMMAND_SHA=$(printf '%s\n' pwd | sha256sum | awk '{print $1}')
 cat > "$G13" <<EOF
 schema_version=gate13-runtime-command-request.v1
@@ -34,7 +35,6 @@ created_at=2099-01-01T00:00:00Z
 construction_path=$ROOT
 stage_reason=test
 EOF
-printf 'kernel\n' > "$TMP/g12.txt"
 
 echo '=== G14 STATIC BOUNDARY CHECK ==='
 if grep -Eq 'runtime_stage\\.sh|runtime_execution\\.sh|/bin/sh[[:space:]]+-c|[[:space:]]eval[[:space:]]|command_result|command_returncode|execution_result' tools/gate14_runtime_command_validation.sh 2>/dev/null; then
@@ -43,7 +43,7 @@ fi
 echo 'NO_G14_EXECUTION=PASS'
 
 echo '=== G14 POSITIVE ==='
-if bash tools/gate14_runtime_command_validation.sh "$RUN_ID" "$G13" "$OUT" >/dev/null && grep -Fqx 'gate_status=PASS' "$OUT" && grep -Fqx 'validation_status=ALLOWED' "$OUT" && grep -Fqx 'command=pwd' "$OUT"; then
+if bash tools/gate14_runtime_command_validation.sh "$RUN_ID" "$G13" "$OUT" >/dev/null && grep -Fqx 'gate_status=PASS' "$OUT" && grep -Fqx 'validation_status=ALLOWED' "$OUT" && grep -Fqx 'command=pwd' "$OUT" && grep -Fqx "gate12_kernel_sha256=$KERNEL_SHA" "$OUT"; then
   echo 'POSITIVE_VALID_REQUEST=PASS'
 else
   echo 'POSITIVE_VALID_REQUEST=FAIL'; exit 1
@@ -72,10 +72,10 @@ gen_negative stale_source source_commit 0000000000000000000000000000000000000000
 gen_negative not_pass gate_status BLOCKED NEGATIVE_REQUEST_NOT_PASS
 gen_negative wrong_request request_status INVALID NEGATIVE_REQUEST_STATUS
 gen_negative wrong_command command id NEGATIVE_COMMAND
-# Restore command before semantic/hash/authority cases.
 gen_negative wrong_semantics command_semantics SHELL_COMMAND NEGATIVE_COMMAND_SEMANTICS
 gen_negative wrong_exec execution_status EXECUTED NEGATIVE_UPSTREAM_EXECUTED
 gen_negative wrong_authority execution_authority G14 NEGATIVE_AUTHORITY
+gen_negative wrong_kernel_hash gate12_kernel_sha256 $(printf '%064d' 9) NEGATIVE_KERNEL_HASH
 
 echo '=== G14 PROTECTION CHECK ==='
 for p in \
