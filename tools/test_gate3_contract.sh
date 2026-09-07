@@ -33,7 +33,7 @@ printf '%s\n' \
 ALFA_EXEC_SHARED_ROOT="$TMP/shared" bash tools/execution_capability.sh > "$TMP/pass.txt" 2>&1
 PASS_RC=$?
 grep -q '^EXEC_PRIVATE=PASS ' "$TMP/pass.txt" || exit 1
-grep -q '^EXEC_SHARED=PASS ' "$TMP/pass.txt" || exit 1
+grep -q '^SHARED_STORAGE_IO=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^SCRIPT_BASH=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^SCRIPT_PYTHON=PASS ' "$TMP/pass.txt" || exit 1
 grep -q '^PROCESS_SPAWN=PASS ' "$TMP/pass.txt" || exit 1
@@ -43,7 +43,7 @@ grep -q '^GATE3_STATUS=PASS$' "$TMP/pass.txt" || exit 1
 if ALFA_EXEC_SHARED_ROOT="$TMP/does-not-exist" bash tools/execution_capability.sh > "$TMP/fail.txt" 2>&1; then
     exit 1
 fi
-grep -q '^EXEC_SHARED=ERROR ' "$TMP/fail.txt" || exit 1
+grep -q '^SHARED_STORAGE_IO=ERROR ' "$TMP/fail.txt" || exit 1
 grep -q '^GATE3_STATUS=ERROR$' "$TMP/fail.txt" || exit 1
 
 if G3_EXPECT_SOURCE_COMMIT=0000000000000000000000000000000000000000 \
@@ -57,9 +57,22 @@ VALIDATOR_RC=$?
 [ "$VALIDATOR_RC" -eq 0 ] || exit 1
 grep -q '^G3_STATUS=GREEN$' "$TMP/validator.txt" || exit 1
 grep -q '^gate_status=GREEN$' artifacts/gates/g3/execution-capability.txt || exit 1
+grep -q '^schema_version=g3-execution-capability.v2$' artifacts/gates/g3/execution-capability.txt || exit 1
 grep -q "^source_commit=$SOURCE$" artifacts/gates/g3/execution-capability.txt || exit 1
+grep -q '^exec_private=PASS$' artifacts/gates/g3/execution-capability.txt || exit 1
+grep -q '^shared_storage_io=PASS$' artifacts/gates/g3/execution-capability.txt || exit 1
+
+# Negative: shared storage must not be treated as executable code.
+if printf '%s\n' '#!/bin/sh' 'printf SHARED_EXEC_MUST_NOT_BE_REQUIRED' > "$TMP/shared/noexec-required"; then
+    chmod +x "$TMP/shared/noexec-required" 2>/dev/null || true
+    :
+else
+    exit 1
+fi
+rm -f "$TMP/shared/noexec-required" 2>/dev/null || true
 
 echo 'G3_CONTRACT_TEST=PASS'
 echo 'NEGATIVE_STALE_SOURCE=PASS'
-echo 'NEGATIVE_CAPABILITY_FAILURE=PASS'
+echo 'NEGATIVE_SHARED_IO_FAILURE=PASS'
 echo 'VALIDATOR_GREEN=PASS'
+echo 'SHARED_EXEC_NOT_REQUIRED=PASS'
