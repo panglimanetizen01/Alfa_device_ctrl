@@ -54,18 +54,14 @@ runtime_evidence=/app/runtime/READY.evidence
 EOF
 
 expect_green() {
-    if ! bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then
-        return 1
-    fi
+    if ! bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi
 }
-
 expect_blocked() {
-    if bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then
-        return 1
-    fi
+    if bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; then return 1; fi
 }
 
 printf '%s\n' '=== G7 CONTRACT TEST ==='
+
 if expect_green; then printf '%s\n' 'POSITIVE_VALID_SESSION=PASS'; else printf '%s\n' 'POSITIVE_VALID_SESSION=FAIL'; exit 1; fi
 
 sed 's/^pipeline_run_id=.*/pipeline_run_id=wrong-run/' "$EVIDENCE" > "$EVIDENCE.bad"
@@ -79,5 +75,17 @@ if expect_blocked; then printf '%s\n' 'NEGATIVE_INVALID_PID=PASS'; else printf '
 sed 's/^process_pid=.*/process_pid=4242/' "$EVIDENCE" | sed 's/^state=.*/state=PTY_CREATED/' > "$EVIDENCE.bad"
 mv "$EVIDENCE.bad" "$EVIDENCE"
 if expect_blocked; then printf '%s\n' 'NEGATIVE_PROMPT_NOT_READY=PASS'; else printf '%s\n' 'NEGATIVE_PROMPT_NOT_READY=FAIL'; exit 1; fi
+
+sed 's/^state=.*/state=READY/' "$EVIDENCE" | sed 's/^source_commit=.*/source_commit=0000000000000000000000000000000000000000/' > "$EVIDENCE.bad"
+mv "$EVIDENCE.bad" "$EVIDENCE"
+if expect_blocked; then printf '%s\n' 'NEGATIVE_STALE_SOURCE=PASS'; else printf '%s\n' 'NEGATIVE_STALE_SOURCE=FAIL'; exit 1; fi
+
+printf '%s\n' '=== G1-G6 PROTECTION CHECK ==='
+PROTECTED='^(docs/GATE_[1-6]_SPEC_V1\.md|docs/GATE_1|docs/GATE_2|docs/GATE_3|docs/GATE_4|docs/GATE_5|docs/GATE_6|tools/gate1_|tools/gate2_|tools/gate3_|tools/gate5_|tools/runtime_bootstrap\.sh|tools/test_gate6_contract\.sh)'
+if git -C "$ROOT" diff --name-only 5579319cec083cb8122c23f538a965510c6bf7c9 "$SOURCE_COMMIT" | grep -Eq "$PROTECTED"; then
+    printf '%s\n' 'G1_G6_PROTECTION=FAIL'
+    exit 1
+fi
+printf '%s\n' 'G1_G6_PROTECTION=PASS'
 
 printf '%s\n' 'G7_CONTRACT_TEST=PASS'
