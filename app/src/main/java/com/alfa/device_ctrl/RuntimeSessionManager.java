@@ -11,10 +11,7 @@ import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
 
-/**
- * Owns one foreground-scoped terminal session independently from Activity view code.
- * It does not claim background persistence or turn Gate 5 pwd into full access.
- */
+/** Owns one foreground-scoped terminal session and emits evidence for the exact G7 contract. */
 public final class RuntimeSessionManager implements TerminalSessionClient {
     public interface Listener {
         void onState(String state);
@@ -52,7 +49,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 this);
         session.mSessionName = contract.sessionId();
         session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
-        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT");
+        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid());
         if (listener != null) listener.onState("PTY_CREATED");
         return true;
     }
@@ -65,7 +62,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public synchronized void stop() {
         if (session != null) {
-            OperationEvidence.write(contract, "STOPPING", "REQUESTED");
+            OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid());
             session.finishIfRunning();
         }
         if (listener != null) listener.onState("STOPPING");
@@ -75,9 +72,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         return session != null && session.isRunning();
     }
 
-    public synchronized TerminalSession currentSession() {
-        return session;
-    }
+    public synchronized TerminalSession currentSession() { return session; }
 
     @Override public void onTextChanged(TerminalSession changedSession) {
         synchronized (this) {
@@ -86,23 +81,25 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 String transcript = changedSession.getEmulator().getScreen().getTranscriptText();
                 if (transcript.contains("alfa:ubuntu:") || transcript.matches("(?s).*([#$] )$")) {
                     promptReady = true;
-                    OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED");
+                    OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid());
                     if (listener != null) listener.onState("READY");
                 }
             }
         }
         if (listener != null) listener.onTextChanged();
     }
-    @Override public void onTitleChanged(TerminalSession changedSession) { }
+
     @Override public synchronized void onSessionFinished(TerminalSession finishedSession) {
         int status = finishedSession.getExitStatus();
         if (session == finishedSession) {
-            OperationEvidence.write(contract, "FINISHED", Integer.toString(status));
+            OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid());
             session = null;
             promptReady = false;
         }
         if (listener != null) listener.onSessionFinished(status);
     }
+
+    @Override public void onTitleChanged(TerminalSession changedSession) { }
     @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
     @Override public void onPasteTextFromClipboard(TerminalSession session) { }
     @Override public void onBell(TerminalSession session) { }
@@ -148,20 +145,12 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 ProcessBuilder builder = new ProcessBuilder(argv);
                 builder.directory(activeContract.hostCwd());
                 builder.redirectErrorStream(true);
-
-                // ProcessBuilder.environment() requires key/value entries.
-                // The PRoot process itself must receive PROOT_TMP_DIR before start.
                 for (String entry : activeContract.environment()) {
                     if (entry == null) continue;
                     int separator = entry.indexOf('=');
-                    if (separator <= 0) {
-                        throw new IllegalStateException("invalid-runtime-environment-entry");
-                    }
-                    builder.environment().put(
-                            entry.substring(0, separator),
-                            entry.substring(separator + 1));
+                    if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry");
+                    builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1));
                 }
-
                 process = builder.start();
                 StringBuilder text = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
