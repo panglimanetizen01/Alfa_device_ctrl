@@ -1,0 +1,37 @@
+name: G7 Runtime Session Contract
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  g7-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bash syntax
+        shell: bash
+        run: |
+          bash -n tools/gate7_runtime_session.sh
+          bash -n tools/runtime_session.sh
+          bash -n tools/test_gate7_contract.sh
+
+      - name: G7 contract and protection test
+        shell: bash
+        run: bash tools/test_gate7_contract.sh
+
+      - name: JNI boundary assertions
+        shell: bash
+        run: |
+          grep -q 'ReleaseStringUTFChars(env, cwd, cmd_cwd)' terminal-emulator/src/main/jni/termux.c
+          ! grep -q 'ReleaseStringUTFChars(env, cmd, cmd_cwd)' terminal-emulator/src/main/jni/termux.c
+          ! grep -q 'runtime_stage.sh' tools/runtime_session.sh
