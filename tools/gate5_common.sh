@@ -56,6 +56,7 @@ gate5_fresh() {
 gate5_gate4_load() {
     local ROOT RUN CONTRACT ENVELOPE EXPECTED_RUN EXPECTED_RESULT SOURCE_COMMIT PROFILE_SHA PROFILE_PATH
     local CONTRACT_SCHEMA PROJECT_ID PROJECT_ROOT COMPLETION FAILURE_STATUS FAILURE_REASON
+    local PROFILE_NAME PROFILE_CANONICAL AUTHORITY_PATH AUTHORITY_NAME
     ROOT=${1:-}
     RUN=${2:-}
     [ -n "$ROOT" ] && [ -n "$RUN" ] || return 1
@@ -79,12 +80,37 @@ gate5_gate4_load() {
     PROFILE_SHA=$(gate5_field "$CONTRACT" profile_sha256) || return 1
     gate5_valid_sha256 "$PROFILE_SHA" || return 1
     PROFILE_PATH=$(gate5_field "$CONTRACT" runtime_profile) || return 1
+
     case "$PROFILE_PATH" in
+        artifacts/runtime_profiles/profile_*.txt)
+            PROFILE_NAME=${PROFILE_PATH##*/}
+            ;;
+        /*/artifacts/runtime_profiles/profile_*.txt)
+            PROFILE_NAME=${PROFILE_PATH##*/}
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+    case "$PROFILE_NAME" in
+        profile_*.txt) ;;
+        *) return 1 ;;
+    esac
+
+    AUTHORITY_PATH="$ROOT/artifacts/runtime_profiles/profile_authority.txt"
+    [ -f "$AUTHORITY_PATH" ] || return 1
+    AUTHORITY_NAME=$(awk -v target="$RUN" 'BEGIN{RS=""}{r=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if(p[1]=="profile_path")v=p[2]}if(r&&v!="")print v}' "$AUTHORITY_PATH" | sed -n '1p')
+    case "$AUTHORITY_NAME" in
         artifacts/runtime_profiles/profile_*.txt) ;;
         *) return 1 ;;
     esac
-    [ -f "$ROOT/$PROFILE_PATH" ] || return 1
-    [ "$(sha256sum "$ROOT/$PROFILE_PATH" | awk '{print $1}')" = "$PROFILE_SHA" ] || return 1
+    [ "${AUTHORITY_NAME##*/}" = "$PROFILE_NAME" ] || return 1
+
+    PROFILE_CANONICAL="$ROOT/artifacts/runtime_profiles/$PROFILE_NAME"
+    [ -f "$PROFILE_CANONICAL" ] || return 1
+    [ "$(sha256sum "$PROFILE_CANONICAL" | awk '{print $1}')" = "$PROFILE_SHA" ] || return 1
+    [ "$(sha256sum "$PROFILE_CANONICAL" | awk '{print $1}')" = "$(awk -v target="$RUN" 'BEGIN{RS=""}{r=0;v="";for(i=1;i<=NF;i++){split($i,p,"=");if(p[1]=="pipeline_run_id"&&p[2]==target)r=1;if(p[1]=="profile_sha256")v=p[2]}if(r&&v!="")print v}' "$AUTHORITY_PATH" | sed -n '1p')" ] || return 1
+
     COMPLETION=$(gate5_field "$CONTRACT" completion_status) || return 1
     FAILURE_STATUS=$(gate5_field "$CONTRACT" failure_status) || return 1
     FAILURE_REASON=$(gate5_field "$CONTRACT" failure_reason) || return 1
