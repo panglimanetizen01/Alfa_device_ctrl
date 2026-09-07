@@ -33,6 +33,7 @@ if git show-ref --verify --quiet refs/remotes/origin/master; then ORIGIN_MASTER=
 for f in settings.gradle build.gradle gradlew gradle/wrapper/gradle-wrapper.properties app/build.gradle; do [ -f "$f" ] || { fail "required-build-file-missing:$f"; exit 1; }; done
 [ -x gradlew ] || { fail 'gradlew-not-executable'; exit 1; }
 WRAPPER_URL="$(sed -n 's/^distributionUrl=//p' gradle/wrapper/gradle-wrapper.properties | head -n1)"
+WRAPPER_URL="${WRAPPER_URL//\\:/\:}"
 case "$WRAPPER_URL" in https://services.gradle.org/distributions/gradle-*.zip) ;; *) fail 'invalid-gradle-wrapper-url'; exit 1 ;; esac
 APP_ID="$(sed -n 's/^[[:space:]]*applicationId[[:space:]]*['"'"']\([^'"'"']*\)['"'"'].*/\1/p' app/build.gradle | head -n1)"
 [ -n "$APP_ID" ] || { fail 'missing-application-id'; exit 1; }
