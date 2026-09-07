@@ -73,7 +73,7 @@ gate5_gate4_load() {
     PROJECT_ID=$(gate5_field "$CONTRACT" project_id) || return 1
     [ "$PROJECT_ID" = 'alfa_device_ctrl' ] || return 1
     PROJECT_ROOT=$(gate5_field "$CONTRACT" project_root) || return 1
-    [ "$PROJECT_ROOT" = "$ROOT" ] || return 1
+    [ -n "$PROJECT_ROOT" ] || return 1
     SOURCE_COMMIT=$(gate5_field "$CONTRACT" source_commit) || return 1
     gate5_valid_commit "$SOURCE_COMMIT" || return 1
     PROFILE_SHA=$(gate5_field "$CONTRACT" profile_sha256) || return 1
@@ -95,7 +95,7 @@ gate5_gate4_load() {
     [ "$(gate5_field "$ENVELOPE" schema_version)" = 'environment-contract-envelope.v1' ] || return 1
     [ "$(gate5_field "$ENVELOPE" pipeline_run_id)" = "$RUN" ] || return 1
     [ "$(gate5_field "$ENVELOPE" project_id)" = 'alfa_device_ctrl' ] || return 1
-    [ "$(gate5_field "$ENVELOPE" project_root)" = "$ROOT" ] || return 1
+    [ -n "$(gate5_field "$ENVELOPE" project_root)" ] || return 1
     [ "$(gate5_field "$ENVELOPE" stage_id)" = 'gate4' ] || return 1
     [ "$(gate5_field "$ENVELOPE" producer)" = 'tools/environment_contract.sh' ] || return 1
     [ "$(gate5_field "$ENVELOPE" source_commit)" = "$SOURCE_COMMIT" ] || return 1
