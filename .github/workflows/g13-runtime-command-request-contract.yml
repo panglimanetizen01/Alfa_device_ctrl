@@ -71,7 +71,7 @@ jobs:
           set -u
           grep -Fqx 'schema_version=gate13-runtime-command-request.v1' docs/GATE_13_RESULT_SCHEMA_V1.md
           grep -Fqx "COMMAND='pwd'" tools/gate13_runtime_command_request.sh
-          grep -Fqx "printf '%s\\n' 'execution_status=DEFERRED'" tools/gate13_runtime_command_request.sh
-          grep -Fqx "printf '%s\\n' 'execution_authority=G17'" tools/gate13_runtime_command_request.sh
+          grep -Fq 'execution_status=DEFERRED' tools/gate13_runtime_command_request.sh
+          grep -Fq 'execution_authority=G17' tools/gate13_runtime_command_request.sh
           ! grep -Eq 'runtime_stage\\.sh|runtime_execution\\.sh|/bin/sh[[:space:]]+-c|[[:space:]]eval[[:space:]]' tools/gate13_runtime_command_request.sh
           echo G13_SCHEMA_BOUNDARY=PASS
