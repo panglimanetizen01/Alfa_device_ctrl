@@ -1,0 +1,34 @@
+name: G11 Runtime Orchestrator Contract
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/gate11_runtime_orchestrator.sh'
+      - 'tools/runtime_orchestrator.sh'
+      - 'tools/test_gate11_contract.sh'
+      - 'docs/GATE_11_*'
+      - '.github/workflows/g11-runtime-orchestrator-contract.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'tools/gate11_runtime_orchestrator.sh'
+      - 'tools/runtime_orchestrator.sh'
+      - 'tools/test_gate11_contract.sh'
+      - 'docs/GATE_11_*'
+      - '.github/workflows/g11-runtime-orchestrator-contract.yml'
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          bash -n tools/gate11_runtime_orchestrator.sh
+          bash -n tools/runtime_orchestrator.sh
+          bash -n tools/test_gate11_contract.sh
+      - name: Run G11 contract
+        shell: bash
+        run: bash tools/test_gate11_contract.sh
