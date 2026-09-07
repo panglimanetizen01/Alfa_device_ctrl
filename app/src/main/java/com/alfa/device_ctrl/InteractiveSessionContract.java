@@ -2,10 +2,7 @@ package com.alfa.device_ctrl;
 
 import java.io.File;
 
-/**
- * Small Android-side representation of interactive-session.v1.
- * It deliberately rejects the Gate 5 pwd self-test as a session authorization.
- */
+/** Android-side representation of interactive-session.v1 with Gate 6 provenance binding. */
 public final class InteractiveSessionContract {
     public static final String SCHEMA_VERSION = "interactive-session.v1";
     public static final String POLICY_ID = "interactive-runtime.v1";
@@ -16,6 +13,10 @@ public final class InteractiveSessionContract {
     private final String requestId;
     private final String pipelineRunId;
     private final String runtimeId;
+    private final String sourceCommit;
+    private final String gate4ContractSha256;
+    private final String profileSha256;
+    private final String implementationCommit;
     private final File runtimeReadyEvidence;
     private final File prootExecutable;
     private final File runtimeRoot;
@@ -27,6 +28,10 @@ public final class InteractiveSessionContract {
             String requestId,
             String pipelineRunId,
             String runtimeId,
+            String sourceCommit,
+            String gate4ContractSha256,
+            String profileSha256,
+            String implementationCommit,
             File runtimeReadyEvidence,
             File prootExecutable,
             File runtimeRoot,
@@ -36,6 +41,10 @@ public final class InteractiveSessionContract {
         this.requestId = requireToken(requestId, "requestId");
         this.pipelineRunId = requireToken(pipelineRunId, "pipelineRunId");
         this.runtimeId = requireToken(runtimeId, "runtimeId");
+        this.sourceCommit = requireHex(sourceCommit, 40, "sourceCommit");
+        this.gate4ContractSha256 = requireHex(gate4ContractSha256, 64, "gate4ContractSha256");
+        this.profileSha256 = requireHex(profileSha256, 64, "profileSha256");
+        this.implementationCommit = requireHex(implementationCommit, 40, "implementationCommit");
         this.runtimeReadyEvidence = requireFile(runtimeReadyEvidence, "runtimeReadyEvidence");
         this.prootExecutable = requireFile(prootExecutable, "prootExecutable");
         this.runtimeRoot = requireFile(runtimeRoot, "runtimeRoot");
@@ -44,7 +53,6 @@ public final class InteractiveSessionContract {
     }
 
     public boolean isAuthorizedForInteractiveRuntime() {
-        // Gate 5 V1 pwd self-test is intentionally not accepted here.
         return POLICY_ID.equals("interactive-runtime.v1")
                 && POLICY_VERSION == 1
                 && POLICY_SCOPE.equals("full-user-access-inside-selected-rootless-runtime")
@@ -94,6 +102,10 @@ public final class InteractiveSessionContract {
     public String requestId() { return requestId; }
     public String pipelineRunId() { return pipelineRunId; }
     public String runtimeId() { return runtimeId; }
+    public String sourceCommit() { return sourceCommit; }
+    public String gate4ContractSha256() { return gate4ContractSha256; }
+    public String profileSha256() { return profileSha256; }
+    public String implementationCommit() { return implementationCommit; }
     public File runtimeReadyEvidence() { return runtimeReadyEvidence; }
     public File prootExecutable() { return prootExecutable; }
     public File runtimeRoot() { return runtimeRoot; }
@@ -118,6 +130,13 @@ public final class InteractiveSessionContract {
             throw new IllegalArgumentException(name + " is invalid");
         }
         return value;
+    }
+
+    private static String requireHex(String value, int length, String name) {
+        if (value == null || !value.matches("[0-9a-fA-F]{" + length + "}")) {
+            throw new IllegalArgumentException(name + " is invalid");
+        }
+        return value.toLowerCase();
     }
 
     private static File requireFile(File value, String name) {
