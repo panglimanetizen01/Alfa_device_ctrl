@@ -1,0 +1,44 @@
+name: G10 Runtime Workflow Contract
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  g10-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Bash syntax
+        run: |
+          bash -n tools/gate10_runtime_workflow.sh
+          bash -n tools/runtime_workflow.sh
+          bash -n tools/test_gate10_contract.sh
+
+      - name: G10 contract and protection test
+        run: bash tools/test_gate10_contract.sh
+
+      - name: G1-G9 source protection
+        run: |
+          git diff --exit-code HEAD^ -- \
+            tools/gate1_foundation_v2.sh \
+            tools/gate2_canonical_source_build_boundary.sh \
+            tools/execution_capability.sh \
+            tools/gate3_execution_capability.sh \
+            tools/environment_contract.sh \
+            tools/gate5_common.sh \
+            tools/runtime_bootstrap.sh \
+            tools/gate7_runtime_session.sh \
+            tools/gate8_runtime_task.sh \
+            tools/gate9_runtime_action.sh
+
+      - name: Post Checkout exact source
+        run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
