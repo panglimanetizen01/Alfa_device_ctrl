@@ -118,8 +118,8 @@ main() {
             gate7) printf '%s\n' "bootstrap_status=$(chain_field "$INPUT1" bootstrap_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "session_status=$STATUS" ;;
             gate8) printf '%s\n' "session_status=$(chain_field "$INPUT1" session_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "task_status=$STATUS"; printf '%s\n' 'task_name=runtime_self_test' ;;
             gate9) printf '%s\n' "task_status=$(chain_field "$INPUT1" task_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "action_status=$STATUS"; printf '%s\n' 'action_name=runtime_self_action' ;;
-            gate10) printf '%s\n' "action_status=$(chain_field "$INPUT1" action_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "workflow_status=$STATUS"; printf '%s\n' 'workflow_name=runtime_self_workflow' ;;
-            gate11) printf '%s\n' "workflow_status=$(chain_field "$INPUT1" workflow_status 2>/dev/null || printf '%s' '')"; printf '%s\n' 'orchestrator_status='$STATUS; printf '%s\n' 'orchestrator_name=runtime_self_orchestrator' ;;
+            gate10) printf '%s\n' "action_status=$(chain_field "$INPUT1" action_status 2>/dev/null || printf '%s' '')"; printf '%s\n' 'workflow_status='$STATUS; printf '%s\n' 'workflow_name=runtime_self_workflow' ;;
+            gate11) printf '%s\n' "workflow_status=$(chain_field "$INPUT1" workflow_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "orchestrator_status=$STATUS"; printf '%s\n' 'orchestrator_name=runtime_self_orchestrator' ;;
             gate12) printf '%s\n' "orchestrator_status=$(chain_field "$INPUT1" orchestrator_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "kernel_status=$STATUS"; printf '%s\n' 'kernel_name=runtime_self_kernel' ;;
             gate13) printf '%s\n' "kernel_status=$(chain_field "$INPUT1" kernel_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$COMMAND"; printf '%s\n' "command_status=$STATUS" ;;
             gate16) printf '%s\n' 'authorization_status=DENIED'; printf '%s\n' 'execution_status=DEFERRED'; printf '%s\n' 'execution_authority=G17' ;;
