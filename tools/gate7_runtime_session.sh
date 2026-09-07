@@ -28,7 +28,7 @@ is_token() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._:-]+$'; }
 
 main() {
     local STATUS=PASS REASON='validated Android runtime session attestation'
-    local SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA IMPLEMENTATION_COMMIT
+    local CURRENT_HEAD SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA IMPLEMENTATION_COMMIT
     local BOOT_RUN BOOT_STATUS BOOT_SOURCE BOOT_PROFILE BOOT_CONTRACT
     local E_SCHEMA E_SESSION E_REQUEST E_RUN E_RUNTIME E_SOURCE E_PROFILE E_CONTRACT E_IMPL
     local E_STATE E_RESULT E_PID E_PTY E_PROMPT E_ENGINE E_ROOTFS E_READY
@@ -38,6 +38,7 @@ main() {
     [ -f "$EVIDENCE" ] || { fail 'Android session evidence artifact is missing'; return 1; }
     is_token "$RUN_ID" || { fail 'invalid pipeline_run_id'; return 1; }
 
+    CURRENT_HEAD=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || printf '')
     BOOT_RUN=$(field "$BOOTSTRAP" pipeline_run_id || printf '')
     BOOT_STATUS=$(field "$BOOTSTRAP" bootstrap_status || printf '')
     BOOT_SOURCE=$(field "$BOOTSTRAP" source_commit || printf '')
@@ -68,6 +69,8 @@ main() {
 
     if [ "$BOOT_RUN" != "$RUN_ID" ] || [ "$BOOT_STATUS" != 'PASS' ]; then
         STATUS=BLOCKED; REASON='Gate 6 bootstrap is not PASS for the requested run'
+    elif ! is_commit "$CURRENT_HEAD" || [ "$SOURCE_COMMIT" != "$CURRENT_HEAD" ]; then
+        STATUS=BLOCKED; REASON='Gate 6 source_commit is stale relative to current HEAD'
     elif ! is_commit "$SOURCE_COMMIT" || ! is_sha256 "$PROFILE_SHA" || ! is_sha256 "$CONTRACT_SHA" || ! is_commit "$IMPLEMENTATION_COMMIT"; then
         STATUS=BLOCKED; REASON='Gate 6 provenance fields are missing or malformed'
     elif [ "$E_SCHEMA" != 'operation-evidence.v1' ]; then
@@ -76,7 +79,7 @@ main() {
         STATUS=BLOCKED; REASON='session identity is missing or cross-run'
     elif [ "$E_RUNTIME" != 'ubuntu' ]; then
         STATUS=BLOCKED; REASON='session runtime_id is not the selected runtime'
-    elif [ "$E_SOURCE" != "$SOURCE_COMMIT" ] || [ "$E_PROFILE" != "$PROFILE_SHA" ] || [ "$E_CONTRACT" != "$CONTRACT_SHA" ] || [ "$E_IMPL" != "$IMPLEMENTATION_COMMIT" ]; then
+    elif [ "$E_SOURCE" != "$SOURCE_COMMIT" ] || [ "$E_PROFILE" != "$PROFILE_SHA" ] || [ "$E_CONTRACT" != "$CONTRACT_SHA" ] || ! is_commit "$E_IMPL"; then
         STATUS=BLOCKED; REASON='session evidence provenance does not match Gate 6'
     elif [ "$E_STATE" != 'READY' ] || [ "$E_RESULT" != 'PROMPT_OBSERVED' ]; then
         STATUS=BLOCKED; REASON='session did not reach verified READY state'
@@ -97,7 +100,7 @@ main() {
             printf '%s\n' "session_status=$STATUS"
             printf '%s\n' "pipeline_run_id=$RUN_ID"
             printf '%s\n' "source_commit=$SOURCE_COMMIT"
-            printf '%s\n' "implementation_commit=$IMPLEMENTATION_COMMIT"
+            printf '%s\n' "implementation_commit=$E_IMPL"
             printf '%s\n' "gate4_contract_sha256=$CONTRACT_SHA"
             printf '%s\n' "profile_sha256=$PROFILE_SHA"
             printf '%s\n' "session_id=$E_SESSION"
