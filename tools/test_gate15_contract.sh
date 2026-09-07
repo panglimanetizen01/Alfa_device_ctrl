@@ -7,9 +7,18 @@ RUN_ID='run_20260907_151500_15001'
 HEAD=$(git -C "$ROOT" rev-parse HEAD)
 INPUT="$TMP/run/gate14/validation.txt"
 OUTPUT="$TMP/run/gate15/policy.txt"
+G13_ARTIFACT="$TMP/g13.txt"
+G12_ARTIFACT="$TMP/g12.txt"
 
 cleanup(){ rm -rf "$TMP"; }
 trap cleanup EXIT
+
+printf '%s\n' synthetic-g13 > "$G13_ARTIFACT"
+printf '%s\n' synthetic-g12 > "$G12_ARTIFACT"
+G13_SHA=$(sha256sum "$G13_ARTIFACT" | awk '{print $1}')
+G12_SHA=$(sha256sum "$G12_ARTIFACT" | awk '{print $1}')
+G4=$(printf g4 | sha256sum | awk '{print $1}')
+PROFILE=$(printf profile | sha256sum | awk '{print $1}')
 
 cat > "$INPUT" <<EOF
 schema_version=gate14-runtime-command-validation.v1
@@ -19,12 +28,12 @@ validation_status=ALLOWED
 validation_id=pwd-validation-$RUN_ID
 pipeline_run_id=$RUN_ID
 source_commit=$HEAD
-gate4_contract_sha256=$(printf g4 | sha256sum | awk '{print $1}')
-profile_sha256=$(printf profile | sha256sum | awk '{print $1}')
-gate13_request_sha256=$(printf g13 | sha256sum | awk '{print $1}')
-gate13_artifact=$TMP/g13.txt
-gate12_kernel_sha256=$(printf g12 | sha256sum | awk '{print $1}')
-gate12_artifact=$TMP/g12.txt
+gate4_contract_sha256=$G4
+profile_sha256=$PROFILE
+gate13_request_sha256=$G13_SHA
+gate13_artifact=$G13_ARTIFACT
+gate12_kernel_sha256=$G12_SHA
+gate12_artifact=$G12_ARTIFACT
 request_id=pwd-request-$RUN_ID
 command=pwd
 command_semantics=POSIX_PWD
@@ -35,29 +44,12 @@ execution_path=DEFERRED:G17
 created_at=2026-09-07T15:15:00Z
 validation_path=$ROOT
 EOF
-printf '%s\n' synthetic > "$TMP/g13.txt"
-printf '%s\n' synthetic > "$TMP/g12.txt"
-
-fail_if(){
-    local name=$1; shift
-    if "$@" >/dev/null 2>&1; then
-        echo "$name=FAIL"
-        return 1
-    fi
-    echo "$name=PASS"
-}
-
 
 echo '=== G15 STATIC BOUNDARY CHECK ==='
 ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh|/bin/sh[[:space:]]+-c|[[:space:]]eval[[:space:]]' "$ROOT/tools/gate15_runtime_command_policy.sh"
 echo 'NO_G15_EXECUTION=PASS'
 
 echo '=== G15 POSITIVE ==='
-G4=$(awk -F= '$1=="gate4_contract_sha256"{print $2}' "$INPUT")
-PROFILE=$(awk -F= '$1=="profile_sha256"{print $2}' "$INPUT")
-G13=$(awk -F= '$1=="gate13_request_sha256"{print $2}' "$INPUT")
-G12=$(awk -F= '$1=="gate12_kernel_sha256"{print $2}' "$INPUT")
-G14_HASH=$(sha256sum "$INPUT" | awk '{print $1}')
 bash "$ROOT/tools/gate15_runtime_command_policy.sh" "$RUN_ID" "$INPUT" "$OUTPUT" >/dev/null
 [ -f "$OUTPUT" ]
 echo 'POSITIVE_VALID_VALIDATION=PASS'
@@ -90,6 +82,7 @@ mutate_and_expect_block NEGATIVE_COMMAND_SEMANTICS command_semantics SHELL_COMMA
 mutate_and_expect_block NEGATIVE_EXECUTION_STATUS execution_status EXECUTED
 mutate_and_expect_block NEGATIVE_AUTHORITY execution_authority G16
 mutate_and_expect_block NEGATIVE_KERNEL_HASH gate12_kernel_sha256 0000000000000000000000000000000000000000000000000000000000000000
+mutate_and_expect_block NEGATIVE_G13_HASH gate13_request_sha256 0000000000000000000000000000000000000000000000000000000000000000
 
 echo '=== G15 PROTECTION CHECK ==='
 for p in \
