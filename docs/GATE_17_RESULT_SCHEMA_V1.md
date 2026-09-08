@@ -30,4 +30,4 @@ Fail-closed: missing, stale, cross-run, malformed, hash-mismatched, non-AUTHORIZ
 
 G17 must not select artifacts by timestamp or directory order. It must not execute any command other than the exact locked `pwd` request. Publication is atomic.
 
-G17 is GREEN only when its contract test proves real execution, exact G16 provenance, negative authorization/provenance cases, execution evidence, and protection of G1-G16.
+G17 contract GREEN requires the synthetic boundary/negative contract test to prove the execution boundary and protection rules. G17 live GREEN requires an additional fresh current-run G4→G17 execution proof with real upstream artifacts and the authoritative G17 executor. Target Android/Termux verification remains mandatory and is not replaced by CI.
