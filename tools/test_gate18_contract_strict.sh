@@ -9,6 +9,8 @@ G17="$RUN_DIR/gate17/execution.txt"
 G16="$RUN_DIR/gate16/live-authorization.txt"
 GOOD_OUT="$RUN_DIR/gate18/good-result.txt"
 BAD_OUT="$RUN_DIR/gate18/bad-result.txt"
+CROSS_OUT="$RUN_DIR/gate18/cross-run.txt"
+HASH_OUT="$RUN_DIR/gate18/hash-mismatch.txt"
 
 rm -rf "$RUN_DIR"
 mkdir -p "$RUN_DIR/gate4" "$RUN_DIR/gate16" "$RUN_DIR/gate17"
@@ -50,8 +52,22 @@ sed -i '/^authorization_status=/d' "$RUN_DIR/gate17/malformed.txt"
 bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$RUN_DIR/gate17/malformed.txt" '' "$BAD_OUT" >/dev/null
 [ "$(awk -F= '$1=="gate_status"{print $2}' "$BAD_OUT")" = BLOCKED ] || { printf '%s\n' 'G18_MALFORMED_EVIDENCE=FAIL'; exit 1; }
 
+cp "$G17" "$RUN_DIR/gate17/cross-run.txt"
+sed -i "s/^execution_id=.*/execution_id=execution-pwd-run_wrong/; s/^request_id=.*/request_id=pwd-request-run_wrong/" "$RUN_DIR/gate17/cross-run.txt"
+bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$RUN_DIR/gate17/cross-run.txt" '' "$CROSS_OUT" >/dev/null
+[ "$(awk -F= '$1=="gate_status"{print $2}' "$CROSS_OUT")" = BLOCKED ] || { printf '%s\n' 'G18_CROSS_RUN=FAIL'; exit 1; }
+
+cp "$G17" "$RUN_DIR/gate17/hash-mismatch.txt"
+sed -i 's/^command_result_sha256=.*/command_result_sha256=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff/' "$RUN_DIR/gate17/hash-mismatch.txt"
+bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$RUN_DIR/gate17/hash-mismatch.txt" '' "$HASH_OUT" >/dev/null
+[ "$(awk -F= '$1=="gate_status"{print $2}' "$HASH_OUT")" = BLOCKED ] || { printf '%s\n' 'G18_HASH_MISMATCH=FAIL'; exit 1; }
+
 bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$G17" '' "$GOOD_OUT" >/dev/null
 [ "$(awk -F= '$1=="gate_status"{print $2}' "$GOOD_OUT")" = PASS ] || { printf '%s\n' 'G18_VALID_EVIDENCE=FAIL'; exit 1; }
+for field in execution_id request_id command_semantics command_sha256 authorization_status execution_status command_result command_returncode command_result_sha256 gate16_authorization_sha256 gate16_authorization_artifact; do
+    [ "$(awk -F= -v k="$field" '$1==k{print substr($0,index($0,"=")+1)}' "$GOOD_OUT")" = "$(awk -F= -v k="$field" '$1==k{print substr($0,index($0,"=")+1)}' "$G17")" ] || { printf '%s\n' "G18_${field}_PRESERVATION=FAIL"; exit 1; }
+done
 [ "$(awk -F= '$1=="execution_path"{print substr($0,index($0,"=")+1)}' "$GOOD_OUT")" = /expected/runtime/path ] || { printf '%s\n' 'G18_PATH_PRESERVATION=FAIL'; exit 1; }
-[ "$(awk -F= '$1=="command_result"{print substr($0,index($0,"=")+1)}' "$GOOD_OUT")" = /expected/runtime/path ] || { printf '%s\n' 'G18_RESULT_PRESERVATION=FAIL'; exit 1; }
+[ "$(awk -F= '$1=="created_at"{print substr($0,index($0,"=")+1)}' "$GOOD_OUT")" = 2026-09-08T05:00:26Z ] || { printf '%s\n' 'G18_TIMESTAMP_PRESERVATION=FAIL'; exit 1; }
+[ "$(awk -F= '$1=="result_status"{print $2}' "$GOOD_OUT")" = PASS ] || { printf '%s\n' 'G18_RESULT_STATUS=FAIL'; exit 1; }
 printf '%s\n' 'G18_CONTRACT_TEST=PASS'
