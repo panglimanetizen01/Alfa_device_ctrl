@@ -6,7 +6,10 @@ on:
     paths:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
+      - 'tools/test_gate17_live.sh'
       - 'tools/runtime_stage.sh'
+      - 'tools/runtime_pipeline.sh'
+      - 'tools/runtime_discovery.sh'
       - 'docs/GATE_17_SPEC_V1.md'
       - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
       - '.github/workflows/g17-runtime-execution-contract.yml'
@@ -14,7 +17,10 @@ on:
     paths:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
+      - 'tools/test_gate17_live.sh'
       - 'tools/runtime_stage.sh'
+      - 'tools/runtime_pipeline.sh'
+      - 'tools/runtime_discovery.sh'
       - 'docs/GATE_17_SPEC_V1.md'
       - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
       - '.github/workflows/g17-runtime-execution-contract.yml'
@@ -57,11 +63,16 @@ jobs:
           grep -Fq 'G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh' tools/runtime_stage.sh
           ! grep -Fq 'COMMAND_RESULT=$(CDPATH= cd -- "$ROOT"' tools/runtime_stage.sh
           echo LEGACY_G17_EXECUTION_REMOVED=PASS
-      - name: Run G17 contract test
+      - name: Run G17 synthetic boundary contract test
         shell: bash
         run: |
           set -u
           bash tools/test_gate17_contract.sh
+      - name: Run G17 live current-run chain verification
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate17_live.sh
       - name: Validate G17 schema and execution boundary
         shell: bash
         run: |
