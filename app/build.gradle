@@ -11,6 +11,7 @@ if (!(alfaSourceCommit ==~ /[0-9a-f]{40}/)) {
 
 android {
     namespace 'com.alfa.device_ctrl'
+    testNamespace 'com.alfa.device_ctrl.test'
     compileSdk 35
 
     buildFeatures {
