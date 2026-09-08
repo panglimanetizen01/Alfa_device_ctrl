@@ -36,7 +36,7 @@ printf '%s\n' '=== G17 STATIC BOUNDARY ==='
 ! grep -Eq 'cd "\$ROOT".*pwd|RESULT=\$\(pwd' "$ROOT/tools/gate17_runtime_execution.sh"
 ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh' "$ROOT/tools/gate17_runtime_execution.sh"
 ! grep -Eq 'eval[[:space:]]|\$\(.*field.*command' "$ROOT/tools/gate17_runtime_execution.sh"
-grep -Fq 'PROOT_EXEC=${4:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq 'ROOTFS=${5:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq '"$PROOT_EXEC" -r "$ROOTFS" -w /root /bin/sh -c "$GUEST_EVIDENCE_SCRIPT"' "$ROOT/tools/gate17_runtime_execution.sh"
+grep -Fq 'PROOT_EXEC=${4:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq 'ROOTFS=${5:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq '"$PROOT_EXEC" -r "$ROOTFS" -b /proc:/proc -w /root /bin/sh -c "$GUEST_EVIDENCE_SCRIPT"' "$ROOT/tools/gate17_runtime_execution.sh"
 echo NO_G17_HOST_PWD=PASS; echo G17_PROOT_BOUNDARY=PASS
 printf '%s\n' '=== G17 REAL POSITIVE EXECUTION ==='
 if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$PROOT_EXEC" "$GUEST" >"$TMP/positive.stdout" 2>"$TMP/positive.stderr"; then
@@ -44,7 +44,7 @@ if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$P
   echo '--- G17 EXECUTOR STDERR ---'; cat "$TMP/positive.stderr"
   echo '--- G17 ROOTFS EXECUTABLES ---'; ls -l "$GUEST/bin/sh" "$GUEST/usr/bin/readlink" "$GUEST/lib64/ld-linux-x86-64.so.2" || true
   echo '--- G17 ROOTFS INTERPRETERS/LIBS ---'; ldd /bin/sh; ldd /usr/bin/readlink
-  echo '--- DIRECT PROOT DIAGNOSTIC ---'; "$PROOT_EXEC" -v 2 -r "$GUEST" -w /root /bin/sh -c 'printf "DIRECT_PWD=%s\\n" "$(pwd)"; /usr/bin/readlink /proc/self/exe; /usr/bin/readlink /proc/self/cwd; /usr/bin/readlink /proc/self/root' || true
+  echo '--- DIRECT PROOT DIAGNOSTIC ---'; "$PROOT_EXEC" -v 2 -r "$GUEST" -b /proc:/proc -w /root /bin/sh -c 'printf "DIRECT_PWD=%s\\n" "$(pwd)"; /usr/bin/readlink /proc/self/exe; /usr/bin/readlink /proc/self/cwd; /usr/bin/readlink /proc/self/root' || true
   exit 1
 fi
 grep -Fqx gate_status=PASS "$OUT"; grep -Fqx execution_status=EXECUTED "$OUT"; grep -Fqx result_status=PASS "$OUT"; grep -Fqx command=pwd "$OUT"; grep -Fqx command_returncode=0 "$OUT"; grep -Fqx command_result=/root "$OUT"
