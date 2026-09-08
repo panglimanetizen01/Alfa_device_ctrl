@@ -18,8 +18,8 @@ Menormalisasi hasil execution menjadi runtime result yang dapat dikonsumsi layer
 10. `execution_status=PASS` harus menghasilkan `result_status=PASS`.
 11. `execution_status=ERROR` harus menghasilkan `result_status=ERROR` hanya jika evidence execution valid dan konsisten.
 12. `execution_status=BLOCKED` harus menghasilkan `result_status=BLOCKED` hanya jika evidence execution valid dan konsisten.
-13. Result wajib mempertahankan `command`, `command_result`, dan `execution_path` aktual dari execution evidence.
-14. Result wajib mencatat timestamp dan menghasilkan evidence artifact.
+13. Result wajib mempertahankan execution/request identity, command, command semantics, command hash, authorization status, execution status, command result, return code, result hash, Gate 16 authorization linkage, timestamp, dan execution path aktual dari execution evidence.
+14. Result wajib menghasilkan evidence artifact current-run.
 15. Gate 18 tidak boleh mengeksekusi ulang command.
 16. Gate 18 tidak boleh mengubah capability status atau otoritas eksekusi.
 
@@ -58,9 +58,9 @@ G18 is a normalization boundary, not a new authorization or execution boundary. 
 
 ## Initial State
 
-Specification: DEFINED
-Implementation: NOT STARTED
-Verification: NOT STARTED
+Specification: IMPLEMENTED
+Implementation: IMPLEMENTED
+Verification: CONTRACT_TESTED
 
 ## Gate 6-19 implementation contract
 
