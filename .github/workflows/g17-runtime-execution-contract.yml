@@ -42,6 +42,15 @@ jobs:
           set -u
           test '${{ github.sha }}' = "$(git rev-parse HEAD)"
           git fsck --full --no-progress
+      - name: Install upstream packaged PRoot runtime
+        shell: bash
+        run: |
+          set -u
+          sudo apt-get update
+          sudo apt-get install -y proot
+          test -x "$(command -v proot)"
+          proot --version
+          echo PROOT_RUNTIME=PASS
       - name: Verify G1-G16 protection
         shell: bash
         run: |
@@ -65,7 +74,7 @@ jobs:
           grep -Fq 'G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh' tools/runtime_stage.sh
           ! grep -Fq 'COMMAND_RESULT=$(CDPATH= cd -- "$ROOT"' tools/runtime_stage.sh
           echo LEGACY_G17_EXECUTION_REMOVED=PASS
-      - name: Run G17 synthetic boundary contract test
+      - name: Run G17 real guest execution contract test
         shell: bash
         run: |
           set -u
@@ -82,8 +91,9 @@ jobs:
         run: |
           set -u
           grep -Fq 'schema_version=gate17-runtime-execution.v1' docs/GATE_17_RESULT_SCHEMA_V1.md
-          grep -Fq 'execution_status=PASS' tools/gate17_runtime_execution.sh
+          grep -Fq 'execution_status=EXECUTED' tools/gate17_runtime_execution.sh
           grep -Fq 'result_status=PASS' tools/gate17_runtime_execution.sh
           grep -Fq 'command=pwd' tools/gate17_runtime_execution.sh
+          grep -Fq ' -r "$ROOTFS" -w /root /bin/sh -c '\''pwd'\''' tools/gate17_runtime_execution.sh
           ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh|eval[[:space:]]' tools/gate17_runtime_execution.sh
           echo G17_SCHEMA_BOUNDARY=PASS
