@@ -17,6 +17,7 @@ cleanup() { rm -rf "$TMP_DIR" 2>/dev/null || true; }
 trap cleanup EXIT
 
 fail() { printf 'G17_LIVE_ERROR=%s\n' "$1"; FAIL=1; }
+field(){ awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/,""); print; exit}' "$2"; }
 
 printf '%s\n' '=== G17 LIVE EXECUTION-BOUNDARY VERIFICATION ==='
 printf '%s\n' "source_head_before=$HEAD_BEFORE"
@@ -76,8 +77,10 @@ fi
 
 if [ "$FAIL" -eq 0 ]; then
     printf '%s\n' '--- CONTROLLED G15 POLICY ENVELOPE ---'
-    G4_SHA=$(sha256sum "$G4" | awk '{print $1}')
-    PROFILE=$(sed -n 's/^profile_sha256=//p' "$G4" | sed -n '1p')
+    G4_CONTRACT_SHA=$(field gate4_contract_sha256 "$G5_AUTH")
+    PROFILE=$(field profile_sha256 "$G5_AUTH")
+    [[ "$G4_CONTRACT_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || fail G5_G4_HASH_MISSING
+    [[ "$PROFILE" =~ ^[0-9a-fA-F]{64}$ ]] || fail G5_PROFILE_HASH_MISSING
     G14="$TMP_DIR/g14-validation.txt"
     G13="$TMP_DIR/g13-request.txt"
     G12="$TMP_DIR/g12-kernel.txt"
@@ -98,7 +101,7 @@ if [ "$FAIL" -eq 0 ]; then
         printf '%s\n' 'policy_version=gate15-policy-v1'
         printf 'pipeline_run_id=%s\n' "$RUN_ID"
         printf 'source_commit=%s\n' "$HEAD_BEFORE"
-        printf 'gate4_contract_sha256=%s\n' "$G4_SHA"
+        printf 'gate4_contract_sha256=%s\n' "$G4_CONTRACT_SHA"
         printf 'profile_sha256=%s\n' "$PROFILE"
         printf 'gate14_validation_sha256=%s\n' "$G14_SHA"
         printf 'gate14_artifact=%s\n' "$G14"
