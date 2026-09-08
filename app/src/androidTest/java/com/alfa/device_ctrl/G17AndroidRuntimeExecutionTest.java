@@ -1,4 +1,4 @@
-package com.alfa.device_ctrl;
+package com.alfa.device_ctrl.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -8,6 +8,9 @@ import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.alfa.device_ctrl.BuildConfig;
+import com.alfa.device_ctrl.RuntimeEvidence;
 
 import org.junit.Test;
 
