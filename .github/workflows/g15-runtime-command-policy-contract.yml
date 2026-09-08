@@ -20,9 +20,12 @@ jobs:
         shell: bash
         run: |
           set -u
-          EXPECTED="$(git rev-parse origin/master)"
-          ACTUAL="$(git rev-parse HEAD)"
+          EXPECTED="$(git rev-parse HEAD)"
+          ACTUAL="${GITHUB_SHA}"
           test "$EXPECTED" = "$ACTUAL"
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "${GITHUB_REF}" = refs/heads/master
+          fi
           git fsck --full --no-progress
 
       - name: Verify G1-G14 protection surface
