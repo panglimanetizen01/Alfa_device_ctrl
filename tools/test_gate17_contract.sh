@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -u
+set -euo pipefail
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 TMP=$(mktemp -d 2>/dev/null || printf '%s/g17-test-%s' "$ROOT" "$$")
 RUN_ID='run_20260908_093200_17001'
