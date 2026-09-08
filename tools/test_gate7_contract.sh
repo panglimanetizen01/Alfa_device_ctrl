@@ -85,10 +85,22 @@ mv "$EVIDENCE.bad" "$EVIDENCE"
 if expect_blocked; then printf '%s\n' 'NEGATIVE_STALE_SOURCE=PASS'; else printf '%s\n' 'NEGATIVE_STALE_SOURCE=FAIL'; exit 1; fi
 
 printf '%s\n' '=== G1-G6 PROTECTION CHECK ==='
-PROTECTED='^(docs/GATE_[1-6]_SPEC_V1\.md|docs/GATE_1|docs/GATE_2|docs/GATE_3|docs/GATE_4|docs/GATE_5|docs/GATE_6|tools/gate1_|tools/gate2_|tools/gate3_|tools/gate5_|tools/runtime_bootstrap\.sh|tools/test_gate6_contract\.sh)'
-if git -C "$ROOT" diff --name-only 1933ee2208c8d29f7fa285572c1ba864ab98faec "$SOURCE_COMMIT" | grep -Eq "$PROTECTED"; then
-    printf '%s\n' 'G1_G6_PROTECTION=FAIL'
-    exit 1
-fi
+PROTECTED_PATHS=(
+  docs/GATE_1_SPEC_V1.md docs/GATE_2_SPEC_V1.md docs/GATE_3_SPEC_V1.md
+  docs/GATE_4_SPEC_V1.md docs/GATE_5_SPEC_V1.md docs/GATE_6_SPEC_V1.md
+  tools/gate1_foundation_v2.sh tools/gate2_canonical_source_build_boundary.sh
+  tools/execution_capability.sh tools/gate3_execution_capability.sh
+  tools/environment_contract.sh tools/gate5_common.sh tools/runtime_bootstrap.sh
+  tools/test_gate6_contract.sh
+)
+while IFS= read -r path; do
+  for protected in "${PROTECTED_PATHS[@]}"; do
+    if [ "$path" = "$protected" ]; then
+      printf '%s\n' 'G1_G6_PROTECTION=FAIL'
+      printf '%s\n' "G1_G6_CHANGED_PATH=$path"
+      exit 1
+    fi
+  done
+done < <(git -C "$ROOT" diff --name-only 1933ee2208c8d29f7fa285572c1ba864ab98faec "$SOURCE_COMMIT")
 printf '%s\n' 'G1_G6_PROTECTION=PASS'
 printf '%s\n' 'G7_CONTRACT_TEST=PASS'
