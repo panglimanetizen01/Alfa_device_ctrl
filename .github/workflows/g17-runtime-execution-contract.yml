@@ -79,7 +79,7 @@ jobs:
         run: |
           set -u
           bash tools/test_gate17_contract.sh
-      - name: Run G17 live current-run chain verification
+      - name: Run G17 live execution-boundary verification
         shell: bash
         run: |
           set -u
