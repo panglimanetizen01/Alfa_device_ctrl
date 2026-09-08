@@ -69,7 +69,7 @@ else
 fi
 chmod +x "$GUEST/bin/busybox"
 ln -s busybox "$GUEST/bin/sh"
-ln -s ../bin/busybox "$GUEST/usr/bin/readlink"
+ln -s ../../bin/busybox "$GUEST/usr/bin/readlink"
 cat > "$GUEST/etc/os-release" <<'EOF'
 NAME="Alfa G17 Linux Guest Fixture"
 ID=alfa-g17-fixture
