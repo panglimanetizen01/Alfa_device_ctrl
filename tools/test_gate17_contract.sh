@@ -48,8 +48,8 @@ if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$P
   exit 1
 fi
 grep -Fqx gate_status=PASS "$OUT"; grep -Fqx execution_status=EXECUTED "$OUT"; grep -Fqx result_status=PASS "$OUT"; grep -Fqx command=pwd "$OUT"; grep -Fqx command_returncode=0 "$OUT"; grep -Fqx command_result=/root "$OUT"
-for k in engine_path engine_sha256 rootfs_path rootfs_os_id guest_pid guest_internal_pid guest_proc_exe guest_proc_cwd guest_proc_root; do grep -Fq "${k}=" "$OUT"; done
-[ "$(awk -F= '$1=="guest_proc_cwd"{print substr($0,index($0,"=")+1);exit}' "$OUT")" = /root ]; [ "$(awk -F= '$1=="guest_proc_root"{print substr($0,index($0,"=")+1);exit}' "$OUT")" != / ]
+for k in engine_path engine_sha256 rootfs_path rootfs_os_id guest_pid guest_internal_pid host_tracee_pid guest_proc_exe guest_proc_cwd guest_proc_root; do grep -Fq "${k}=" "$OUT"; done
+[ "$(awk -F= '$1=="guest_pid"{print substr($0,index($0,"=")+1);exit}' "$OUT")" = "$(awk -F= '$1=="guest_internal_pid"{print substr($0,index($0,"=")+1);exit}' "$OUT")" ]; [ "$(awk -F= '$1=="guest_proc_cwd"{print substr($0,index($0,"=")+1);exit}' "$OUT")" = /root ]; [ "$(awk -F= '$1=="guest_proc_root"{print substr($0,index($0,"=")+1);exit}' "$OUT")" != / ]
 echo POSITIVE_REAL_GUEST_EXECUTION=PASS; echo EXECUTION_EVIDENCE=PASS
 mutate_expect_block(){ local n=$1 k=$2 v=$3; cp "$AUTH" "$TMP/mut"; sed -i "s|^${k}=.*$|${k}=${v}|" "$TMP/mut"; rm -f "$TMP/out"; if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$TMP/mut" "$TMP/out" "$PROOT_EXEC" "$GUEST" >/dev/null 2>&1; then echo "$n=FAIL"; return 1; fi; echo "$n=PASS"; }
 mutate_expect_block NEGATIVE_WRONG_RUN pipeline_run_id run_20260908_093200_17002
