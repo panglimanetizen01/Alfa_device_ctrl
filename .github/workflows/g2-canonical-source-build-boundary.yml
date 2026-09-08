@@ -27,7 +27,9 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          test "${GITHUB_REF}" = refs/heads/master
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "${GITHUB_REF}" = refs/heads/master
+          fi
 
       - name: Run G1 prerequisite
         shell: bash
@@ -53,7 +55,8 @@ jobs:
           set -euo pipefail
           bash tools/test_gate2_contract.sh
 
-      - name: Run G2 canonical boundary
+      - name: Run G2 canonical boundary on canonical master
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         shell: bash
         run: |
           set -euo pipefail
@@ -61,11 +64,19 @@ jobs:
           test "$(sed -n 's/^gate_status=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = GREEN
           test "$(sed -n 's/^source_commit=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = "${GITHUB_SHA}"
 
+      - name: Verify PR does not substitute merge ref for canonical master
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "${GITHUB_BASE_REF}" = master
+          echo G2_PR_CANONICAL_MASTER_UNTOUCHED=PASS
+
       - name: Upload G2 evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v5
         with:
           name: alfa-g2-canonical-source-build-boundary-${{ github.sha }}
           path: artifacts/gates/g2/canonical-source-build-boundary.txt
           if-no-files-found: error
-
-      # Canonical verification marker: this workflow is intentionally self-triggered by master pushes.

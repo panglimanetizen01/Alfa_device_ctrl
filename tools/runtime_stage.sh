@@ -9,8 +9,10 @@ set -u
 
 main() {
     local STAGE RUN_ID INPUT1 INPUT2 OUTPUT ROOT CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA
-    local INPUT_STATUS INPUT2_STATUS STATUS REASON NOW COMMAND
-    local OUTPUT_TMP
+    local INPUT_STATUS INPUT2_STATUS STATUS REASON NOW COMMAND EXECUTION_PATH
+    local OUTPUT_TMP G17_SCHEMA G17_GATE G17_EXEC_ID G17_REQUEST G17_COMMAND G17_SEMANTICS
+    local G17_CMD_SHA G17_AUTH G17_EXEC G17_RESULT G17_RETURN G17_RESULT_SHA G17_RESULT_VALUE
+    local G17_G16_SHA G17_G16_ART G17_CREATED G17_PATH EXPECTED_COMMAND_SHA
 
     STAGE=${1:-}
     RUN_ID=${2:-}
@@ -35,6 +37,7 @@ main() {
     REASON='upstream artifact and current Gate 4 identity verified'
     INPUT_STATUS=$(chain_field "$INPUT1" gate_status 2>/dev/null || printf '%s' '')
     INPUT2_STATUS=$(chain_field "$INPUT2" gate_status 2>/dev/null || printf '%s' '')
+    EXECUTION_PATH=$(chain_field "$INPUT1" execution_path 2>/dev/null || printf '%s' 'UNKNOWN')
 
     if [ -z "$CONTRACT" ] || [ ! -f "$CONTRACT" ]; then
         STATUS=BLOCKED
@@ -73,13 +76,59 @@ main() {
             ;;
     esac
 
-    if [ "$STAGE" = 'gate18' ]; then
-        case "$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')" in
-            PASS) STATUS=PASS ;;
-            BLOCKED) STATUS=BLOCKED; REASON='execution was BLOCKED' ;;
-            ERROR) STATUS=ERROR; REASON='execution returned ERROR' ;;
-            *) STATUS=BLOCKED; REASON='execution status missing or invalid' ;;
-        esac
+    if [ "$STAGE" = 'gate18' ] && [ "$STATUS" = 'PASS' ]; then
+        G17_SCHEMA=$(chain_field "$INPUT1" schema_version 2>/dev/null || printf '%s' '')
+        G17_GATE=$(chain_field "$INPUT1" gate 2>/dev/null || printf '%s' '')
+        G17_EXEC_ID=$(chain_field "$INPUT1" execution_id 2>/dev/null || printf '%s' '')
+        G17_REQUEST=$(chain_field "$INPUT1" request_id 2>/dev/null || printf '%s' '')
+        G17_COMMAND=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')
+        G17_SEMANTICS=$(chain_field "$INPUT1" command_semantics 2>/dev/null || printf '%s' '')
+        G17_CMD_SHA=$(chain_field "$INPUT1" command_sha256 2>/dev/null || printf '%s' '')
+        G17_AUTH=$(chain_field "$INPUT1" authorization_status 2>/dev/null || printf '%s' '')
+        G17_EXEC=$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')
+        G17_RESULT=$(chain_field "$INPUT1" result_status 2>/dev/null || printf '%s' '')
+        G17_RETURN=$(chain_field "$INPUT1" command_returncode 2>/dev/null || printf '%s' '')
+        G17_RESULT_VALUE=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')
+        G17_RESULT_SHA=$(chain_field "$INPUT1" command_result_sha256 2>/dev/null || printf '%s' '')
+        G17_G16_SHA=$(chain_field "$INPUT1" gate16_authorization_sha256 2>/dev/null || printf '%s' '')
+        G17_G16_ART=$(chain_field "$INPUT1" gate16_authorization_artifact 2>/dev/null || printf '%s' '')
+        G17_CREATED=$(chain_field "$INPUT1" created_at 2>/dev/null || printf '%s' '')
+        G17_PATH=$(chain_field "$INPUT1" execution_path 2>/dev/null || printf '%s' '')
+        EXPECTED_COMMAND_SHA=$(printf '%s\n' pwd | sha256sum | awk '{print $1}')
+
+        if [ "$G17_SCHEMA" != 'gate17-runtime-execution.v1' ]; then
+            STATUS=BLOCKED; REASON='G17 schema invalid'
+        elif [ "$G17_GATE" != 'gate17' ]; then
+            STATUS=BLOCKED; REASON='G17 gate identity invalid'
+        elif [ "$G17_EXEC_ID" != "execution-pwd-$RUN_ID" ]; then
+            STATUS=BLOCKED; REASON='G17 execution identity mismatch'
+        elif [ "$G17_REQUEST" != "pwd-request-$RUN_ID" ]; then
+            STATUS=BLOCKED; REASON='G17 request identity mismatch'
+        elif [ "$G17_COMMAND" != 'pwd' ] || [ "$G17_SEMANTICS" != 'POSIX_PWD' ]; then
+            STATUS=BLOCKED; REASON='G17 command identity invalid'
+        elif [ "$G17_CMD_SHA" != "$EXPECTED_COMMAND_SHA" ]; then
+            STATUS=BLOCKED; REASON='G17 command hash mismatch'
+        elif [ "$G17_AUTH" != 'AUTHORIZED' ]; then
+            STATUS=BLOCKED; REASON='G17 authorization is not AUTHORIZED'
+        elif [ "$G17_EXEC" != 'PASS' ] || [ "$G17_RESULT" != 'PASS' ]; then
+            STATUS=BLOCKED; REASON='G17 execution/result status is not PASS'
+        elif [ "$G17_RETURN" != '0' ]; then
+            STATUS=BLOCKED; REASON='G17 command return code is not zero'
+        elif [ -z "$G17_RESULT_VALUE" ]; then
+            STATUS=BLOCKED; REASON='G17 command result is missing'
+        elif ! [[ "$G17_RESULT_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || [ "$(printf '%s\n' "$G17_RESULT_VALUE" | sha256sum | awk '{print $1}')" != "$G17_RESULT_SHA" ]; then
+            STATUS=BLOCKED; REASON='G17 command result hash mismatch'
+        elif ! [[ "$G17_G16_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || [ ! -f "$G17_G16_ART" ]; then
+            STATUS=BLOCKED; REASON='G17 Gate 16 authorization evidence missing'
+        elif [ "$(sha256sum "$G17_G16_ART" | awk '{print $1}')" != "$G17_G16_SHA" ]; then
+            STATUS=BLOCKED; REASON='G17 Gate 16 authorization hash mismatch'
+        elif [ -z "$G17_CREATED" ] || [ -z "$G17_PATH" ]; then
+            STATUS=BLOCKED; REASON='G17 execution timestamp or path missing'
+        else
+            STATUS=PASS
+            REASON='G17 execution evidence validated against current Gate 4 identity'
+            EXECUTION_PATH="$G17_PATH"
+        fi
     fi
 
     if [ "$STAGE" = 'gate19' ]; then
@@ -99,7 +148,7 @@ main() {
         printf '%s\n' "input_artifact=$INPUT1"
         if [ -n "$INPUT2" ]; then printf '%s\n' "input_artifact_2=$INPUT2"; fi
         printf '%s\n' "created_at=$NOW"
-        printf '%s\n' "execution_path=$ROOT"
+        printf '%s\n' "execution_path=$EXECUTION_PATH"
         case "$STAGE" in
             gate6) printf '%s\n' "decision=$(chain_field "$INPUT1" decision 2>/dev/null || printf '%s' '')"; printf '%s\n' "bootstrap_status=$STATUS" ;;
             gate7) printf '%s\n' "bootstrap_status=$(chain_field "$INPUT1" bootstrap_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "session_status=$STATUS" ;;

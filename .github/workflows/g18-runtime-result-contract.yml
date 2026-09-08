@@ -1,0 +1,50 @@
+name: g18-runtime-result-contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/runtime_chain_common.sh'
+      - 'tools/runtime_stage.sh'
+      - 'tools/runtime_execution_result.sh'
+      - 'tools/test_gate18_contract_strict.sh'
+      - 'docs/GATE_18_SPEC_V1.md'
+      - '.github/workflows/g18-runtime-result-contract.yml'
+  pull_request:
+    paths:
+      - 'tools/runtime_chain_common.sh'
+      - 'tools/runtime_stage.sh'
+      - 'tools/runtime_execution_result.sh'
+      - 'tools/test_gate18_contract_strict.sh'
+      - 'docs/GATE_18_SPEC_V1.md'
+      - '.github/workflows/g18-runtime-result-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  g18-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -u
+          test '${{ github.sha }}' = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+      - name: Verify G1-G17 protection
+        shell: bash
+        run: |
+          set -u
+          test -f tools/gate17_runtime_execution.sh
+          test -f tools/test_gate17_contract.sh
+          test -f tools/test_gate17_live.sh
+          grep -Fq 'G17 is intentionally not implemented here; use gate17_runtime_execution.sh.' tools/runtime_stage.sh
+          echo G1_G17_PROTECTION=PASS
+      - name: Run G18 strict contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate18_contract_strict.sh
