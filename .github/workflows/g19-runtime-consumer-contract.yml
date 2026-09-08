@@ -1,0 +1,73 @@
+name: g19-runtime-consumer-contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/runtime_chain_common.sh'
+      - 'tools/runtime_stage.sh'
+      - 'tools/runtime_result_consumer.sh'
+      - 'tools/test_gate19_contract_strict.sh'
+      - 'docs/GATE_18_SPEC_V1.md'
+      - 'docs/GATE_19_SPEC_V1.md'
+      - '.github/workflows/g19-runtime-consumer-contract.yml'
+  pull_request:
+    paths:
+      - 'tools/runtime_chain_common.sh'
+      - 'tools/runtime_stage.sh'
+      - 'tools/runtime_result_consumer.sh'
+      - 'tools/test_gate19_contract_strict.sh'
+      - 'docs/GATE_18_SPEC_V1.md'
+      - 'docs/GATE_19_SPEC_V1.md'
+      - '.github/workflows/g19-runtime-consumer-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  g19-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -u
+          test '${{ github.sha }}' = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+      - name: Verify G1-G17 protection
+        shell: bash
+        run: |
+          set -u
+          test -f tools/gate17_runtime_execution.sh
+          test -f tools/test_gate17_contract.sh
+          test -f tools/test_gate17_live.sh
+          grep -Fq 'G17 is intentionally not implemented here; use gate17_runtime_execution.sh.' tools/runtime_stage.sh
+          echo G1_G17_PROTECTION=PASS
+      - name: Verify G18 authority boundary
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'gate18)' tools/runtime_stage.sh
+          grep -Fq 'execution_id=$G17_EXEC_ID' tools/runtime_stage.sh
+          grep -Fq 'command_result_sha256=$(chain_field "$INPUT1" command_result_sha256' tools/runtime_stage.sh
+          echo G18_PROTECTION=PASS
+      - name: Run G18 strict contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate18_contract_strict.sh
+      - name: Run G19 strict contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate19_contract_strict.sh
+      - name: Verify terminal build unlock contract
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'next_phase=APK_BUILD_AND_UI' tools/runtime_result_consumer.sh
+          grep -Fq 'next_phase_status=' tools/runtime_result_consumer.sh
+          grep -Fq 'apk_build_status=' tools/runtime_result_consumer.sh
+          echo APK_UI_BUILD_BOUNDARY=DEFINED
