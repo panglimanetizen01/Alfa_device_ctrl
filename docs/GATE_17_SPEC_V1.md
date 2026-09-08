@@ -31,7 +31,7 @@ Result schema: `docs/GATE_17_RESULT_SCHEMA_V1.md`
 
 Contract test: `tools/test_gate17_contract.sh`
 
-Live current-run verification: `tools/test_gate17_live.sh`
+Live execution-boundary verification: `tools/test_gate17_live.sh`
 
 Expected artifact: `artifacts/pipeline/$RUN_ID/gate17/execution.txt`
 
@@ -46,15 +46,17 @@ No timestamp/newest-artifact discovery is permitted. Publication is atomic.
 G17 is GREEN only when both layers are proven:
 
 1. The dedicated contract test proves the execution boundary, exact provenance checks, objective execution evidence, negative fail-closed cases, and G1-G16 protection.
-2. A live current-run verification creates one fresh explicit Gate 4 run and drives the real G5-G17 chain to the authoritative G17 executor without synthetic upstream fixtures or newest-artifact selection.
+2. A live execution-boundary verification creates one fresh explicit Gate 4 run, obtains real current-run Gate 5 authorization, uses the real G16 producer with a controlled G15 policy envelope, and executes the real G17 executor against that current-run authorization. This verifies G17's own execution boundary without falsely requiring Android-produced G7 session evidence before APK integration is permitted.
 
-For Android/Termux acceptance, the same live current-run verification must additionally be executed from the canonical Termux project environment and its terminal output independently checked against the resulting G17 artifact. CI evidence is supplementary and does not replace target-device verification.
+The controlled G15 envelope is not evidence that G7-G15 integration has passed. G7-G15 retain their own locked verification evidence. Full Android session-to-execution integration remains a separate system-level acceptance activity after the corresponding product runtime is available.
+
+For Android/Termux acceptance, the live execution-boundary verification must be executed from the canonical Termux project environment and its terminal output independently checked against the resulting G17 artifact. CI evidence is supplementary and does not replace target-device verification.
 
 ## Initial State
 
 Specification: IMPLEMENTED
 Implementation: IMPLEMENTED
-Verification: IMPLEMENTED — LIVE GATE 17 VERIFICATION REQUIRED
+Verification: IMPLEMENTED — LIVE GATE 17 EXECUTION-BOUNDARY VERIFICATION REQUIRED
 
 ## Gate 6-19 implementation contract
 
