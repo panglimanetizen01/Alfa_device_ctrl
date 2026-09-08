@@ -54,12 +54,14 @@ if command -v apt-get >/dev/null 2>&1; then
   else
     apt-cache policy busybox-static >/dev/null 2>&1
   fi
-  apt-get download busybox-static >/dev/null
+  apt-get download "busybox-static:$(dpkg --print-architecture)" >/dev/null
   BUSYBOX_DEB=$(find . -maxdepth 1 -type f -name 'busybox-static_*.deb' -print -quit)
   test -n "$BUSYBOX_DEB"
   dpkg-deb -x "$BUSYBOX_DEB" "$TMP/busybox-pkg"
-  test -x "$TMP/busybox-pkg/bin/busybox"
-  cp -L "$TMP/busybox-pkg/bin/busybox" "$GUEST/bin/busybox"
+  BUSYBOX_BIN="$TMP/busybox-pkg/bin/busybox"
+  if [ ! -x "$BUSYBOX_BIN" ]; then BUSYBOX_BIN="$TMP/busybox-pkg/usr/bin/busybox"; fi
+  test -x "$BUSYBOX_BIN"
+  cp -L "$BUSYBOX_BIN" "$GUEST/bin/busybox"
 else
   echo G17_CONTRACT_TEST=BLOCKED
   echo G17_REASON=NO_DEBIAN_PACKAGE_MANAGER
