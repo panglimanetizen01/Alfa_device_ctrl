@@ -27,7 +27,9 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          test "${GITHUB_REF}" = refs/heads/master
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "${GITHUB_REF}" = refs/heads/master
+          fi
 
       - name: Run G1 prerequisite
         shell: bash
