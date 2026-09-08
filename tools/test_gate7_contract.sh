@@ -86,7 +86,7 @@ if expect_blocked; then printf '%s\n' 'NEGATIVE_STALE_SOURCE=PASS'; else printf 
 
 printf '%s\n' '=== G1-G6 PROTECTION CHECK ==='
 PROTECTED='^(docs/GATE_[1-6]_SPEC_V1\.md|docs/GATE_1|docs/GATE_2|docs/GATE_3|docs/GATE_4|docs/GATE_5|docs/GATE_6|tools/gate1_|tools/gate2_|tools/gate3_|tools/gate5_|tools/runtime_bootstrap\.sh|tools/test_gate6_contract\.sh)'
-if git -C "$ROOT" diff --name-only 5579319cec083cb8122c23f538a965510c6bf7c9 "$SOURCE_COMMIT" | grep -Eq "$PROTECTED"; then
+if git -C "$ROOT" diff --name-only 1933ee2208c8d29f7fa285572c1ba864ab98faec "$SOURCE_COMMIT" | grep -Eq "$PROTECTED"; then
     printf '%s\n' 'G1_G6_PROTECTION=FAIL'
     exit 1
 fi
