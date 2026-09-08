@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+T="app/src/androidTest/java/com/alfa/device_ctrl/G17AndroidRuntimeExecutionTest.java"
+L="tools/test_gate17_live.sh"
+test -s "$T"
+grep -Fq 'InstrumentationRegistry.getInstrumentation().getTargetContext()' "$T"
+grep -Fq 'android.os.Process.myUid()' "$T"
+grep -Fq 'new ProcessBuilder(x)' "$T"
+grep -Fq 'libproot.so' "$T"
+grep -Fq 'gate16-runtime-execution-authorization.v1' "$T"
+grep -Fq 'execution_status' "$T"
+grep -Fq 'DEFERRED:G17' "$T"
+grep -Fq 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "$T"
+! grep -Fq 'com.termux' "$T"
+! grep -Fq '/home/userland' "$T"
+! grep -Fq 'runtime_execution.sh' "$T"
+! grep -Fq 'RuntimeSessionManager' "$T"
+grep -Fq 'am instrument -w -r' "$L"
+grep -Fq 'G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime' "$L"
+ggrep -Fq 'gate16_path' "$L"
+grep -Fq 'run-as "$PACKAGE"' "$L"
+! grep -Fq 'gate17_runtime_execution.sh' "$L"
+! grep -Fq 'ALFA_G17_PROOT_EXEC' "$L"
+! grep -Fq 'ALFA_G17_ROOTFS' "$L"
+echo G17_ANDROID_INSTRUMENTATION_BOUNDARY=PASS
+echo G17_LIVE_DELEGATES_TO_ANDROID=PASS
