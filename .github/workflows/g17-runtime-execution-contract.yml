@@ -1,0 +1,74 @@
+name: g17-runtime-execution-contract
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'tools/gate17_runtime_execution.sh'
+      - 'tools/test_gate17_contract.sh'
+      - 'tools/runtime_stage.sh'
+      - 'docs/GATE_17_SPEC_V1.md'
+      - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g17-runtime-execution-contract.yml'
+  pull_request:
+    paths:
+      - 'tools/gate17_runtime_execution.sh'
+      - 'tools/test_gate17_contract.sh'
+      - 'tools/runtime_stage.sh'
+      - 'docs/GATE_17_SPEC_V1.md'
+      - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
+      - '.github/workflows/g17-runtime-execution-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  g17-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify source identity
+        shell: bash
+        run: |
+          set -u
+          test '${{ github.sha }}' = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+      - name: Verify G1-G16 protection
+        shell: bash
+        run: |
+          set -u
+          for p in \
+            tools/gate1_foundation_v2.sh tools/gate2_canonical_source_build_boundary.sh \
+            tools/execution_capability.sh tools/gate3_execution_capability.sh \
+            tools/environment_contract.sh tools/gate5_common.sh tools/runtime_bootstrap.sh \
+            tools/gate7_runtime_session.sh tools/gate8_runtime_task.sh tools/gate9_runtime_action.sh \
+            tools/gate10_runtime_workflow.sh tools/gate11_runtime_orchestrator.sh \
+            tools/gate12_runtime_kernel.sh tools/gate13_runtime_command_request.sh \
+            tools/gate14_runtime_command_validation.sh tools/gate15_runtime_command_policy.sh \
+            tools/test_gate15_contract.sh tools/gate16_runtime_execution_authorization.sh \
+            tools/test_gate16_contract.sh; do test -f "$p"; done
+          echo G1_G16_PROTECTION=PASS
+      - name: Verify legacy G17 path is not authoritative
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'G17 is intentionally not implemented here; use gate17_runtime_execution.sh.' tools/runtime_stage.sh
+          grep -Fq 'G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh' tools/runtime_stage.sh
+          ! grep -Fq 'COMMAND_RESULT=$(CDPATH= cd -- "$ROOT"' tools/runtime_stage.sh
+          echo LEGACY_G17_EXECUTION_REMOVED=PASS
+      - name: Run G17 contract test
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate17_contract.sh
+      - name: Validate G17 schema and execution boundary
+        shell: bash
+        run: |
+          set -u
+          grep -Fq 'schema_version=gate17-runtime-execution.v1' docs/GATE_17_RESULT_SCHEMA_V1.md
+          grep -Fq 'execution_status=PASS' tools/gate17_runtime_execution.sh
+          grep -Fq 'result_status=PASS' tools/gate17_runtime_execution.sh
+          grep -Fq 'command=pwd' tools/gate17_runtime_execution.sh
+          ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh|eval[[:space:]]' tools/gate17_runtime_execution.sh
+          echo G17_SCHEMA_BOUNDARY=PASS
