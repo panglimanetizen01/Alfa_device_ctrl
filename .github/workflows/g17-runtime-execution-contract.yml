@@ -84,7 +84,10 @@ jobs:
         run: |
           set -u
           test -f tools/test_gate17_live.sh
-          grep -Fq 'G17_LIVE_VERIFICATION=FAIL' tools/test_gate17_live.sh
+          grep -Fq 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' tools/test_gate17_live.sh
+          grep -Fq 'G17_LIVE_PACKAGE=' tools/test_gate17_live.sh
+          grep -Fq 'Android package identity could not be proven' tools/test_gate17_live.sh
+          grep -Fq 'Android installed APK identity could not be proven' tools/test_gate17_live.sh
           echo G17_HOSTED_CI_NOT_DUT=PASS
       - name: Validate G17 schema and execution boundary
         shell: bash
