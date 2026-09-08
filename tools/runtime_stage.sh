@@ -57,8 +57,7 @@ main() {
     fi
 
     case "$STAGE" in
-        gate6) ;;
-        gate7|gate8|gate9|gate10|gate11|gate12) ;;
+        gate6|gate7|gate8|gate9|gate10|gate11|gate12) ;;
         gate13) COMMAND='pwd' ;;
         gate16)
             STATUS=BLOCKED
@@ -69,7 +68,10 @@ main() {
             REASON='G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh'
             ;;
         gate18) ;;
-        gate19) ;;
+        gate19)
+            STATUS=BLOCKED
+            REASON='G19 is non-authoritative in runtime_stage.sh; use runtime_result_consumer.sh'
+            ;;
         *)
             STATUS=BLOCKED
             REASON='unknown or non-authoritative runtime gate'
@@ -131,10 +133,6 @@ main() {
         fi
     fi
 
-    if [ "$STAGE" = 'gate19' ]; then
-        if [ "$(chain_field "$INPUT1" result_status 2>/dev/null || printf '%s' '')" = 'PASS' ]; then STATUS=PASS; else STATUS=BLOCKED; REASON='runtime result is not PASS'; fi
-    fi
-
     mkdir -p "$(dirname -- "$OUTPUT")"
     OUTPUT_TMP="$OUTPUT.partial.$$"
     {
@@ -160,8 +158,23 @@ main() {
             gate13) printf '%s\n' "kernel_status=$(chain_field "$INPUT1" kernel_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$COMMAND"; printf '%s\n' "command_status=$STATUS" ;;
             gate16) printf '%s\n' 'authorization_status=DENIED'; printf '%s\n' 'execution_status=DEFERRED'; printf '%s\n' 'execution_authority=G17' ;;
             gate17) printf '%s\n' 'execution_status=BLOCKED'; printf '%s\n' 'execution_authority=G17' ;;
-            gate18) printf '%s\n' "execution_status=$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"; printf '%s\n' "command_result=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')"; printf '%s\n' "result_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'PASS' || printf '%s' "$STATUS")" ;;
-            gate19) printf '%s\n' "result_status=$(chain_field "$INPUT1" result_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "consume_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'ACCEPTED' || printf '%s' 'REJECTED')"; printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"; printf '%s\n' "command_result=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')" ;;
+            gate18)
+                printf '%s\n' "execution_id=$G17_EXEC_ID"
+                printf '%s\n' "request_id=$G17_REQUEST"
+                printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "command_semantics=$(chain_field "$INPUT1" command_semantics 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "command_sha256=$(chain_field "$INPUT1" command_sha256 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "authorization_status=$(chain_field "$INPUT1" authorization_status 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "execution_status=$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "command_result=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "command_returncode=$(chain_field "$INPUT1" command_returncode 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "command_result_sha256=$(chain_field "$INPUT1" command_result_sha256 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "gate16_authorization_sha256=$(chain_field "$INPUT1" gate16_authorization_sha256 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "gate16_authorization_artifact=$(chain_field "$INPUT1" gate16_authorization_artifact 2>/dev/null || printf '%s' '')"
+                printf '%s\n' "created_at=$G17_CREATED"
+                printf '%s\n' "result_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'PASS' || printf '%s' "$STATUS")"
+                ;;
+            gate19) ;;
         esac
         printf '%s\n' "stage_reason=$REASON"
     } > "$OUTPUT_TMP"
