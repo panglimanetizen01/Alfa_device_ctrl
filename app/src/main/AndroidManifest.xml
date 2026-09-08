@@ -18,7 +18,21 @@
             </intent-filter>
         </activity>
 
-            <activity
+        <activity
+            android:name=".Gate6ImportActivity"
+            android:exported="true"
+            android:label="Alfa Runtime Provisioning">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.alfa.device_ctrl.action.GATE6_IMPORT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name="com.alfa.device_ctrl.HostStorageDeviceProofActivity"
             android:exported="true"
             android:label="Alfa SAF Device Proof">
@@ -31,6 +45,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-</application>
+    </application>
 
 </manifest>
