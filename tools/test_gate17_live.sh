@@ -32,9 +32,10 @@ fi
 if [ "$FAIL" -eq 0 ]; then
     RUN_DIR="$ROOT/artifacts/pipeline/$RUN_ID"
     G4="$RUN_DIR/gate4/environment_contract.txt"
-    G5_REQ="$RUN_DIR/gate5/requests/pwd-request-$RUN_ID.txt"
-    G5_DEC="$RUN_DIR/gate5/decisions/pwd-request-$RUN_ID.txt"
-    G5_AUTH="$RUN_DIR/gate5/authorizations/gate5-self-test.txt"
+    G5_REQUEST_ID='gate5-self-test'
+    G5_REQ="$RUN_DIR/gate5/requests/$G5_REQUEST_ID.txt"
+    G5_DEC="$RUN_DIR/gate5/decisions/$G5_REQUEST_ID.txt"
+    G5_AUTH="$RUN_DIR/gate5/authorizations/$G5_REQUEST_ID.txt"
     G16="$RUN_DIR/gate16/authorization.txt"
     G17="$RUN_DIR/gate17/execution.txt"
 
@@ -46,7 +47,7 @@ fi
 
 if [ "$FAIL" -eq 0 ]; then
     printf '%s\n' '--- G5 REAL DECISION ---'
-    bash "$ROOT/tools/runtime_decision.sh" "$RUN_ID" "pwd-request-$RUN_ID" local-runtime pwd runtime purpose=self-test
+    bash "$ROOT/tools/runtime_decision.sh" "$RUN_ID" "$G5_REQUEST_ID" local-runtime pwd runtime purpose=self-test
     RC=$?
     [ "$RC" -eq 0 ] || fail G5_DECISION_RC_$RC
 fi
