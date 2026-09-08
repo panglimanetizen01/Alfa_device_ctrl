@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 TMP=$(mktemp -d 2>/dev/null || printf '%s/g17-test-%s' "$ROOT" "$$"); trap 'rm -rf "$TMP"' EXIT
-RUN_ID='run_20260908_093200_17001'; HEAD=$(git -C "$ROOT" rev-parse HEAD")
+RUN_ID='run_20260908_093200_17001'; HEAD=$(git -C "$ROOT" rev-parse HEAD)
 G15="$TMP/g15.txt"; G5="$TMP/g5.txt"; AUTH="$TMP/g16.txt"; OUT="$TMP/g17.txt"; GUEST="$TMP/rootfs"
 printf '%s\n' g15 > "$G15"; printf '%s\n' g5 > "$G5"; mkdir -p "$GUEST/root" "$GUEST/etc" "$GUEST/bin" "$GUEST/usr/bin"
 G15_SHA=$(sha256sum "$G15"|awk '{print $1}'); G5_SHA=$(sha256sum "$G5"|awk '{print $1}'); G4=$(printf g4|sha256sum|awk '{print $1}'); PROFILE=$(printf profile|sha256sum|awk '{print $1}'); CMD_SHA=$(printf '%s\n' pwd|sha256sum|awk '{print $1}')
