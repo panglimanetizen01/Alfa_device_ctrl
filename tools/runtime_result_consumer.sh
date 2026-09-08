@@ -5,7 +5,7 @@ set -u
 main() {
     local ROOT RUN_ID INPUT OUTPUT CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA STATUS REASON NOW TMP
     local SCHEMA GATE GATE_STATUS PIPELINE SOURCE G4SHA PROFILE INPUT_ART CREATED
-    local EXEC_ID REQUEST COMMAND SEMANTICS CMD_SHA AUTH EXEC RESULT RETURN RESULT_VALUE RESULT_SHA G16_SHA G16_ART PATH
+    local EXEC_ID REQUEST COMMAND SEMANTICS CMD_SHA AUTH EXEC RESULT RETURN RESULT_VALUE RESULT_SHA G16_SHA G16_ART EXECUTION_PATH
     ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
     RUN_ID=${1:-}
     INPUT=${2:-}
@@ -48,7 +48,7 @@ main() {
     RESULT_SHA=$(chain_field "$INPUT" command_result_sha256 2>/dev/null || printf '%s' '')
     G16_SHA=$(chain_field "$INPUT" gate16_authorization_sha256 2>/dev/null || printf '%s' '')
     G16_ART=$(chain_field "$INPUT" gate16_authorization_artifact 2>/dev/null || printf '%s' '')
-    PATH=$(chain_field "$INPUT" execution_path 2>/dev/null || printf '%s' '')
+    EXECUTION_PATH=$(chain_field "$INPUT" execution_path 2>/dev/null || printf '%s' '')
 
     if [ ! -f "$INPUT" ]; then
         STATUS=BLOCKED; REASON='G18 result artifact missing'
@@ -68,7 +68,7 @@ main() {
         STATUS=BLOCKED; REASON='G18 command identity invalid'
     elif [ "$AUTH" != 'AUTHORIZED' ] || [ "$EXEC" != 'PASS' ] || [ "$RESULT" != 'PASS' ] || [ "$RETURN" != '0' ]; then
         STATUS=BLOCKED; REASON='G18 execution/result authorization state invalid'
-    elif [ -z "$RESULT_VALUE" ] || [ -z "$PATH" ] || [ -z "$CREATED" ]; then
+    elif [ -z "$RESULT_VALUE" ] || [ -z "$EXECUTION_PATH" ] || [ -z "$CREATED" ]; then
         STATUS=BLOCKED; REASON='G18 result evidence incomplete'
     elif ! [[ "$CMD_SHA" =~ ^[0-9a-fA-F]{64}$ ]] || [ "$CMD_SHA" != "$(printf '%s\n' pwd | sha256sum | awk '{print $1}')" ]; then
         STATUS=BLOCKED; REASON='G18 command hash invalid'
@@ -106,7 +106,7 @@ main() {
         printf '%s\n' "command_result_sha256=$RESULT_SHA"
         printf '%s\n' "gate16_authorization_sha256=$G16_SHA"
         printf '%s\n' "gate16_authorization_artifact=$G16_ART"
-        printf '%s\n' "execution_path=$PATH"
+        printf '%s\n' "execution_path=$EXECUTION_PATH"
         printf '%s\n' "consume_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'ACCEPTED' || printf '%s' 'REJECTED')"
         printf '%s\n' "next_phase=APK_BUILD_AND_UI"
         printf '%s\n' "next_phase_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'UNLOCKED' || printf '%s' 'BLOCKED')"
