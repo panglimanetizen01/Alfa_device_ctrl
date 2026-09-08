@@ -5,8 +5,6 @@ PACKAGE=${ALFA_ANDROID_PACKAGE:-com.alfa.device_ctrl}
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/alfa-g17-live.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT HUP INT TERM
 
-# Build only the authorization/provenance chain on the host. G17 itself is never
-# executed here; the Android instrumentation test is the sole live executor.
 PIPE_OUT="$TMP/pipeline.out"
 if ! bash "$ROOT/tools/runtime_pipeline.sh" >"$PIPE_OUT" 2>&1; then
     cat "$PIPE_OUT"
@@ -26,7 +24,6 @@ PROFILE_ART="$ROOT/$PROFILE_REL"
 [ -s "$PROFILE_ART" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=profile artifact missing'; exit 1; }
 G4_SHA=$(sha256sum "$G4_ART" | awk '{print $1}')
 PROFILE_SHA=$(sha256sum "$PROFILE_ART" | awk '{print $1}')
-
 G11="$TMP/g11.kernel-input"; G12="$TMP/g12.kernel"; G13="$TMP/g13.request"; G14="$TMP/g14.validation"; G15="$TMP/g15.policy"; G5="$TMP/g5.authorization"; G16="$TMP/g16.authorization"
 cat > "$G11" <<EOF
 schema_version=gate11-runtime-orchestrator.v1
@@ -44,7 +41,6 @@ bash "$ROOT/tools/gate12_runtime_kernel.sh" "$RUN_ID" "$G11" "$G12" >/dev/null
 bash "$ROOT/tools/gate13_runtime_command_request.sh" "$RUN_ID" "$G12" "$G13" >/dev/null
 bash "$ROOT/tools/gate14_runtime_command_validation.sh" "$RUN_ID" "$G13" "$G14" >/dev/null
 bash "$ROOT/tools/gate15_runtime_command_policy.sh" "$RUN_ID" "$G14" "$G15" >/dev/null
-
 DECISION_ID="decision-$RUN_ID"
 cat > "$G5" <<EOF
 schema_version=gate5-authorization.v1
@@ -59,7 +55,6 @@ decision_id=$DECISION_ID
 authorization_status=AUTHORIZED
 EOF
 bash "$ROOT/tools/gate16_runtime_execution_authorization.sh" "$RUN_ID" "$G15" "$G5" "$G16" >/dev/null
-
 ANDROID_UID=$(cmd package list packages -U "$PACKAGE" 2>/dev/null | awk -v p="$PACKAGE" '$1=="package:"p {print $3;exit}' || true)
 [ -n "$ANDROID_UID" ] || ANDROID_UID=$(dumpsys package "$PACKAGE" 2>/dev/null | sed -n 's/.*userId=\([0-9][0-9]*\).*/\1/p' | head -n1 || true)
 [ -n "$ANDROID_UID" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=Android package identity could not be proven'; exit 1; }
@@ -67,7 +62,6 @@ APK_PATH=$(pm path "$PACKAGE" 2>/dev/null | sed -n '1s/^package://p')
 [ -n "$APK_PATH" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=Android installed APK identity could not be proven'; exit 1; }
 INSTRUMENTATION=$(pm list instrumentation 2>/dev/null | awk -v p="$PACKAGE" '$0 ~ "target="p {line=$0; sub(/^instrumentation:/,"",line); sub(/ \(target=.*/,"",line); print line; exit}')
 [ -n "$INSTRUMENTATION" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=Android instrumentation targeting package not installed'; exit 1; }
-
 APP_G17_DIR='files/g17'; APP_G16="$APP_G17_DIR/gate16.authorization"
 run-as "$PACKAGE" sh -c "mkdir -p '$APP_G17_DIR' && rm -f '$APP_G16'"
 run-as "$PACKAGE" sh -c "cat > '$APP_G16'" < "$G16"
@@ -75,7 +69,7 @@ run-as "$PACKAGE" sh -c "test -s '$APP_G16'"
 APP_DATA_DIR=$(run-as "$PACKAGE" sh -c 'pwd')
 [ -n "$APP_DATA_DIR" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=app-private data directory could not be proven'; exit 1; }
 GATE16_DUT_PATH="$APP_DATA_DIR/$APP_G16"
-TEST_CLASS='com.alfa.device_ctrl.G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime'
+TEST_CLASS='com.alfa.device_ctrl.test.G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime'
 RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "$GATE16_DUT_PATH" -e source_commit "$HEAD" "$INSTRUMENTATION" 2>&1) || {
     printf '%s\n' "$RESULT"
     echo 'G17_LIVE_STATUS=FAIL'
@@ -86,7 +80,6 @@ printf '%s\n' "$RESULT"
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_STATUS=PASS' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not produce objective PASS marker'; exit 1; }
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not prove real Android DUT execution'; exit 1; }
 printf '%s\n' "$RESULT" | grep -Fqx "G17_LIVE_APK_SOURCE_COMMIT=$HEAD" || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=installed APK provenance does not match source HEAD'; exit 1; }
-
 G17_DEVICE='files/g17/gate17-runtime-execution.v1'
 run-as "$PACKAGE" sh -c "test -s '$G17_DEVICE'"
 DEVICE_ARTIFACT=$(run-as "$PACKAGE" sh -c "cat '$G17_DEVICE'")
