@@ -3,13 +3,14 @@
 # G14 is intentionally not implemented here; use gate14_runtime_command_validation.sh.
 # G15 is intentionally not implemented here; use gate15_runtime_command_policy.sh.
 # G16 is intentionally not implemented here; use gate16_runtime_execution_authorization.sh.
+# G17 is intentionally not implemented here; use gate17_runtime_execution.sh.
 
 set -u
 
 main() {
     local STAGE RUN_ID INPUT1 INPUT2 OUTPUT ROOT CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA
-    local INPUT_STATUS INPUT2_STATUS STATUS REASON NOW COMMAND COMMAND_RESULT RETURN_CODE
-    local INPUT_REL INPUT2_REL OUTPUT_TMP
+    local INPUT_STATUS INPUT2_STATUS STATUS REASON NOW COMMAND
+    local OUTPUT_TMP
 
     STAGE=${1:-}
     RUN_ID=${2:-}
@@ -61,9 +62,8 @@ main() {
             REASON='G16 is non-authoritative in runtime_stage.sh; use gate16_runtime_execution_authorization.sh'
             ;;
         gate17)
-            if [ "$STATUS" = 'PASS' ] && [ "$(chain_field "$INPUT1" authorization_status 2>/dev/null || printf '%s' '')" != 'AUTHORIZED' ]; then STATUS=BLOCKED; REASON='authorization is not AUTHORIZED'; fi
-            if [ "$STATUS" = 'PASS' ] && [ ! -f "$INPUT2" ]; then STATUS=BLOCKED; REASON='command artifact missing'; fi
-            if [ "$STATUS" = 'PASS' ] && [ "$(chain_field "$INPUT2" command 2>/dev/null || printf '%s' '')" != 'pwd' ]; then STATUS=BLOCKED; REASON='command is not pwd'; fi
+            STATUS=BLOCKED
+            REASON='G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh'
             ;;
         gate18) ;;
         gate19) ;;
@@ -72,13 +72,6 @@ main() {
             REASON='unknown or non-authoritative runtime gate'
             ;;
     esac
-
-    if [ "$STAGE" = 'gate17' ] && [ "$STATUS" = 'PASS' ]; then
-        COMMAND='pwd'
-        COMMAND_RESULT=$(CDPATH= cd -- "$ROOT" 2>/dev/null && pwd 2>/dev/null)
-        RETURN_CODE=$?
-        if [ "$RETURN_CODE" -ne 0 ] || [ -z "$COMMAND_RESULT" ]; then STATUS=ERROR; REASON='pwd execution failed'; fi
-    fi
 
     if [ "$STAGE" = 'gate18' ]; then
         case "$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')" in
@@ -117,7 +110,7 @@ main() {
             gate12) printf '%s\n' "orchestrator_status=$(chain_field "$INPUT1" orchestrator_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "kernel_status=$STATUS"; printf '%s\n' 'kernel_name=runtime_self_kernel' ;;
             gate13) printf '%s\n' "kernel_status=$(chain_field "$INPUT1" kernel_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$COMMAND"; printf '%s\n' "command_status=$STATUS" ;;
             gate16) printf '%s\n' 'authorization_status=DENIED'; printf '%s\n' 'execution_status=DEFERRED'; printf '%s\n' 'execution_authority=G17' ;;
-            gate17) printf '%s\n' "authorization_status=$(chain_field "$INPUT1" authorization_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=pwd"; printf '%s\n' "execution_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'PASS' || printf '%s' "$STATUS")"; if [ "$STATUS" = 'PASS' ]; then printf '%s\n' "command_result=$COMMAND_RESULT"; printf '%s\n' "command_returncode=$RETURN_CODE"; else printf '%s\n' 'command_result=NOT_EXECUTED'; fi ;;
+            gate17) printf '%s\n' 'execution_status=BLOCKED'; printf '%s\n' 'execution_authority=G17' ;;
             gate18) printf '%s\n' "execution_status=$(chain_field "$INPUT1" execution_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"; printf '%s\n' "command_result=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')"; printf '%s\n' "result_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'PASS' || printf '%s' "$STATUS")" ;;
             gate19) printf '%s\n' "result_status=$(chain_field "$INPUT1" result_status 2>/dev/null || printf '%s' '')"; printf '%s\n' "consume_status=$([ "$STATUS" = 'PASS' ] && printf '%s' 'ACCEPTED' || printf '%s' 'REJECTED')"; printf '%s\n' "command=$(chain_field "$INPUT1" command 2>/dev/null || printf '%s' '')"; printf '%s\n' "command_result=$(chain_field "$INPUT1" command_result 2>/dev/null || printf '%s' '')" ;;
         esac
