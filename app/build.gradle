@@ -2,9 +2,20 @@ plugins {
     id 'com.android.application'
 }
 
+def alfaSourceCommit = providers.environmentVariable('ALFA_SOURCE_COMMIT')
+        .orElse(providers.exec { commandLine 'git', 'rev-parse', 'HEAD' }.standardOutput.asText.map { it.trim() })
+        .get()
+if (!(alfaSourceCommit ==~ /[0-9a-f]{40}/)) {
+    throw new GradleException("ALFA_SOURCE_COMMIT must be a 40-character git SHA: ${alfaSourceCommit}")
+}
+
 android {
     namespace 'com.alfa.device_ctrl'
     compileSdk 35
+
+    buildFeatures {
+        buildConfig true
+    }
 
     buildTypes {
         debug {
@@ -19,6 +30,7 @@ android {
         versionCode 1
         versionName '0.1.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        buildConfigField 'String', 'ALFA_SOURCE_COMMIT', '"' + alfaSourceCommit + '"'
     }
 }
 
