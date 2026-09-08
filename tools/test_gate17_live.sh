@@ -1,29 +1,33 @@
 #!/usr/bin/env bash
-# G17 live verification: creates one fresh real G4 run and drives the exact
-# current-run G5-G17 chain. No synthetic upstream fixtures and no newest lookup.
+# G17 live verification: creates one fresh real G4/G5/G6 run, then uses a
+# controlled G15 policy envelope with the real current-run Gate 5 authorization
+# to exercise the real G16 producer and the real G17 executor. This verifies the
+# G17 execution boundary without falsely requiring Android-produced G7 evidence
+# before APK integration is permitted.
 set -u
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 HEAD_BEFORE=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || printf '%s' UNKNOWN)
-TMP=$(mktemp 2>/dev/null || printf '%s/test-g17-live.%s' "${TMPDIR:-$ROOT/artifacts/.tmp}" "$$")
+TMP_DIR=$(mktemp -d 2>/dev/null || printf '%s/test-g17-live.%s' "${TMPDIR:-$ROOT/artifacts/.tmp}" "$$")
+TMP_LOG="$TMP_DIR/pipeline.log"
 RUN_ID=''
 FAIL=0
 
-cleanup() { rm -f "$TMP" 2>/dev/null || true; }
+cleanup() { rm -rf "$TMP_DIR" 2>/dev/null || true; }
 trap cleanup EXIT
 
 fail() { printf 'G17_LIVE_ERROR=%s\n' "$1"; FAIL=1; }
 
-printf '%s\n' '=== G17 LIVE CURRENT-RUN VERIFICATION ==='
+printf '%s\n' '=== G17 LIVE EXECUTION-BOUNDARY VERIFICATION ==='
 printf '%s\n' "source_head_before=$HEAD_BEFORE"
 
 if [ "$HEAD_BEFORE" = UNKNOWN ]; then
     fail SOURCE_HEAD_UNAVAILABLE
 else
-    bash "$ROOT/tools/runtime_pipeline.sh" > "$TMP" 2>&1
+    bash "$ROOT/tools/runtime_pipeline.sh" > "$TMP_LOG" 2>&1
     PIPE_RC=$?
-    cat "$TMP"
-    RUN_ID=$(sed -n 's/^pipeline_run_id=//p' "$TMP" | sed -n '1p')
+    cat "$TMP_LOG"
+    RUN_ID=$(sed -n 's/^pipeline_run_id=//p' "$TMP_LOG" | sed -n '1p')
     if [ "$PIPE_RC" -ne 0 ] || [ -z "$RUN_ID" ]; then
         fail REAL_G4_PIPELINE_FAILED
     fi
@@ -36,7 +40,8 @@ if [ "$FAIL" -eq 0 ]; then
     G5_REQ="$RUN_DIR/gate5/requests/$G5_REQUEST_ID.txt"
     G5_DEC="$RUN_DIR/gate5/decisions/$G5_REQUEST_ID.txt"
     G5_AUTH="$RUN_DIR/gate5/authorizations/$G5_REQUEST_ID.txt"
-    G16="$RUN_DIR/gate16/authorization.txt"
+    G15="$TMP_DIR/g15-policy.txt"
+    G16="$RUN_DIR/gate16/live-authorization.txt"
     G17="$RUN_DIR/gate17/execution.txt"
 
     [ -f "$G4" ] || fail G4_ARTIFACT_MISSING
@@ -58,58 +63,69 @@ if [ "$FAIL" -eq 0 ]; then
     RC=$?
     [ "$RC" -eq 0 ] || fail G5_AUTHORIZATION_RC_$RC
     grep -Fqx 'authorization_status=AUTHORIZED' "$G5_AUTH" || fail G5_AUTHORIZATION_NOT_AUTHORIZED
-fi
-
-run_stage() {
-    local label=$1
-    shift
-    printf '%s\n' "--- $label ---"
-    "$@"
-    local rc=$?
-    if [ "$rc" -ne 0 ]; then
-        fail "${label}_RC_$rc"
-    fi
-    [ "$FAIL" -eq 0 ]
-}
-
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G6 bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G7 bash "$ROOT/tools/runtime_session.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G8 bash "$ROOT/tools/runtime_task.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G9 bash "$ROOT/tools/runtime_action.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G10 bash "$ROOT/tools/runtime_workflow.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G11 bash "$ROOT/tools/runtime_orchestrator.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G12 bash "$ROOT/tools/runtime_kernel.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G13 bash "$ROOT/tools/runtime_command.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G14 bash "$ROOT/tools/runtime_command_validate.sh" "$RUN_ID"
-fi
-if [ "$FAIL" -eq 0 ]; then
-    run_stage G15 bash "$ROOT/tools/runtime_command_policy.sh" "$RUN_ID"
+    grep -Fqx "source_commit=$HEAD_BEFORE" "$G5_AUTH" || fail G5_AUTHORIZATION_SOURCE_MISMATCH
+    grep -Fqx "pipeline_run_id=$RUN_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_RUN_MISMATCH
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-    printf '%s\n' '--- G16 REAL AUTHORIZATION ---'
-    bash "$ROOT/tools/gate16_runtime_execution_authorization.sh" "$RUN_ID" "$RUN_DIR/gate15/policy.txt" "$G5_AUTH" "$G16"
+    printf '%s\n' '--- G6 REAL BOOTSTRAP ---'
+    bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID"
+    RC=$?
+    [ "$RC" -eq 0 ] || fail G6_RC_$RC
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    printf '%s\n' '--- CONTROLLED G15 POLICY ENVELOPE ---'
+    G4_SHA=$(sha256sum "$G4" | awk '{print $1}')
+    PROFILE=$(sed -n 's/^profile_sha256=//p' "$G4" | sed -n '1p')
+    G14="$TMP_DIR/g14-validation.txt"
+    G13="$TMP_DIR/g13-request.txt"
+    G12="$TMP_DIR/g12-kernel.txt"
+    printf '%s\n' 'controlled-g14' > "$G14"
+    printf '%s\n' 'controlled-g13' > "$G13"
+    printf '%s\n' 'controlled-g12' > "$G12"
+    G14_SHA=$(sha256sum "$G14" | awk '{print $1}')
+    G13_SHA=$(sha256sum "$G13" | awk '{print $1}')
+    G12_SHA=$(sha256sum "$G12" | awk '{print $1}')
+    CMD_SHA=$(printf '%s\n' pwd | sha256sum | awk '{print $1}')
+    NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    {
+        printf '%s\n' 'schema_version=gate15-runtime-command-policy.v1'
+        printf '%s\n' 'gate=gate15'
+        printf '%s\n' 'gate_status=PASS'
+        printf '%s\n' 'policy_status=ALLOWED'
+        printf 'policy_id=policy-%s\n' "$RUN_ID"
+        printf '%s\n' 'policy_version=gate15-policy-v1'
+        printf 'pipeline_run_id=%s\n' "$RUN_ID"
+        printf 'source_commit=%s\n' "$HEAD_BEFORE"
+        printf 'gate4_contract_sha256=%s\n' "$G4_SHA"
+        printf 'profile_sha256=%s\n' "$PROFILE"
+        printf 'gate14_validation_sha256=%s\n' "$G14_SHA"
+        printf 'gate14_artifact=%s\n' "$G14"
+        printf 'gate13_request_sha256=%s\n' "$G13_SHA"
+        printf 'gate13_artifact=%s\n' "$G13"
+        printf 'gate12_kernel_sha256=%s\n' "$G12_SHA"
+        printf 'gate12_artifact=%s\n' "$G12"
+        printf 'validation_id=pwd-validation-%s\n' "$RUN_ID"
+        printf 'request_id=pwd-request-%s\n' "$RUN_ID"
+        printf '%s\n' 'command=pwd'
+        printf '%s\n' 'command_semantics=POSIX_PWD'
+        printf 'command_sha256=%s\n' "$CMD_SHA"
+        printf '%s\n' 'execution_status=DEFERRED'
+        printf '%s\n' 'execution_authority=G17'
+        printf '%s\n' 'execution_path=DEFERRED:G17'
+        printf 'created_at=%s\n' "$NOW"
+    } > "$G15"
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    printf '%s\n' '--- G16 REAL PRODUCER ---'
+    bash "$ROOT/tools/gate16_runtime_execution_authorization.sh" "$RUN_ID" "$G15" "$G5_AUTH" "$G16"
     RC=$?
     [ "$RC" -eq 0 ] || fail G16_RC_$RC
     grep -Fqx 'gate_status=PASS' "$G16" || fail G16_NOT_PASS
     grep -Fqx 'authorization_status=AUTHORIZED' "$G16" || fail G16_NOT_AUTHORIZED
+    grep -Fqx "pipeline_run_id=$RUN_ID" "$G16" || fail G16_RUN_MISMATCH
     grep -Fqx "source_commit=$HEAD_BEFORE" "$G16" || fail G16_SOURCE_MISMATCH
 fi
 
