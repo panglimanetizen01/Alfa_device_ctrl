@@ -6,7 +6,11 @@ on:
     paths:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
+      - 'tools/test_gate17_live.sh'
       - 'tools/runtime_stage.sh'
+      - 'tools/runtime_pipeline.sh'
+      - 'tools/runtime_discovery.sh'
+      - 'tools/execution_capability.sh'
       - 'docs/GATE_17_SPEC_V1.md'
       - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
       - '.github/workflows/g17-runtime-execution-contract.yml'
@@ -14,7 +18,11 @@ on:
     paths:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
+      - 'tools/test_gate17_live.sh'
       - 'tools/runtime_stage.sh'
+      - 'tools/runtime_pipeline.sh'
+      - 'tools/runtime_discovery.sh'
+      - 'tools/execution_capability.sh'
       - 'docs/GATE_17_SPEC_V1.md'
       - 'docs/GATE_17_RESULT_SCHEMA_V1.md'
       - '.github/workflows/g17-runtime-execution-contract.yml'
@@ -23,11 +31,20 @@ on:
 jobs:
   g17-contract:
     runs-on: ubuntu-latest
+    env:
+      ALFA_EXEC_SHARED_ROOT: ${{ runner.temp }}/alfa-shared
     steps:
       - name: Checkout exact source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare controlled CI capability root
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "$ALFA_EXEC_SHARED_ROOT"
+          test -d "$ALFA_EXEC_SHARED_ROOT"
+          echo "ALFA_EXEC_SHARED_ROOT=$ALFA_EXEC_SHARED_ROOT"
       - name: Verify source identity
         shell: bash
         run: |
@@ -57,11 +74,16 @@ jobs:
           grep -Fq 'G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh' tools/runtime_stage.sh
           ! grep -Fq 'COMMAND_RESULT=$(CDPATH= cd -- "$ROOT"' tools/runtime_stage.sh
           echo LEGACY_G17_EXECUTION_REMOVED=PASS
-      - name: Run G17 contract test
+      - name: Run G17 synthetic boundary contract test
         shell: bash
         run: |
           set -u
           bash tools/test_gate17_contract.sh
+      - name: Run G17 live current-run chain verification
+        shell: bash
+        run: |
+          set -u
+          bash tools/test_gate17_live.sh
       - name: Validate G17 schema and execution boundary
         shell: bash
         run: |
