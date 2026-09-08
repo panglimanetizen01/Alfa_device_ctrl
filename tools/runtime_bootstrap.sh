@@ -4,22 +4,23 @@
 set -u
 
 main() {
-    local ROOT RUN_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT
-    local CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA DECISION_ID REQUEST_ID
+    local ROOT RUN_ID REQUEST_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT
+    local CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA DECISION_ID
     local AUTH_STATUS AUTH_DECISION_ID AUTH_REQUEST_ID AUTH_RUN AUTH_SOURCE AUTH_PROFILE AUTH_CONTRACT
     local STATUS REASON PROBE NOW MARKER_CONTENT MARKER_READ
 
     ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
     RUN_ID=${1:-}
-    if [ -z "$RUN_ID" ]; then
+    REQUEST_ID=${2:-}
+    if [ -z "$RUN_ID" ] || [ -z "$REQUEST_ID" ]; then
         printf '%s\n' 'GATE6_STATUS=BLOCKED'
-        printf '%s\n' 'GATE6_REASON=explicit pipeline_run_id is required'
+        printf '%s\n' 'GATE6_REASON=explicit pipeline_run_id and Gate 5 request_id are required'
         return 1
     fi
 
     IMPLEMENTATION_COMMIT=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || printf '%s' 'UNKNOWN')
-    DECISION="$ROOT/artifacts/pipeline/$RUN_ID/gate5/decisions/gate5-self-test.txt"
-    AUTH="$ROOT/artifacts/pipeline/$RUN_ID/gate5/authorizations/gate5-self-test.txt"
+    DECISION="$ROOT/artifacts/pipeline/$RUN_ID/gate5/decisions/$REQUEST_ID.txt"
+    AUTH="$ROOT/artifacts/pipeline/$RUN_ID/gate5/authorizations/$REQUEST_ID.txt"
     OUTPUT="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap.txt"
     STATE_DIR="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap-state"
     MARKER="$STATE_DIR/bootstrap.marker"
@@ -31,7 +32,6 @@ main() {
     PROFILE_SHA=$(chain_field "$CONTRACT" profile_sha256 2>/dev/null || printf '%s' '')
     CONTRACT_SHA=$(chain_hash "$CONTRACT" 2>/dev/null || printf '%s' '')
     DECISION_ID=$(chain_field "$DECISION" decision_id 2>/dev/null || printf '%s' '')
-    REQUEST_ID=$(chain_field "$DECISION" request_id 2>/dev/null || printf '%s' '')
     AUTH_STATUS=$(chain_field "$AUTH" authorization_status 2>/dev/null || printf '%s' '')
     AUTH_DECISION_ID=$(chain_field "$AUTH" decision_id 2>/dev/null || printf '%s' '')
     AUTH_REQUEST_ID=$(chain_field "$AUTH" request_id 2>/dev/null || printf '%s' '')
@@ -48,21 +48,23 @@ main() {
     if [ -z "$CONTRACT" ] || [ ! -f "$CONTRACT" ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 4 contract missing, malformed, or not VALID'
     elif [ ! -f "$DECISION" ]; then
-        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision artifact missing'
+        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision artifact missing for explicit request_id'
     elif [ ! -f "$AUTH" ]; then
-        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization artifact missing'
+        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization artifact missing for explicit request_id'
     elif ! chain_identity_ok "$CONTRACT" "$DECISION"; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision provenance mismatch'
     elif ! chain_identity_ok "$CONTRACT" "$AUTH"; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization provenance mismatch'
+    elif [ "$(chain_field "$DECISION" request_id 2>/dev/null || printf '%s' '')" != "$REQUEST_ID" ]; then
+        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision request_id mismatch'
     elif [ "$(chain_field "$DECISION" decision 2>/dev/null || printf '%s' '')" != 'ALLOW' ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision is not ALLOW'
     elif [ "$AUTH_STATUS" != 'AUTHORIZED' ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization is not AUTHORIZED'
     elif [ -z "$DECISION_ID" ] || [ "$AUTH_DECISION_ID" != "$DECISION_ID" ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 decision_id mismatch'
-    elif [ -z "$REQUEST_ID" ] || [ "$AUTH_REQUEST_ID" != "$REQUEST_ID" ]; then
-        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 request_id mismatch'
+    elif [ "$AUTH_REQUEST_ID" != "$REQUEST_ID" ]; then
+        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization request_id mismatch'
     elif [ "$AUTH_RUN" != "$RUN_ID" ] || [ "$AUTH_SOURCE" != "$SOURCE_COMMIT" ] || [ "$AUTH_PROFILE" != "$PROFILE_SHA" ] || [ "$AUTH_CONTRACT" != "$CONTRACT_SHA" ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization identity is incomplete or stale'
     fi
@@ -118,6 +120,7 @@ main() {
 
     printf '%s\n' '=== ALFA GATE 6 V1 BOOTSTRAP ==='
     printf '%s\n' "pipeline_run_id=$RUN_ID"
+    printf '%s\n' "request_id=$REQUEST_ID"
     printf '%s\n' "GATE6_STATUS=$STATUS"
     printf '%s\n' "GATE6_RESULT=$([ "$STATUS" = 'PASS' ] && printf '%s' 'BOOTSTRAP_PASS' || printf '%s' "$STATUS")"
     printf '%s\n' "bootstrap_status=$STATUS"
