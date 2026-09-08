@@ -39,7 +39,14 @@ printf '%s\n' '=== G17 STATIC BOUNDARY ==='
 grep -Fq 'PROOT_EXEC=${4:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq 'ROOTFS=${5:-}' "$ROOT/tools/gate17_runtime_execution.sh"; grep -Fq '"$PROOT_EXEC" -r "$ROOTFS" -w /root /bin/sh -c "$GUEST_EVIDENCE_SCRIPT"' "$ROOT/tools/gate17_runtime_execution.sh"
 echo NO_G17_HOST_PWD=PASS; echo G17_PROOT_BOUNDARY=PASS
 printf '%s\n' '=== G17 REAL POSITIVE EXECUTION ==='
-bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$PROOT_EXEC" "$GUEST" >/dev/null
+if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$PROOT_EXEC" "$GUEST" >"$TMP/positive.stdout" 2>"$TMP/positive.stderr"; then
+  echo '--- G17 EXECUTOR STDOUT ---'; cat "$TMP/positive.stdout"
+  echo '--- G17 EXECUTOR STDERR ---'; cat "$TMP/positive.stderr"
+  echo '--- G17 ROOTFS EXECUTABLES ---'; ls -l "$GUEST/bin/sh" "$GUEST/usr/bin/readlink"
+  echo '--- G17 ROOTFS INTERPRETERS/LIBS ---'; ldd /bin/sh; ldd /usr/bin/readlink
+  echo '--- DIRECT PROOT DIAGNOSTIC ---'; "$PROOT_EXEC" -v 2 -r "$GUEST" -w /root /bin/sh -c 'printf "DIRECT_PWD=%s\\n" "$(pwd)"; /usr/bin/readlink /proc/self/exe; /usr/bin/readlink /proc/self/cwd; /usr/bin/readlink /proc/self/root' || true
+  exit 1
+fi
 grep -Fqx gate_status=PASS "$OUT"; grep -Fqx execution_status=EXECUTED "$OUT"; grep -Fqx result_status=PASS "$OUT"; grep -Fqx command=pwd "$OUT"; grep -Fqx command_returncode=0 "$OUT"; grep -Fqx command_result=/root "$OUT"
 for k in engine_path engine_sha256 rootfs_path rootfs_os_id guest_pid guest_internal_pid guest_proc_exe guest_proc_cwd guest_proc_root; do grep -Fq "${k}=" "$OUT"; done
 [ "$(awk -F= '$1=="guest_proc_cwd"{print substr($0,index($0,"=")+1);exit}' "$OUT")" = /root ]; [ "$(awk -F= '$1=="guest_proc_root"{print substr($0,index($0,"=")+1);exit}' "$OUT")" != / ]
