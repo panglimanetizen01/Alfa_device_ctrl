@@ -37,7 +37,11 @@ fi
 if [ "$FAIL" -eq 0 ]; then
     RUN_DIR="$ROOT/artifacts/pipeline/$RUN_ID"
     G4="$RUN_DIR/gate4/environment_contract.txt"
-    G5_REQUEST_ID='gate5-self-test'
+    # G16 requires the Gate 5 authorization to authorize the exact command
+    # request represented by G15. Therefore the live harness must construct
+    # the Gate 5 request with the same deterministic request_id as G13-G15,
+    # rather than using the unrelated gate5-self-test request identity.
+    G5_REQUEST_ID="pwd-request-$RUN_ID"
     G5_REQ="$RUN_DIR/gate5/requests/$G5_REQUEST_ID.txt"
     G5_DEC="$RUN_DIR/gate5/decisions/$G5_REQUEST_ID.txt"
     G5_AUTH="$RUN_DIR/gate5/authorizations/$G5_REQUEST_ID.txt"
@@ -66,6 +70,7 @@ if [ "$FAIL" -eq 0 ]; then
     grep -Fqx 'authorization_status=AUTHORIZED' "$G5_AUTH" || fail G5_AUTHORIZATION_NOT_AUTHORIZED
     grep -Fqx "source_commit=$HEAD_BEFORE" "$G5_AUTH" || fail G5_AUTHORIZATION_SOURCE_MISMATCH
     grep -Fqx "pipeline_run_id=$RUN_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_RUN_MISMATCH
+    grep -Fqx "request_id=$G5_REQUEST_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_REQUEST_MISMATCH
 fi
 
 if [ "$FAIL" -eq 0 ]; then
