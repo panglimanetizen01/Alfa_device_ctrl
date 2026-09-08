@@ -94,6 +94,6 @@ jobs:
           grep -Fq 'execution_status=EXECUTED' tools/gate17_runtime_execution.sh
           grep -Fq 'result_status=PASS' tools/gate17_runtime_execution.sh
           grep -Fq 'command=pwd' tools/gate17_runtime_execution.sh
-          grep -Fq ' -r "$ROOTFS" -w /root /bin/sh -c '\''pwd'\''' tools/gate17_runtime_execution.sh
+          grep -Fq '"$PROOT_EXEC" -r "$ROOTFS" -b /proc:/proc -w /root /bin/sh -c "$GUEST_EVIDENCE_SCRIPT"' tools/gate17_runtime_execution.sh
           ! grep -Eq 'runtime_stage\.sh|runtime_execution\.sh|eval[[:space:]]' tools/gate17_runtime_execution.sh
           echo G17_SCHEMA_BOUNDARY=PASS
