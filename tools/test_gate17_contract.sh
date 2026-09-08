@@ -78,7 +78,8 @@ grep -Fq 'PROOT_EXEC=${4:-}' "$ROOT/tools/gate17_runtime_execution.sh"
 grep -Fq 'ROOTFS=${5:-}' "$ROOT/tools/gate17_runtime_execution.sh"
 grep -Fq '"$PROOT_EXEC" -r "$ROOTFS" -b /proc:/proc -w /root /bin/sh -c "$GUEST_EVIDENCE_SCRIPT"' "$ROOT/tools/gate17_runtime_execution.sh"
 ! grep -Eq '(^|[;&|[:space:]])exit[[:space:]]' "$ROOT/tools/test_gate17_contract.sh"
-! grep -Fq 'trap ' "$ROOT/tools/test_gate17_contract.sh"
+TRAP_MATCHES="$(awk '/grep -Fq.*trap / {next} /trap / {print}' "$ROOT/tools/test_gate17_contract.sh")"
+test -z "$TRAP_MATCHES"
 echo NO_G17_HOST_PWD=PASS
 echo G17_PROOT_BOUNDARY=PASS
 echo G17_VERIFIER_NO_EXIT_TRAP=PASS
