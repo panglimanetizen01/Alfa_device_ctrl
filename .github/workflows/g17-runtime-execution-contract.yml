@@ -8,6 +8,7 @@ on:
       - 'tools/test_gate17_contract.sh'
       - 'tools/test_gate17_live.sh'
       - 'tools/test_gate17_android_contract.sh'
+      - 'tools/run_g17_android_dut.sh'
       - 'app/src/androidTest/**'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
       - 'app/build.gradle'
@@ -24,6 +25,7 @@ on:
       - 'tools/test_gate17_contract.sh'
       - 'tools/test_gate17_live.sh'
       - 'tools/test_gate17_android_contract.sh'
+      - 'tools/run_g17_android_dut.sh'
       - 'app/src/androidTest/**'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
       - 'app/build.gradle'
@@ -92,6 +94,15 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/test_gate17_android_contract.sh
+      - name: Build Android APKs with exact source provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x ./gradlew
+          ALFA_SOURCE_COMMIT='${{ github.sha }}' ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          echo G17_ANDROID_BUILD_PROVENANCE=PASS
       - name: Verify hosted CI does not substitute for Android DUT
         shell: bash
         run: |
