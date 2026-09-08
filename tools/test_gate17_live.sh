@@ -72,8 +72,11 @@ APP_G17_DIR='files/g17'; APP_G16="$APP_G17_DIR/gate16.authorization"
 run-as "$PACKAGE" sh -c "mkdir -p '$APP_G17_DIR' && rm -f '$APP_G16'"
 run-as "$PACKAGE" sh -c "cat > '$APP_G16'" < "$G16"
 run-as "$PACKAGE" sh -c "test -s '$APP_G16'"
+APP_DATA_DIR=$(run-as "$PACKAGE" sh -c 'pwd')
+[ -n "$APP_DATA_DIR" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=app-private data directory could not be proven'; exit 1; }
+GATE16_DUT_PATH="$APP_DATA_DIR/$APP_G16"
 TEST_CLASS='com.alfa.device_ctrl.G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime'
-RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "/data/user/0/$PACKAGE/$APP_G16" -e source_commit "$HEAD" "$INSTRUMENTATION" 2>&1) || {
+RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "$GATE16_DUT_PATH" -e source_commit "$HEAD" "$INSTRUMENTATION" 2>&1) || {
     printf '%s\n' "$RESULT"
     echo 'G17_LIVE_STATUS=FAIL'
     echo 'G17_LIVE_REASON=Android instrumentation execution failed'
@@ -82,6 +85,7 @@ RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "/data/user/0
 printf '%s\n' "$RESULT"
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_STATUS=PASS' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not produce objective PASS marker'; exit 1; }
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not prove real Android DUT execution'; exit 1; }
+printf '%s\n' "$RESULT" | grep -Fqx "G17_LIVE_APK_SOURCE_COMMIT=$HEAD" || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=installed APK provenance does not match source HEAD'; exit 1; }
 
 G17_DEVICE='files/g17/gate17-runtime-execution.v1'
 run-as "$PACKAGE" sh -c "test -s '$G17_DEVICE'"
@@ -94,6 +98,7 @@ grep -Fqx 'command=pwd' "$TMP/g17.device"
 grep -Fqx 'command_result=/root' "$TMP/g17.device"
 grep -Fqx 'command_returncode=0' "$TMP/g17.device"
 grep -Fq "source_commit=$HEAD" "$TMP/g17.device"
+grep -Fq "apk_source_commit=$HEAD" "$TMP/g17.device"
 grep -Fq "pipeline_run_id=$RUN_ID" "$TMP/g17.device"
 grep -Fq "gate4_contract_sha256=$G4_SHA" "$TMP/g17.device"
 grep -Fq "profile_sha256=$PROFILE_SHA" "$TMP/g17.device"
