@@ -2,9 +2,11 @@
 set -euo pipefail
 T="app/src/androidTest/java/com/alfa/device_ctrl/G17AndroidRuntimeExecutionTest.java"
 L="tools/test_gate17_live.sh"
+D="tools/run_g17_android_dut.sh"
 B="app/build.gradle"
 test -s "$T"
 test -s "$B"
+test -s "$D"
 grep -Fq 'package com.alfa.device_ctrl.test;' "$T"
 grep -Fq 'import com.alfa.device_ctrl.BuildConfig;' "$T"
 grep -Fq 'InstrumentationRegistry.getInstrumentation().getTargetContext()' "$T"
@@ -32,6 +34,11 @@ grep -Fq 'gate16_path' "$L"
 grep -Fq 'run-as "$PACKAGE"' "$L"
 grep -Fq 'APP_DATA_DIR=' "$L"
 grep -Fq 'G17_LIVE_APK_SOURCE_COMMIT=' "$L"
+grep -Fq 'SHARED_ROOT=' "$D"
+grep -Fq 'STAGE=' "$D"
+grep -Fq 'pm install -r' "$D"
+grep -Fq 'pm install -r -t' "$D"
+grep -Fq 'G17_DUT_STAGING_CLEANUP=PASS' "$D"
 ! grep -Fq 'gate17_runtime_execution.sh' "$L"
 ! grep -Fq 'ALFA_G17_PROOT_EXEC' "$L"
 ! grep -Fq 'ALFA_G17_ROOTFS' "$L"
@@ -41,3 +48,4 @@ echo G17_ANDROID_INSTRUMENTATION_BOUNDARY=PASS
 echo G17_LIVE_DELEGATES_TO_ANDROID=PASS
 echo G17_APK_PROVENANCE_BOUNDARY=PASS
 echo G17_INSTRUMENTATION_NAMESPACE_BOUNDARY=PASS
+echo G17_DUT_APK_STAGING_BOUNDARY=PASS
