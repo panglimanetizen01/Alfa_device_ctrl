@@ -31,8 +31,6 @@ on:
 jobs:
   g17-contract:
     runs-on: ubuntu-latest
-    env:
-      ALFA_EXEC_SHARED_ROOT: ${{ runner.temp }}/alfa-shared
     steps:
       - name: Checkout exact source
         uses: actions/checkout@v4
@@ -42,8 +40,10 @@ jobs:
         shell: bash
         run: |
           set -u
+          ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-shared"
           mkdir -p "$ALFA_EXEC_SHARED_ROOT"
           test -d "$ALFA_EXEC_SHARED_ROOT"
+          echo "ALFA_EXEC_SHARED_ROOT=$ALFA_EXEC_SHARED_ROOT" >> "$GITHUB_ENV"
           echo "ALFA_EXEC_SHARED_ROOT=$ALFA_EXEC_SHARED_ROOT"
       - name: Verify source identity
         shell: bash
