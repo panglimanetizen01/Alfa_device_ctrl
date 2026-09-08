@@ -22,15 +22,15 @@ printf '%s\n' "pipeline_run_id=$RUN_ID" 'contract_result=VALID' "source_commit=$
 printf '%s\n' 'authorization_status=AUTHORIZED' > "$G16"
 CONTRACT_SHA=$(sha256sum "$G4" | awk '{print $1}')
 G16_SHA=$(sha256sum "$G16" | awk '{print $1}')
-RESULT_SHA=e7748a2b5e00e724562c9d7688fa9dc1aecbf20dba00096d6e2d91bf37696449
-CMD_SHA=b1119ecaf54feb68aa5ca8387277e0a929c71cd99fc70f1985b1de1b3b8724b6
+RESULT_SHA=$(printf '%s\n' '/expected/runtime/path' | sha256sum | awk '{print $1}')
+CMD_SHA=$(printf '%s\n' 'pwd' | sha256sum | awk '{print $1}')
 
 printf '%s\n' "schema_version=gate17-runtime-execution.v1" 'gate=gate17' 'gate_status=PASS' "execution_id=execution-pwd-$RUN_ID" "pipeline_run_id=$RUN_ID" "source_commit=$HEAD" "gate4_contract_sha256=$CONTRACT_SHA" 'profile_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' "gate16_authorization_sha256=$G16_SHA" "gate16_authorization_artifact=$G16" "request_id=pwd-request-$RUN_ID" 'command=pwd' 'command_semantics=POSIX_PWD' "command_sha256=$CMD_SHA" 'authorization_status=AUTHORIZED' 'execution_status=PASS' 'result_status=PASS' 'command_result=/expected/runtime/path' 'command_returncode=0' "command_result_sha256=$RESULT_SHA" 'created_at=2026-09-08T05:00:26Z' 'execution_path=/expected/runtime/path' > "$G17"
 
 printf '%s\n' 'schema_version=gate18-artifact.v1' 'gate=gate18' 'gate_status=PASS' "pipeline_run_id=$RUN_ID" "source_commit=$HEAD" "gate4_contract_sha256=$CONTRACT_SHA" 'profile_sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' "input_artifact=$G17" 'created_at=2026-09-08T05:01:00Z' "execution_id=execution-pwd-$RUN_ID" "request_id=pwd-request-$RUN_ID" 'command=pwd' 'command_semantics=POSIX_PWD' "command_sha256=$CMD_SHA" 'authorization_status=AUTHORIZED' 'execution_status=PASS' 'result_status=PASS' 'command_result=/expected/runtime/path' 'command_returncode=0' "command_result_sha256=$RESULT_SHA" "gate16_authorization_sha256=$G16_SHA" "gate16_authorization_artifact=$G16" 'execution_path=/expected/runtime/path' > "$G18"
 
-bash "$ROOT/tools/runtime_result_consumer.sh" "$RUN_ID" "$G18" "$GOOD_OUT" >/dev/null
-[ "$(awk -F= '$1=="GATE19_STATUS"{print $2}' <(bash "$ROOT/tools/runtime_result_consumer.sh" "$RUN_ID" "$G18" "$GOOD_OUT" 2>/dev/null))" = PASS ] || { printf '%s\n' 'G19_VALID_EVIDENCE=FAIL'; exit 1; }
+bash "$ROOT/tools/runtime_result_consumer.sh" "$RUN_ID" "$G18" "$GOOD_OUT" >/dev/null || { printf '%s\n' 'G19_VALID_EVIDENCE=FAIL'; exit 1; }
+[ "$(awk -F= '$1=="gate_status"{print $2}' "$GOOD_OUT")" = PASS ] || { printf '%s\n' 'G19_GATE_STATUS=FAIL'; exit 1; }
 [ "$(awk -F= '$1=="consume_status"{print $2}' "$GOOD_OUT")" = ACCEPTED ] || { printf '%s\n' 'G19_CONSUME_STATUS=FAIL'; exit 1; }
 [ "$(awk -F= '$1=="next_phase_status"{print $2}' "$GOOD_OUT")" = UNLOCKED ] || { printf '%s\n' 'G19_NEXT_PHASE_UNLOCK=FAIL'; exit 1; }
 [ "$(awk -F= '$1=="apk_build_status"{print $2}' "$GOOD_OUT")" = OPEN ] || { printf '%s\n' 'G19_APK_BUILD_OPEN=FAIL'; exit 1; }
