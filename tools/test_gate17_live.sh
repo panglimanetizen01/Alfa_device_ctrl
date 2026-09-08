@@ -4,6 +4,12 @@
 # to exercise the real G16 producer and the real G17 executor. This verifies the
 # G17 execution boundary without falsely requiring Android-produced G7 evidence
 # before APK integration is permitted.
+#
+# IMPORTANT: G6 is an already-verified locked gate. Its contract consumes the
+# Gate 5 self-test identity gate5-self-test. G17 must respect that contract.
+# Therefore this harness deliberately separates:
+#   1) Gate 5 self-test evidence consumed by G6; and
+#   2) the exact pwd-request-$RUN_ID authorization consumed by G16.
 set -u
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
@@ -37,10 +43,17 @@ fi
 if [ "$FAIL" -eq 0 ]; then
     RUN_DIR="$ROOT/artifacts/pipeline/$RUN_ID"
     G4="$RUN_DIR/gate4/environment_contract.txt"
-    # G16 requires the Gate 5 authorization to authorize the exact command
-    # request represented by G15. Therefore the live harness must construct
-    # the Gate 5 request with the same deterministic request_id as G13-G15,
-    # rather than using the unrelated gate5-self-test request identity.
+    # G6 is a locked, previously verified gate. Its Gate 5 input contract is
+    # the canonical gate5-self-test identity; G17 must not rewrite G6 to accept
+    # the later command-specific authorization identity.
+    G6_G5_REQUEST_ID='gate5-self-test'
+    G6_G5_REQ="$RUN_DIR/gate5/requests/$G6_G5_REQUEST_ID.txt"
+    G6_G5_DEC="$RUN_DIR/gate5/decisions/$G6_G5_REQUEST_ID.txt"
+    G6_G5_AUTH="$RUN_DIR/gate5/authorizations/$G6_G5_REQUEST_ID.txt"
+
+    # G16 separately requires Gate 5 authorization for the exact G13-G15
+    # command identity. This evidence is produced after G6 and is consumed only
+    # by G16/G17.
     G5_REQUEST_ID="pwd-request-$RUN_ID"
     G5_REQ="$RUN_DIR/gate5/requests/$G5_REQUEST_ID.txt"
     G5_DEC="$RUN_DIR/gate5/decisions/$G5_REQUEST_ID.txt"
@@ -56,21 +69,21 @@ if [ "$FAIL" -eq 0 ]; then
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-    printf '%s\n' '--- G5 REAL DECISION ---'
-    bash "$ROOT/tools/runtime_decision.sh" "$RUN_ID" "$G5_REQUEST_ID" local-runtime pwd runtime purpose=self-test
+    printf '%s\n' '--- G5 REAL SELF-TEST DECISION FOR LOCKED G6 ---'
+    bash "$ROOT/tools/runtime_decision.sh" "$RUN_ID" "$G6_G5_REQUEST_ID" local-runtime pwd runtime purpose=self-test
     RC=$?
-    [ "$RC" -eq 0 ] || fail G5_DECISION_RC_$RC
+    [ "$RC" -eq 0 ] || fail G6_G5_DECISION_RC_$RC
 fi
 
 if [ "$FAIL" -eq 0 ]; then
-    printf '%s\n' '--- G5 REAL AUTHORIZATION ---'
-    bash "$ROOT/tools/runtime_execution_authorize.sh" "$G5_REQ" "$G5_DEC" "$G5_AUTH"
+    printf '%s\n' '--- G5 REAL SELF-TEST AUTHORIZATION FOR LOCKED G6 ---'
+    bash "$ROOT/tools/runtime_execution_authorize.sh" "$G6_G5_REQ" "$G6_G5_DEC" "$G6_G5_AUTH"
     RC=$?
-    [ "$RC" -eq 0 ] || fail G5_AUTHORIZATION_RC_$RC
-    grep -Fqx 'authorization_status=AUTHORIZED' "$G5_AUTH" || fail G5_AUTHORIZATION_NOT_AUTHORIZED
-    grep -Fqx "source_commit=$HEAD_BEFORE" "$G5_AUTH" || fail G5_AUTHORIZATION_SOURCE_MISMATCH
-    grep -Fqx "pipeline_run_id=$RUN_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_RUN_MISMATCH
-    grep -Fqx "request_id=$G5_REQUEST_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_REQUEST_MISMATCH
+    [ "$RC" -eq 0 ] || fail G6_G5_AUTHORIZATION_RC_$RC
+    grep -Fqx 'authorization_status=AUTHORIZED' "$G6_G5_AUTH" || fail G6_G5_AUTHORIZATION_NOT_AUTHORIZED
+    grep -Fqx "source_commit=$HEAD_BEFORE" "$G6_G5_AUTH" || fail G6_G5_AUTHORIZATION_SOURCE_MISMATCH
+    grep -Fqx "pipeline_run_id=$RUN_ID" "$G6_G5_AUTH" || fail G6_G5_AUTHORIZATION_RUN_MISMATCH
+    grep -Fqx "request_id=$G6_G5_REQUEST_ID" "$G6_G5_AUTH" || fail G6_G5_AUTHORIZATION_REQUEST_MISMATCH
 fi
 
 if [ "$FAIL" -eq 0 ]; then
@@ -78,6 +91,24 @@ if [ "$FAIL" -eq 0 ]; then
     bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID"
     RC=$?
     [ "$RC" -eq 0 ] || fail G6_RC_$RC
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    printf '%s\n' '--- G5 REAL COMMAND DECISION FOR G16 ---'
+    bash "$ROOT/tools/runtime_decision.sh" "$RUN_ID" "$G5_REQUEST_ID" local-runtime pwd runtime purpose=self-test
+    RC=$?
+    [ "$RC" -eq 0 ] || fail G5_DECISION_RC_$RC
+fi
+
+if [ "$FAIL" -eq 0 ]; then
+    printf '%s\n' '--- G5 REAL COMMAND AUTHORIZATION FOR G16 ---'
+    bash "$ROOT/tools/runtime_execution_authorize.sh" "$G5_REQ" "$G5_DEC" "$G5_AUTH"
+    RC=$?
+    [ "$RC" -eq 0 ] || fail G5_AUTHORIZATION_RC_$RC
+    grep -Fqx 'authorization_status=AUTHORIZED' "$G5_AUTH" || fail G5_AUTHORIZATION_NOT_AUTHORIZED
+    grep -Fqx "source_commit=$HEAD_BEFORE" "$G5_AUTH" || fail G5_AUTHORIZATION_SOURCE_MISMATCH
+    grep -Fqx "pipeline_run_id=$RUN_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_RUN_MISMATCH
+    grep -Fqx "request_id=$G5_REQUEST_ID" "$G5_AUTH" || fail G5_AUTHORIZATION_REQUEST_MISMATCH
 fi
 
 if [ "$FAIL" -eq 0 ]; then
