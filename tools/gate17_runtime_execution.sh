@@ -13,15 +13,15 @@ blocked(){
   return 1 2>/dev/null || :
 }
 
-[ -n "$RUN_ID" ] && [ -n "$AUTH_INPUT" ] && [ -n "$OUTPUT" ] && [ -n "$PROOT_EXEC" ] && [ -n "$ROOTFS" ] || blocked 'explicit run id, G16 authorization, output, PRoot executable, and guest rootfs are required' || return 1
-[[ "$RUN_ID" =~ ^run_[0-9]{8}_[0-9]{6}_[0-9]+$ ]] || { blocked 'invalid pipeline run id'; return 1; }
-[ -f "$AUTH_INPUT" ] || { blocked 'G16 authorization artifact missing'; return 1; }
-[ -x "$PROOT_EXEC" ] || { blocked 'explicit PRoot executable is missing or not executable'; return 1; }
-[ -d "$ROOTFS" ] || { blocked 'explicit guest rootfs is missing'; return 1; }
-[ -x "$ROOTFS/bin/sh" ] || { blocked 'guest rootfs /bin/sh is missing or not executable'; return 1; }
-[ -f "$ROOTFS/etc/os-release" ] || { blocked 'guest rootfs identity /etc/os-release missing'; return 1; }
+[ -n "$RUN_ID" ] && [ -n "$AUTH_INPUT" ] && [ -n "$OUTPUT" ] && [ -n "$PROOT_EXEC" ] && [ -n "$ROOTFS" ] || { blocked 'explicit run id, G16 authorization, output, PRoot executable, and guest rootfs are required'; exit 1; }
+[[ "$RUN_ID" =~ ^run_[0-9]{8}_[0-9]{6}_[0-9]+$ ]] || { blocked 'invalid pipeline run id'; exit 1; }
+[ -f "$AUTH_INPUT" ] || { blocked 'G16 authorization artifact missing'; exit 1; }
+[ -x "$PROOT_EXEC" ] || { blocked 'explicit PRoot executable is missing or not executable'; exit 1; }
+[ -d "$ROOTFS" ] || { blocked 'explicit guest rootfs is missing'; exit 1; }
+[ -x "$ROOTFS/bin/sh" ] || { blocked 'guest rootfs /bin/sh is missing or not executable'; exit 1; }
+[ -f "$ROOTFS/etc/os-release" ] || { blocked 'guest rootfs identity /etc/os-release missing'; exit 1; }
 HEAD=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || printf '%s' '')
-[ -n "$HEAD" ] || { blocked 'current Git HEAD unavailable'; return 1; }
+[ -n "$HEAD" ] || { blocked 'current Git HEAD unavailable'; exit 1; }
 field(){ awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/,"",$0); print; exit}' "$2"; }
 A_SCHEMA=$(field schema_version "$AUTH_INPUT")
 A_GATE=$(field gate "$AUTH_INPUT")
@@ -43,34 +43,34 @@ A_CMD_SHA=$(field command_sha256 "$AUTH_INPUT")
 A_EXEC=$(field execution_status "$AUTH_INPUT")
 A_AUTHORITY=$(field execution_authority "$AUTH_INPUT")
 A_PATH=$(field execution_path "$AUTH_INPUT")
-[ "$A_SCHEMA" = gate16-runtime-execution-authorization.v1 ] || { blocked 'G16 schema invalid'; return 1; }
-[ "$A_GATE" = gate16 ] || { blocked 'G16 identity invalid'; return 1; }
-[ "$A_STATUS" = PASS ] || { blocked 'G16 is not PASS'; return 1; }
-[ "$A_AUTH" = AUTHORIZED ] || { blocked 'G16 authorization is not AUTHORIZED'; return 1; }
-[ "$A_ID" = "authorization-$RUN_ID" ] || { blocked 'G16 authorization identity mismatch'; return 1; }
-[ "$A_RUN" = "$RUN_ID" ] || { blocked 'G16 run mismatch'; return 1; }
-[ "$A_SOURCE" = "$HEAD" ] || { blocked 'G16 source is stale relative to current HEAD'; return 1; }
-[[ "$A_G4" =~ ^[0-9a-fA-F]{64}$ ]] || { blocked 'Gate 4 hash invalid'; return 1; }
-[[ "$A_PROFILE" =~ ^[0-9a-fA-F]{64}$ ]] || { blocked 'profile hash invalid'; return 1; }
-[ -f "$A_POLICY_ART" ] || { blocked 'referenced G15 policy artifact missing'; return 1; }
-[ -f "$A_G5_ART" ] || { blocked 'referenced Gate 5 authorization artifact missing'; return 1; }
-[ "$(sha256sum "$A_POLICY_ART" | awk '{print $1}')" = "$A_POLICY_SHA" ] || { blocked 'G15 policy hash mismatch'; return 1; }
-[ "$(sha256sum "$A_G5_ART" | awk '{print $1}')" = "$A_G5_SHA" ] || { blocked 'Gate 5 authorization hash mismatch'; return 1; }
-[ "$A_REQUEST" = "pwd-request-$RUN_ID" ] || { blocked 'request identity mismatch'; return 1; }
-[ "$A_COMMAND" = pwd ] || { blocked 'command is not exact pwd'; return 1; }
-[ "$A_SEMANTICS" = POSIX_PWD ] || { blocked 'command semantics invalid'; return 1; }
+[ "$A_SCHEMA" = gate16-runtime-execution-authorization.v1 ] || { blocked 'G16 schema invalid'; exit 1; }
+[ "$A_GATE" = gate16 ] || { blocked 'G16 identity invalid'; exit 1; }
+[ "$A_STATUS" = PASS ] || { blocked 'G16 is not PASS'; exit 1; }
+[ "$A_AUTH" = AUTHORIZED ] || { blocked 'G16 authorization is not AUTHORIZED'; exit 1; }
+[ "$A_ID" = "authorization-$RUN_ID" ] || { blocked 'G16 authorization identity mismatch'; exit 1; }
+[ "$A_RUN" = "$RUN_ID" ] || { blocked 'G16 run mismatch'; exit 1; }
+[ "$A_SOURCE" = "$HEAD" ] || { blocked 'G16 source is stale relative to current HEAD'; exit 1; }
+[[ "$A_G4" =~ ^[0-9a-fA-F]{64}$ ]] || { blocked 'Gate 4 hash invalid'; exit 1; }
+[[ "$A_PROFILE" =~ ^[0-9a-fA-F]{64}$ ]] || { blocked 'profile hash invalid'; exit 1; }
+[ -f "$A_POLICY_ART" ] || { blocked 'referenced G15 policy artifact missing'; exit 1; }
+[ -f "$A_G5_ART" ] || { blocked 'referenced Gate 5 authorization artifact missing'; exit 1; }
+[ "$(sha256sum "$A_POLICY_ART" | awk '{print $1}')" = "$A_POLICY_SHA" ] || { blocked 'G15 policy hash mismatch'; exit 1; }
+[ "$(sha256sum "$A_G5_ART" | awk '{print $1}')" = "$A_G5_SHA" ] || { blocked 'Gate 5 authorization hash mismatch'; exit 1; }
+[ "$A_REQUEST" = "pwd-request-$RUN_ID" ] || { blocked 'request identity mismatch'; exit 1; }
+[ "$A_COMMAND" = pwd ] || { blocked 'command is not exact pwd'; exit 1; }
+[ "$A_SEMANTICS" = POSIX_PWD ] || { blocked 'command semantics invalid'; exit 1; }
 EXPECTED_COMMAND_SHA=$(printf '%s\n' pwd | sha256sum | awk '{print $1}')
-[ "$A_CMD_SHA" = "$EXPECTED_COMMAND_SHA" ] || { blocked 'command hash mismatch'; return 1; }
-[ "$A_EXEC" = DEFERRED ] || { blocked 'execution state is not DEFERRED'; return 1; }
-[ "$A_AUTHORITY" = G17 ] || { blocked 'execution authority is not G17'; return 1; }
-[ "$A_PATH" = DEFERRED:G17 ] || { blocked 'execution path is not DEFERRED:G17'; return 1; }
+[ "$A_CMD_SHA" = "$EXPECTED_COMMAND_SHA" ] || { blocked 'command hash mismatch'; exit 1; }
+[ "$A_EXEC" = DEFERRED ] || { blocked 'execution state is not DEFERRED'; exit 1; }
+[ "$A_AUTHORITY" = G17 ] || { blocked 'execution authority is not G17'; exit 1; }
+[ "$A_PATH" = DEFERRED:G17 ] || { blocked 'execution path is not DEFERRED:G17'; exit 1; }
 
 PROOT_SHA=$(sha256sum "$PROOT_EXEC" | awk '{print $1}')
 ROOTFS_OS_SHA=$(sha256sum "$ROOTFS/etc/os-release" | awk '{print $1}')
 GUEST_OS_ID=$(awk -F= '$1=="ID" {gsub(/"/,"",$2); print $2; exit}' "$ROOTFS/etc/os-release")
-[ -n "$GUEST_OS_ID" ] || { blocked 'guest rootfs ID missing'; return 1; }
+[ -n "$GUEST_OS_ID" ] || { blocked 'guest rootfs ID missing'; exit 1; }
 
-TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/alfa-g17.XXXXXX") || { blocked 'temporary execution directory unavailable'; return 1; }
+TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/alfa-g17.XXXXXX") || { blocked 'temporary execution directory unavailable'; exit 1; }
 cleanup(){ rm -rf "$TMP_DIR"; }
 trap cleanup EXIT HUP INT TERM
 STDOUT_FILE="$TMP_DIR/stdout"
@@ -86,25 +86,25 @@ for _ in $(seq 1 100); do
     [ -n "$GUEST_PID" ] && [ -d "/proc/$GUEST_PID" ] && break
   fi
   sleep 0.001
- done
+done
 wait "$PROOT_PID"
 RETURN_CODE=$?
-[ "$RETURN_CODE" -eq 0 ] || { blocked "PRoot execution failed with return code $RETURN_CODE"; return 1; }
-[ -n "$GUEST_PID" ] || { blocked 'guest process PID could not be observed'; return 1; }
-RESULT=$(cat "$STDOUT_FILE" 2>/dev/null) || { blocked 'guest stdout unavailable'; return 1; }
+[ "$RETURN_CODE" -eq 0 ] || { blocked "PRoot execution failed with return code $RETURN_CODE"; exit 1; }
+[ -n "$GUEST_PID" ] || { blocked 'guest process PID could not be observed'; exit 1; }
+RESULT=$(cat "$STDOUT_FILE" 2>/dev/null) || { blocked 'guest stdout unavailable'; exit 1; }
 RESULT=${RESULT%$'\n'}
-[ "$RESULT" = /root ] || { blocked 'guest pwd result is not the authorized guest working directory'; return 1; }
+[ "$RESULT" = /root ] || { blocked 'guest pwd result is not the authorized guest working directory'; exit 1; }
 
 PROC_EXE=$(readlink "/proc/$GUEST_PID/exe" 2>/dev/null || printf '%s' '')
 PROC_CWD=$(readlink "/proc/$GUEST_PID/cwd" 2>/dev/null || printf '%s' '')
 PROC_ROOT=$(readlink "/proc/$GUEST_PID/root" 2>/dev/null || printf '%s' '')
-[ -n "$PROC_EXE" ] || { blocked 'guest process /proc/exe evidence unavailable'; return 1; }
-[ -n "$PROC_ROOT" ] || { blocked 'guest process /proc/root evidence unavailable'; return 1; }
+[ -n "$PROC_EXE" ] || { blocked 'guest process /proc/exe evidence unavailable'; exit 1; }
+[ -n "$PROC_ROOT" ] || { blocked 'guest process /proc/root evidence unavailable'; exit 1; }
 NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf '%s' '')
-[ -n "$NOW" ] || { blocked 'timestamp unavailable'; return 1; }
+[ -n "$NOW" ] || { blocked 'timestamp unavailable'; exit 1; }
 EXEC_SHA=$(printf '%s\n' "$RESULT" | sha256sum | awk '{print $1}')
 AUTH_SHA=$(sha256sum "$AUTH_INPUT" | awk '{print $1}')
-mkdir -p "$(dirname -- "$OUTPUT")" || { blocked 'cannot create output directory'; return 1; }
+mkdir -p "$(dirname -- "$OUTPUT")" || { blocked 'cannot create output directory'; exit 1; }
 TMP="$OUTPUT.partial.$$"
 {
   printf '%s\n' 'schema_version=gate17-runtime-execution.v1'
@@ -139,8 +139,8 @@ TMP="$OUTPUT.partial.$$"
   printf '%s\n' "created_at=$NOW"
   printf '%s\n' 'execution_path=PRoot:-r:<rootfs>:-w:/root:/bin/sh:-c:pwd'
   printf '%s\n' 'execution_reason=G16 authorization verified; exact pwd command executed inside explicit PRoot guest rootfs'
-} > "$TMP" || { rm -f "$TMP"; blocked 'failed to write execution evidence'; return 1; }
-mv "$TMP" "$OUTPUT" || { rm -f "$TMP"; blocked 'failed to publish execution evidence'; return 1; }
+} > "$TMP" || { rm -f "$TMP"; blocked 'failed to write execution evidence'; exit 1; }
+mv "$TMP" "$OUTPUT" || { rm -f "$TMP"; blocked 'failed to publish execution evidence'; exit 1; }
 printf '%s\n' 'G17_STATUS=PASS'
 printf '%s\n' 'G17_RESULT=EXECUTED'
 printf 'G17_ARTIFACT=%s\n' "$OUTPUT"
