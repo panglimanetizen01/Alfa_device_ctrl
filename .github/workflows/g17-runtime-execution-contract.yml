@@ -79,11 +79,21 @@ jobs:
         run: |
           set -u
           bash tools/test_gate17_contract.sh
+      - name: Diagnose controlled G3 capability environment
+        shell: bash
+        run: |
+          set -u
+          printf 'ALFA_EXEC_SHARED_ROOT=%s\n' "$ALFA_EXEC_SHARED_ROOT"
+          printf 'TMPDIR=%s\n' "${TMPDIR:-UNSET}"
+          ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-shared" bash tools/execution_capability.sh
+          RC=$?
+          printf 'G3_DIAGNOSTIC_RC=%s\n' "$RC"
+          test "$RC" -eq 0
       - name: Run G17 live execution-boundary verification
         shell: bash
         run: |
           set -u
-          bash tools/test_gate17_live.sh
+          ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-shared" bash tools/test_gate17_live.sh
       - name: Validate G17 schema and execution boundary
         shell: bash
         run: |
