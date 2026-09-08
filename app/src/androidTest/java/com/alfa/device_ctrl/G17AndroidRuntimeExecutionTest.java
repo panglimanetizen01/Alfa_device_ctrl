@@ -22,6 +22,7 @@ public final class G17AndroidRuntimeExecutionTest {
     private static final String PACKAGE = "com.alfa.device_ctrl";
     private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
     private static final Pattern SHA256 = Pattern.compile("[0-9a-fA-F]{64}");
+    private static final Pattern GIT_SHA = Pattern.compile("[0-9a-f]{40}");
 
     @Test public void exactGate16AuthorizationExecutesPwdInsidePackagedRuntime() throws Exception {
         Context c = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -38,6 +39,10 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("SELinux context missing", !selinux.isEmpty());
         assertTrue("shell SELinux context must never be accepted", !"u:r:shell:s0".equals(selinux));
 
+        String source = arg("source_commit");
+        assertTrue("source_commit is not a git SHA", GIT_SHA.matcher(source).matches());
+        assertEquals("installed APK provenance does not match requested source", source, BuildConfig.ALFA_SOURCE_COMMIT);
+
         File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/ubuntu");
         File ready = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
@@ -48,8 +53,8 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("rootfs /sys missing", new File(rootfs, "sys").isDirectory());
         assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, "ubuntu", engine, rootfs));
 
-        String source = arg("source_commit");
-        File g16 = new File(arg("gate16_path"));
+        File g16Arg = new File(arg("gate16_path"));
+        File g16 = g16Arg.isAbsolute() ? g16Arg : new File(c.getFilesDir(), arg("gate16_path"));
         String filesRoot = c.getFilesDir().getCanonicalPath() + File.separator;
         assertTrue("Gate16 artifact must be app-private", g16.getCanonicalPath().startsWith(filesRoot));
         assertTrue("Gate16 artifact missing", g16.isFile());
@@ -99,10 +104,11 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("cannot create G17 evidence directory", out.getParentFile().exists() || out.getParentFile().mkdirs());
         try (Writer w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.UTF_8)) {
             w.write("schema_version=gate17-runtime-execution.v1\n");
-            w.write("gate=gate17\n gate_status=PASS\n".replace(" ", ""));
+            w.write("gate=gate17\ngate_status=PASS\n");
             w.write("execution_status=EXECUTED\nresult_status=PASS\ncommand=pwd\ncommand_semantics=POSIX_PWD\ncommand_result=/root\ncommand_returncode=0\n");
             w.write("guest_pid="+pid+"\nguest_proc_exe="+exe+"\nguest_proc_cwd="+cwd+"\nguest_proc_root="+root+"\n");
             w.write("android_package="+PACKAGE+"\nandroid_uid="+uid+"\nandroid_selinux_context="+selinux+"\n");
+            w.write("apk_source_commit="+BuildConfig.ALFA_SOURCE_COMMIT+"\n");
             w.write("execution_engine="+engine.getCanonicalPath()+"\nengine_sha256="+sha256(engine)+"\nrootfs_path="+rootfs.getCanonicalPath()+"\nrootfs_os_release_sha256="+sha256(new File(rootfs,"etc/os-release"))+"\n");
             w.write("pipeline_run_id="+a.getProperty("pipeline_run_id")+"\nsource_commit="+source+"\ngate4_contract_sha256="+a.getProperty("gate4_contract_sha256")+"\nprofile_sha256="+a.getProperty("profile_sha256")+"\ngate16_authorization_sha256="+g16Hash+"\ngate16_authorization_id="+a.getProperty("authorization_id")+"\ntimestamp="+System.currentTimeMillis()+"\n");
         }
@@ -111,6 +117,7 @@ public final class G17AndroidRuntimeExecutionTest {
         System.out.println("G17_LIVE_PACKAGE="+PACKAGE);
         System.out.println("G17_LIVE_UID="+uid);
         System.out.println("G17_LIVE_SELINUX="+selinux);
+        System.out.println("G17_LIVE_APK_SOURCE_COMMIT="+BuildConfig.ALFA_SOURCE_COMMIT);
         System.out.println("G17_LIVE_ARTIFACT="+out);
     }
 
