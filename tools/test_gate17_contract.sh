@@ -49,7 +49,11 @@ test -x "$PROOT_EXEC"
 # Build a genuine Linux guest fixture from a statically linked Linux busybox package.
 # Never copy Android/Termux host binaries or host /etc/os-release into the guest.
 if command -v apt-get >/dev/null 2>&1; then
-  apt-get update -qq
+  if command -v sudo >/dev/null 2>&1; then
+    sudo apt-get update -qq
+  else
+    apt-cache policy busybox-static >/dev/null 2>&1
+  fi
   apt-get download busybox-static >/dev/null
   BUSYBOX_DEB=$(find . -maxdepth 1 -type f -name 'busybox-static_*.deb' -print -quit)
   test -n "$BUSYBOX_DEB"
