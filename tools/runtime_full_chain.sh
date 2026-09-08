@@ -32,7 +32,7 @@ main() {
     bash "$ROOT/tools/runtime_stage.sh" gate16 "$RUN_ID" "$ROOT/artifacts/pipeline/$RUN_ID/gate15/policy.txt" "$GATE5_AUTH" "$ROOT/artifacts/pipeline/$RUN_ID/gate16/authorization.txt"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
     bash "$ROOT/tools/runtime_stage.sh" gate17 "$RUN_ID" "$ROOT/artifacts/pipeline/$RUN_ID/gate16/authorization.txt" "$ROOT/artifacts/pipeline/$RUN_ID/gate13/command.txt" "$ROOT/artifacts/pipeline/$RUN_ID/gate17/execution.txt"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
     bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$ROOT/artifacts/pipeline/$RUN_ID/gate17/execution.txt" "" "$ROOT/artifacts/pipeline/$RUN_ID/gate18/result.txt"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
-    bash "$ROOT/tools/runtime_stage.sh" gate19 "$RUN_ID" "$ROOT/artifacts/pipeline/$RUN_ID/gate18/result.txt" "" "$ROOT/artifacts/pipeline/$RUN_ID/gate19/consumer.txt"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
+    bash "$ROOT/tools/runtime_result_consumer.sh" "$RUN_ID" "$ROOT/artifacts/pipeline/$RUN_ID/gate18/result.txt" "$ROOT/artifacts/pipeline/$RUN_ID/gate19/consumer.txt"; RC=$?; [ "$RC" -eq 0 ] || return "$RC"
     FINAL=$(grep '^consume_status=' "$ROOT/artifacts/pipeline/$RUN_ID/gate19/consumer.txt" 2>/dev/null | sed -n '1p' | cut -d= -f2-)
     printf '%s\n' "FULL_CHAIN_STATUS=$([ "$FINAL" = 'ACCEPTED' ] && printf '%s' 'PASS' || printf '%s' 'BLOCKED')"
     printf '%s\n' "consume_status=${FINAL:-UNKNOWN}"
@@ -40,5 +40,4 @@ main() {
     printf '%s\n' "consumer_artifact=$ROOT/artifacts/pipeline/$RUN_ID/gate19/consumer.txt"
     return 0
 }
-
 main "$@"
