@@ -7,6 +7,10 @@ on:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
       - 'tools/test_gate17_live.sh'
+      - 'tools/test_gate17_android_contract.sh'
+      - 'app/src/androidTest/**'
+      - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
+      - 'app/build.gradle'
       - 'tools/runtime_stage.sh'
       - 'tools/runtime_pipeline.sh'
       - 'tools/runtime_discovery.sh'
@@ -19,6 +23,10 @@ on:
       - 'tools/gate17_runtime_execution.sh'
       - 'tools/test_gate17_contract.sh'
       - 'tools/test_gate17_live.sh'
+      - 'tools/test_gate17_android_contract.sh'
+      - 'app/src/androidTest/**'
+      - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
+      - 'app/build.gradle'
       - 'tools/runtime_stage.sh'
       - 'tools/runtime_pipeline.sh'
       - 'tools/runtime_discovery.sh'
@@ -39,13 +47,13 @@ jobs:
       - name: Verify source identity
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           test '${{ github.sha }}' = "$(git rev-parse HEAD)"
           git fsck --full --no-progress
       - name: Install upstream packaged PRoot runtime
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y proot
           test -x "$(command -v proot)"
@@ -54,7 +62,7 @@ jobs:
       - name: Verify G1-G16 protection
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           for p in \
             tools/gate1_foundation_v2.sh tools/gate2_canonical_source_build_boundary.sh \
             tools/execution_capability.sh tools/gate3_execution_capability.sh \
@@ -69,7 +77,7 @@ jobs:
       - name: Verify legacy G17 path is not authoritative
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           grep -Fq 'G17 is intentionally not implemented here; use gate17_runtime_execution.sh.' tools/runtime_stage.sh
           grep -Fq 'G17 is non-authoritative in runtime_stage.sh; use gate17_runtime_execution.sh' tools/runtime_stage.sh
           ! grep -Fq 'COMMAND_RESULT=$(CDPATH= cd -- "$ROOT"' tools/runtime_stage.sh
@@ -77,22 +85,28 @@ jobs:
       - name: Run G17 real guest execution contract test
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           bash tools/test_gate17_contract.sh
+      - name: Verify Android instrumentation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/test_gate17_android_contract.sh
       - name: Verify hosted CI does not substitute for Android DUT
         shell: bash
         run: |
-          set -u
-          test -f tools/test_gate17_live.sh
+          set -euo pipefail
           grep -Fq 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' tools/test_gate17_live.sh
-          grep -Fq 'G17_LIVE_PACKAGE=' tools/test_gate17_live.sh
-          grep -Fq 'Android package identity could not be proven' tools/test_gate17_live.sh
-          grep -Fq 'Android installed APK identity could not be proven' tools/test_gate17_live.sh
+          grep -Fq 'am instrument -w -r' tools/test_gate17_live.sh
+          grep -Fq 'run-as "$PACKAGE"' tools/test_gate17_live.sh
+          ! grep -Fq 'gate17_runtime_execution.sh' tools/test_gate17_live.sh
+          ! grep -Fq 'ALFA_G17_PROOT_EXEC' tools/test_gate17_live.sh
+          ! grep -Fq 'ALFA_G17_ROOTFS' tools/test_gate17_live.sh
           echo G17_HOSTED_CI_NOT_DUT=PASS
       - name: Validate G17 schema and execution boundary
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           grep -Fq 'schema_version=gate17-runtime-execution.v1' docs/GATE_17_RESULT_SCHEMA_V1.md
           grep -Fq 'execution_status=EXECUTED' tools/gate17_runtime_execution.sh
           grep -Fq 'result_status=PASS' tools/gate17_runtime_execution.sh
