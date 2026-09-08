@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# G17 live verification: creates one fresh real G4/G5/G6 run, then uses a
+# Gate 17 live verification: creates one fresh real G4/G5/G6 run, then uses a
 # controlled G15 policy envelope with the real current-run Gate 5 authorization
 # to exercise the real G16 producer and the real G17 executor. This verifies the
 # G17 execution boundary without falsely requiring Android-produced G7 evidence
@@ -17,7 +17,7 @@ cleanup() { rm -rf "$TMP_DIR" 2>/dev/null || true; }
 trap cleanup EXIT
 
 fail() { printf 'G17_LIVE_ERROR=%s\n' "$1"; FAIL=1; }
-field(){ awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/,""); print; exit}' "$2"; }
+field(){ awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/,"",$0); print; exit}' "$2"; }
 
 printf '%s\n' '=== G17 LIVE EXECUTION-BOUNDARY VERIFICATION ==='
 printf '%s\n' "source_head_before=$HEAD_BEFORE"
@@ -38,9 +38,8 @@ if [ "$FAIL" -eq 0 ]; then
     RUN_DIR="$ROOT/artifacts/pipeline/$RUN_ID"
     G4="$RUN_DIR/gate4/environment_contract.txt"
     # G16 requires the Gate 5 authorization to authorize the exact command
-    # request represented by G15. Therefore the live harness must construct
-    # the Gate 5 request with the same deterministic request_id as G13-G15,
-    # rather than using the unrelated gate5-self-test request identity.
+    # request represented by G15. Therefore the live harness constructs the
+    # Gate 5 request with the same deterministic request_id as G13-G15.
     G5_REQUEST_ID="pwd-request-$RUN_ID"
     G5_REQ="$RUN_DIR/gate5/requests/$G5_REQUEST_ID.txt"
     G5_DEC="$RUN_DIR/gate5/decisions/$G5_REQUEST_ID.txt"
@@ -75,7 +74,7 @@ fi
 
 if [ "$FAIL" -eq 0 ]; then
     printf '%s\n' '--- G6 REAL BOOTSTRAP ---'
-    bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID"
+    bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$G5_REQUEST_ID"
     RC=$?
     [ "$RC" -eq 0 ] || fail G6_RC_$RC
 fi
