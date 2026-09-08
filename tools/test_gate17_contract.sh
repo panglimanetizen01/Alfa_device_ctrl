@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 TMP=$(mktemp -d 2>/dev/null || printf '%s/g17-test-%s' "$ROOT" "$$"); trap 'rm -rf "$TMP"' EXIT
-RUN_ID='run_20260908_093200_17001'; HEAD=$(git -C "$ROOT" rev-parse HEAD)
+RUN_ID='run_20260908_093200_17001'; HEAD=$(git -c "safe.directory=$ROOT" -C "$ROOT" rev-parse HEAD)
 G15="$TMP/g15.txt"; G5="$TMP/g5.txt"; AUTH="$TMP/g16.txt"; OUT="$TMP/g17.txt"; GUEST="$TMP/rootfs"
 printf '%s\n' g15 > "$G15"; printf '%s\n' g5 > "$G5"; mkdir -p "$GUEST/root" "$GUEST/etc" "$GUEST/bin" "$GUEST/usr/bin"
 G15_SHA=$(sha256sum "$G15"|awk '{print $1}'); G5_SHA=$(sha256sum "$G5"|awk '{print $1}'); G4=$(printf g4|sha256sum|awk '{print $1}'); PROFILE=$(printf profile|sha256sum|awk '{print $1}'); CMD_SHA=$(printf '%s\n' pwd|sha256sum|awk '{print $1}')
@@ -45,7 +45,7 @@ if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$P
   echo '--- G17 ROOTFS EXECUTABLES ---'; ls -l "$GUEST/bin/sh" "$GUEST/usr/bin/readlink" "$GUEST/lib64/ld-linux-x86-64.so.2" || true
   echo '--- G17 ROOTFS INTERPRETERS/LIBS ---'; ldd /bin/sh; ldd /usr/bin/readlink
   echo '--- DIRECT PROOT DIAGNOSTIC ---'; "$PROOT_EXEC" -v 2 -r "$GUEST" -b /proc:/proc -w /root /bin/sh -c 'printf "DIRECT_PWD=%s\\n" "$(pwd)"; /usr/bin/readlink /proc/self/exe; /usr/bin/readlink /proc/self/cwd; /usr/bin/readlink /proc/self/root' || true
-  exit 1
+  false
 fi
 grep -Fqx gate_status=PASS "$OUT"; grep -Fqx execution_status=EXECUTED "$OUT"; grep -Fqx result_status=PASS "$OUT"; grep -Fqx command=pwd "$OUT"; grep -Fqx command_returncode=0 "$OUT"; grep -Fqx command_result=/root "$OUT"
 for k in engine_path engine_sha256 rootfs_path rootfs_os_id guest_pid guest_internal_pid host_tracee_pid guest_proc_exe guest_proc_cwd guest_proc_root; do grep -Fq "${k}=" "$OUT"; done
@@ -61,7 +61,7 @@ mutate_expect_block NEGATIVE_COMMAND command sh
 mutate_expect_block NEGATIVE_SEMANTICS command_semantics SHELL_COMMAND
 mutate_expect_block NEGATIVE_COMMAND_HASH command_sha256 0000000000000000000000000000000000000000000000000000000000000000
 mutate_expect_block NEGATIVE_G15_HASH gate15_policy_sha256 0000000000000000000000000000000000000000000000000000000000000000
-if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out" "$TMP/no-proot" "$GUEST" >/dev/null 2>&1; then echo NEGATIVE_MISSING_ENGINE=FAIL; exit 1; fi; echo NEGATIVE_MISSING_ENGINE=PASS
-if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out" "$PROOT_EXEC" "$TMP/no-rootfs" >/dev/null 2>&1; then echo NEGATIVE_MISSING_ROOTFS=FAIL; exit 1; fi; echo NEGATIVE_MISSING_ROOTFS=PASS
+if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out" "$TMP/no-proot" "$GUEST" >/dev/null 2>&1; then echo NEGATIVE_MISSING_ENGINE=FAIL; false; fi; echo NEGATIVE_MISSING_ENGINE=PASS
+if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out" "$PROOT_EXEC" "$TMP/no-rootfs" >/dev/null 2>&1; then echo NEGATIVE_MISSING_ROOTFS=FAIL; false; fi; echo NEGATIVE_MISSING_ROOTFS=PASS
 for p in tools/gate1_foundation_v2.sh tools/gate2_canonical_source_build_boundary.sh tools/execution_capability.sh tools/gate3_execution_capability.sh tools/environment_contract.sh tools/gate5_common.sh tools/runtime_bootstrap.sh tools/gate7_runtime_session.sh tools/gate8_runtime_task.sh tools/gate9_runtime_action.sh tools/gate10_runtime_workflow.sh tools/gate11_runtime_orchestrator.sh tools/gate12_runtime_kernel.sh tools/gate13_runtime_command_request.sh tools/gate14_runtime_command_validation.sh tools/gate15_runtime_command_policy.sh tools/test_gate15_contract.sh tools/gate16_runtime_execution_authorization.sh tools/test_gate16_contract.sh; do test -f "$ROOT/$p"; done
 echo G1_G16_PROTECTION=PASS; echo G17_CONTRACT_TEST=PASS
