@@ -30,7 +30,7 @@ execution_path=DEFERRED:G17
 EOF
 PROOT_EXEC=${ALFA_G17_PROOT:-$(command -v proot 2>/dev/null || true)}; [ -x "$PROOT_EXEC" ] || { echo G17_CONTRACT_TEST=BLOCKED; exit 1; }
 cp -L /etc/os-release "$GUEST/etc/os-release"; cp -L /bin/sh "$GUEST/bin/sh"; cp -L /usr/bin/readlink "$GUEST/usr/bin/readlink"; chmod +x "$GUEST/bin/sh" "$GUEST/usr/bin/readlink"
-copy_libs(){ ldd "$1" 2>/dev/null | awk '/=> \/|^\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u | while IFS= read -r lib; do [ -f "$lib" ] || continue; mkdir -p "$GUEST$(dirname "$lib")"; cp -L "$lib" "$GUEST$lib"; done; }
+copy_libs(){ ldd "$1" 2>/dev/null | awk '/=> \/|^[[:space:]]*\// {for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort -u | while IFS= read -r lib; do [ -f "$lib" ] || continue; mkdir -p "$GUEST$(dirname "$lib")"; cp -L "$lib" "$GUEST$lib"; done; }
 copy_libs /bin/sh; copy_libs /usr/bin/readlink
 printf '%s\n' '=== G17 STATIC BOUNDARY ==='
 ! grep -Eq 'cd "\$ROOT".*pwd|RESULT=\$\(pwd' "$ROOT/tools/gate17_runtime_execution.sh"
@@ -42,7 +42,7 @@ printf '%s\n' '=== G17 REAL POSITIVE EXECUTION ==='
 if ! bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$OUT" "$PROOT_EXEC" "$GUEST" >"$TMP/positive.stdout" 2>"$TMP/positive.stderr"; then
   echo '--- G17 EXECUTOR STDOUT ---'; cat "$TMP/positive.stdout"
   echo '--- G17 EXECUTOR STDERR ---'; cat "$TMP/positive.stderr"
-  echo '--- G17 ROOTFS EXECUTABLES ---'; ls -l "$GUEST/bin/sh" "$GUEST/usr/bin/readlink"
+  echo '--- G17 ROOTFS EXECUTABLES ---'; ls -l "$GUEST/bin/sh" "$GUEST/usr/bin/readlink" "$GUEST/lib64/ld-linux-x86-64.so.2" || true
   echo '--- G17 ROOTFS INTERPRETERS/LIBS ---'; ldd /bin/sh; ldd /usr/bin/readlink
   echo '--- DIRECT PROOT DIAGNOSTIC ---'; "$PROOT_EXEC" -v 2 -r "$GUEST" -w /root /bin/sh -c 'printf "DIRECT_PWD=%s\\n" "$(pwd)"; /usr/bin/readlink /proc/self/exe; /usr/bin/readlink /proc/self/cwd; /usr/bin/readlink /proc/self/root' || true
   exit 1
