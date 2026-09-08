@@ -41,8 +41,9 @@ jobs:
         run: |
           set -u
           ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-shared"
-          mkdir -p "$ALFA_EXEC_SHARED_ROOT"
+          mkdir -p "$ALFA_EXEC_SHARED_ROOT" "$HOME/tmp"
           test -d "$ALFA_EXEC_SHARED_ROOT"
+          test -d "$HOME/tmp"
           echo "ALFA_EXEC_SHARED_ROOT=$ALFA_EXEC_SHARED_ROOT" >> "$GITHUB_ENV"
           echo "ALFA_EXEC_SHARED_ROOT=$ALFA_EXEC_SHARED_ROOT"
       - name: Verify source identity
