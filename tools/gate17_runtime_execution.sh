@@ -79,11 +79,19 @@ STDERR_FILE="$TMP_DIR/stderr"
 "$PROOT_EXEC" -r "$ROOTFS" -w /root /bin/sh -c 'pwd' >"$STDOUT_FILE" 2>"$STDERR_FILE" &
 PROOT_PID=$!
 GUEST_PID=''
+GUEST_PROC_EXE=''
+GUEST_PROC_CWD=''
+GUEST_PROC_ROOT=''
 for _ in $(seq 1 100); do
   CHILDREN="/proc/$PROOT_PID/task/$PROOT_PID/children"
   if [ -r "$CHILDREN" ]; then
     GUEST_PID=$(awk '{print $1}' "$CHILDREN" 2>/dev/null || printf '%s' '')
-    [ -n "$GUEST_PID" ] && [ -d "/proc/$GUEST_PID" ] && break
+    if [ -n "$GUEST_PID" ] && [ -d "/proc/$GUEST_PID" ]; then
+      GUEST_PROC_EXE=$(readlink "/proc/$GUEST_PID/exe" 2>/dev/null || printf '%s' '')
+      GUEST_PROC_CWD=$(readlink "/proc/$GUEST_PID/cwd" 2>/dev/null || printf '%s' '')
+      GUEST_PROC_ROOT=$(readlink "/proc/$GUEST_PID/root" 2>/dev/null || printf '%s' '')
+      [ -n "$GUEST_PROC_EXE" ] && [ -n "$GUEST_PROC_ROOT" ] && break
+    fi
   fi
   sleep 0.001
 done
@@ -91,15 +99,12 @@ wait "$PROOT_PID"
 RETURN_CODE=$?
 [ "$RETURN_CODE" -eq 0 ] || { blocked "PRoot execution failed with return code $RETURN_CODE"; exit 1; }
 [ -n "$GUEST_PID" ] || { blocked 'guest process PID could not be observed'; exit 1; }
+[ -n "$GUEST_PROC_EXE" ] || { blocked 'guest process /proc/exe evidence unavailable'; exit 1; }
+[ -n "$GUEST_PROC_ROOT" ] || { blocked 'guest process /proc/root evidence unavailable'; exit 1; }
 RESULT=$(cat "$STDOUT_FILE" 2>/dev/null) || { blocked 'guest stdout unavailable'; exit 1; }
 RESULT=${RESULT%$'\n'}
 [ "$RESULT" = /root ] || { blocked 'guest pwd result is not the authorized guest working directory'; exit 1; }
-
-PROC_EXE=$(readlink "/proc/$GUEST_PID/exe" 2>/dev/null || printf '%s' '')
-PROC_CWD=$(readlink "/proc/$GUEST_PID/cwd" 2>/dev/null || printf '%s' '')
-PROC_ROOT=$(readlink "/proc/$GUEST_PID/root" 2>/dev/null || printf '%s' '')
-[ -n "$PROC_EXE" ] || { blocked 'guest process /proc/exe evidence unavailable'; exit 1; }
-[ -n "$PROC_ROOT" ] || { blocked 'guest process /proc/root evidence unavailable'; exit 1; }
+[ "$GUEST_PROC_ROOT" != / ] || { blocked 'guest process /proc/root resolves to host root'; exit 1; }
 NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf '%s' '')
 [ -n "$NOW" ] || { blocked 'timestamp unavailable'; exit 1; }
 EXEC_SHA=$(printf '%s\n' "$RESULT" | sha256sum | awk '{print $1}')
@@ -133,9 +138,9 @@ TMP="$OUTPUT.partial.$$"
   printf '%s\n' "rootfs_os_id=$GUEST_OS_ID"
   printf '%s\n' "rootfs_os_release_sha256=$ROOTFS_OS_SHA"
   printf '%s\n' "guest_pid=$GUEST_PID"
-  printf '%s\n' "guest_proc_exe=$PROC_EXE"
-  printf '%s\n' "guest_proc_cwd=$PROC_CWD"
-  printf '%s\n' "guest_proc_root=$PROC_ROOT"
+  printf '%s\n' "guest_proc_exe=$GUEST_PROC_EXE"
+  printf '%s\n' "guest_proc_cwd=$GUEST_PROC_CWD"
+  printf '%s\n' "guest_proc_root=$GUEST_PROC_ROOT"
   printf '%s\n' "created_at=$NOW"
   printf '%s\n' 'execution_path=PRoot:-r:<rootfs>:-w:/root:/bin/sh:-c:pwd'
   printf '%s\n' 'execution_reason=G16 authorization verified; exact pwd command executed inside explicit PRoot guest rootfs'
