@@ -71,7 +71,9 @@ grep -Fq 'rootfs_path=' "$OUT"
 grep -Fq 'rootfs_os_id=' "$OUT"
 grep -Fq 'guest_pid=' "$OUT"
 grep -Fq 'guest_proc_exe=' "$OUT"
+grep -Fq 'guest_proc_cwd=' "$OUT"
 grep -Fq 'guest_proc_root=' "$OUT"
+[ "$(awk -F= '$1=="guest_proc_cwd" {print substr($0,index($0,"=")+1); exit}' "$OUT")" = /root ]
 [ "$(awk -F= '$1=="guest_proc_root" {print substr($0,index($0,"=")+1); exit}' "$OUT")" != / ]
 echo 'POSITIVE_REAL_GUEST_EXECUTION=PASS'
 echo 'EXECUTION_EVIDENCE=PASS'
