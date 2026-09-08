@@ -34,7 +34,7 @@ execution_path=DEFERRED:G17
 EOF
 
 PROOT_EXEC=${ALFA_G17_PROOT:-$(command -v proot 2>/dev/null || printf '%s' '')}
-[ -n "$PROOT_EXEC" ] && [ -x "$PROOT_EXEC" ] || { echo 'G17_CONTRACT_TEST=BLOCKED'; echo 'REASON=real PRoot executable is required'; return 1 2>/dev/null || :; }
+[ -n "$PROOT_EXEC" ] && [ -x "$PROOT_EXEC" ] || { echo 'G17_CONTRACT_TEST=BLOCKED'; echo 'REASON=real PRoot executable is required'; exit 1; }
 mkdir -p "$GUEST/root" "$GUEST/etc"
 cp -L /etc/os-release "$GUEST/etc/os-release"
 cp -L /bin/sh "$GUEST/bin-sh.tmp"
@@ -97,9 +97,9 @@ mutate_expect_block NEGATIVE_COMMAND_HASH command_sha256 00000000000000000000000
 mutate_expect_block NEGATIVE_G15_HASH gate15_policy_sha256 0000000000000000000000000000000000000000000000000000000000000000
 
 cp "$AUTH" "$TMP/missing-engine.txt"
-if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$TMP/missing-engine.txt" "$TMP/out.txt" "$TMP/no-proot" "$GUEST" >/dev/null 2>&1; then echo 'NEGATIVE_MISSING_ENGINE=FAIL'; return 1; fi
+if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$TMP/missing-engine.txt" "$TMP/out.txt" "$TMP/no-proot" "$GUEST" >/dev/null 2>&1; then echo 'NEGATIVE_MISSING_ENGINE=FAIL'; exit 1; fi
 echo 'NEGATIVE_MISSING_ENGINE=PASS'
-if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out.txt" "$PROOT_EXEC" "$TMP/no-rootfs" >/dev/null 2>&1; then echo 'NEGATIVE_MISSING_ROOTFS=FAIL'; return 1; fi
+if bash "$ROOT/tools/gate17_runtime_execution.sh" "$RUN_ID" "$AUTH" "$TMP/out.txt" "$PROOT_EXEC" "$TMP/no-rootfs" >/dev/null 2>&1; then echo 'NEGATIVE_MISSING_ROOTFS=FAIL'; exit 1; fi
 echo 'NEGATIVE_MISSING_ROOTFS=PASS'
 
 echo '=== G17 PROTECTION ==='
