@@ -77,8 +77,8 @@ main() {
         STATUS=BLOCKED; REASON='session evidence schema is missing or unsupported'
     elif ! is_token "$E_SESSION" || ! is_token "$E_REQUEST" || [ "$E_RUN" != "$RUN_ID" ]; then
         STATUS=BLOCKED; REASON='session identity is missing or cross-run'
-    elif [ "$E_RUNTIME" != 'ubuntu' ]; then
-        STATUS=BLOCKED; REASON='session runtime_id is not the selected runtime'
+    elif [ "$E_RUNTIME" != 'debian' ]; then
+        STATUS=BLOCKED; REASON='session runtime_id is not the Debian acceptance runtime'
     elif [ "$E_SOURCE" != "$SOURCE_COMMIT" ] || [ "$E_PROFILE" != "$PROFILE_SHA" ] || [ "$E_CONTRACT" != "$CONTRACT_SHA" ] || ! is_commit "$E_IMPL"; then
         STATUS=BLOCKED; REASON='session evidence provenance does not match Gate 6'
     elif [ "$E_STATE" != 'READY' ] || [ "$E_RESULT" != 'PROMPT_OBSERVED' ]; then
