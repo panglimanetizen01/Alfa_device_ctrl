@@ -57,134 +57,33 @@ jobs:
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "ANDROID_SDK_READY=PASS"
 
-      - name: Build and inject PRoot external loader (runner-only)
+      - name: Prepare canonical PRoot loader
         shell: bash
         env:
-          PROOT_COMMIT: 7266fb3e8516535682f5a9c8f3a7e70f6506eddb
           NDK_VERSION: 28.0.13004108
         run: |
           set -euo pipefail
           mkdir -p ci-evidence
           sdkmanager "ndk;${NDK_VERSION}"
-
-          rm -rf .ci/proot
-          git clone https://github.com/termux/proot.git .ci/proot
-          git -C .ci/proot checkout --detach "$PROOT_COMMIT"
-          test "$(git -C .ci/proot rev-parse HEAD)" = "$PROOT_COMMIT"
-
-          NDK="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
-          TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          CC="$TOOLCHAIN/clang --target=aarch64-linux-android26"
-
-          make -C .ci/proot/src \
-            CC="$CC" \
-            LD="$CC" \
-            STRIP="$TOOLCHAIN/llvm-strip" \
-            loader/loader
-
-          install -D -m 0755 \
-            .ci/proot/src/loader/loader \
-            app/src/main/jniLibs/arm64-v8a/libproot-loader.so
-
-          test -x app/src/main/jniLibs/arm64-v8a/libproot-loader.so
-          file app/src/main/jniLibs/arm64-v8a/libproot-loader.so
-          readelf -h app/src/main/jniLibs/arm64-v8a/libproot-loader.so | grep -E 'Class:|Machine:'
-          LOADER_SHA256="$(sha256sum app/src/main/jniLibs/arm64-v8a/libproot-loader.so | awk '{print $1}')"
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path("app/src/main/java/com/alfa/device_ctrl/MainActivity.java")
-          s = p.read_text()
-          old = '"PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath()'
-          new = old + ',\n                        "PROOT_LOADER=" + new File(getApplicationInfo().nativeLibraryDir, "libproot-loader.so").getAbsolutePath()'
-          if 'PROOT_LOADER=' not in s:
-              if old not in s:
-                  raise SystemExit("MainActivity loader anchor missing")
-              p.write_text(s.replace(old, new, 1))
-
-          p = Path("app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java")
-          s = p.read_text()
-          anchor = "            validatePackagedEngine(packagedEngine, nativeLibraryDir);\n"
-          if "private void validatePackagedLoader" not in s:
-              if anchor not in s:
-                  raise SystemExit("RuntimeInstaller validation anchor missing")
-              s = s.replace(anchor, anchor + "            validatePackagedLoader(nativeLibraryDir);\n", 1)
-              marker = "    private static boolean isArm64Elf(File engine) throws IOException {"
-              method = (
-                  "    private void validatePackagedLoader(File libraryDir) throws Exception {\n"
-                  "        File loader = new File(libraryDir.getCanonicalFile(), \"libproot-loader.so\").getCanonicalFile();\n"
-                  "        if (!loader.isFile()) throw new IOException(\"runtime-loader-missing\");\n"
-                  "        if (!loader.canExecute()) throw new IOException(\"runtime-loader-not-executable\");\n"
-                  "    }\n"
-              )
-              if marker not in s:
-                  raise SystemExit("RuntimeInstaller method marker missing")
-              s = s.replace(marker, method + "\n" + marker, 1)
-
-          old = '            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());'
-          new = old + '\n            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();\n            if (!loader.isFile() || !loader.canExecute()) return "runtime-smoke-loader-missing-or-not-executable";\n            builder.environment().put("PROOT_LOADER", loader.getAbsolutePath());'
-          if 'builder.environment().put("PROOT_LOADER"' not in s:
-              if old not in s:
-                  raise SystemExit("RuntimeInstaller smoke anchor missing")
-              s = s.replace(old, new, 1)
-          p.write_text(s)
-
-          p = Path("app/build.gradle")
-          s = p.read_text()
-          if "useLegacyPackaging true" not in s:
-              marker = "android {\n"
-              replacement = (
-                  "android {\n"
-                  "    packagingOptions {\n"
-                  "        jniLibs {\n"
-                  "            useLegacyPackaging true\n"
-                  "        }\n"
-                  "    }\n"
-                  "\n"
-              )
-              if marker not in s:
-                  raise SystemExit("build.gradle anchor missing")
-              p.write_text(s.replace(marker, replacement, 1))
-          PY
-
-          git diff --check
-          git diff --binary > ci-evidence/runner-injection.patch
-
-          python3 - "$LOADER_SHA256" "$(cat ci-evidence/source-commit.txt)" "$PROOT_COMMIT" "$NDK_VERSION" <<'PY'
-          import json, subprocess, sys
-          allowed = {
-              "app/build.gradle",
-              "app/src/main/java/com/alfa/device_ctrl/MainActivity.java",
-              "app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java",
-              "app/src/main/jniLibs/arm64-v8a/libproot-loader.so",
-          }
-          status = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
-          paths = set()
-          for line in status:
-              path = line[3:]
-              if " -> " in path:
-                  path = path.split(" -> ", 1)[1]
-              if path == ".ci" or path.startswith(".ci/"):
-                  continue
-              if path == "ci-evidence" or path.startswith("ci-evidence/"):
-                  continue
-              paths.add(path)
-          if not paths.issubset(allowed):
-              raise SystemExit(f"unexpected runner changes: {sorted(paths - allowed)}")
-          if paths != allowed:
-              raise SystemExit(f"runner injection incomplete: missing={sorted(allowed - paths)}")
-          report = {
+          ./gradlew :app:prepareProotLoader --no-daemon --stacktrace
+          LOADER="app/build/generated/jniLibs/arm64-v8a/libproot-loader.so"
+          test -x "$LOADER"
+          file "$LOADER"
+          readelf -h "$LOADER" | grep -E 'Class:|Machine:'
+          readelf -l "$LOADER" | grep 'LOAD' | awk '{print $NF}'
+          LOADER_SHA256="$(sha256sum "$LOADER" | awk '{print $1}')"
+          python3 - "$LOADER_SHA256" "$NDK_VERSION" <<'PY'
+          import json, os, sys
+          json.dump({
               "status": "PASS",
-              "mode": "runner-only",
-              "source_commit": sys.argv[2],
-              "proot_commit": sys.argv[3],
-              "ndk_version": sys.argv[4],
-              "loader_path": "app/src/main/jniLibs/arm64-v8a/libproot-loader.so",
+              "mode": "canonical-gradle-build",
+              "loader_path": "app/build/generated/jniLibs/arm64-v8a/libproot-loader.so",
+              "proot_commit": "7266fb3e8516535682f5a9c8f3a7e70f6506eddb",
+              "ndk_version": sys.argv[2],
               "loader_sha256": sys.argv[1],
-              "changed_paths": sorted(paths),
-          }
-          json.dump(report, open("ci-evidence/runner-injection.json", "w"), indent=2)
+              "exists": True,
+              "executable": os.access("app/build/generated/jniLibs/arm64-v8a/libproot-loader.so", os.X_OK),
+          }, open("ci-evidence/loader-provenance.json", "w"), indent=2)
           PY
 
       - name: Gate A - Source integrity
@@ -305,7 +204,7 @@ jobs:
           find . -type f -path '*/build/reports/tests/*' -print0 |
             while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/test-report/; done
           python3 - "$D" <<'PY'
-          import glob, json, subprocess, sys
+          import glob, json, sys
           from xml.etree import ElementTree as ET
           failures = []
           xml_files = glob.glob("ci-evidence/junit-xml/**/*.xml", recursive=True)
@@ -348,11 +247,10 @@ jobs:
           required = [
               "source-commit.txt",
               "source-integrity.json",
-              "runner-injection.json",
+              "loader-provenance.json",
               "audit-summary.json",
               "build-result.json",
               "test-result.json",
-              "runner-injection.patch",
               "fixture-provenance.json",
           ]
           missing = [x for x in required if not os.path.isfile("ci-evidence/" + x)]
@@ -390,7 +288,7 @@ jobs:
           import json, os, sys
           files = [
               "source-integrity.json",
-              "runner-injection.json",
+              "loader-provenance.json",
               "audit-summary.json",
               "build-result.json",
               "test-result.json",
