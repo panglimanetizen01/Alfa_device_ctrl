@@ -11,6 +11,9 @@ on:
       - ".github/workflows/mcp-server.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
