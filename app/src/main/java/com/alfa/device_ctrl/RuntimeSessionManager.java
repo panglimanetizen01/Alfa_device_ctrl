@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import android.view.View;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -131,36 +132,115 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         }
     }
 
-    static CommandResult executeProcess(ProcessBuilder builder, long timeoutMs, int maxOutputChars) throws Exception {
-        Process process = builder.start();
-        StringBuilder text = new StringBuilder();
-        Thread readerThread = new Thread(() -> {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                char[] buffer = new char[4096];
-                int count;
-                while ((count = reader.read(buffer)) != -1) {
-                    synchronized (text) {
-                        if (text.length() >= maxOutputChars) continue;
-                        int remaining = maxOutputChars - text.length();
-                        text.append(buffer, 0, Math.min(count, remaining));
-                    }
-                }
-            } catch (Exception ignored) {
-                // Process termination is reported by the owner thread.
-            }
-        }, "alfa-runtime-command-output");
-        readerThread.start();
-
-        boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
-        if (!finished) {
-            process.destroyForcibly();
-            process.waitFor(2, TimeUnit.SECONDS);
-            readerThread.join(2000);
-            return new CommandResult(text.toString().trim(), 124, true);
+    private static String findExecutable(String... candidates) {
+        for (String candidate : candidates) {
+            File file = new File(candidate);
+            if (file.isFile() && file.canExecute()) return candidate;
         }
+        return null;
+    }
 
-        readerThread.join(2000);
-        return new CommandResult(text.toString().trim(), process.exitValue(), false);
+    private static String requireProcessGroupTool(String... candidates) {
+        String executable = findExecutable(candidates);
+        if (executable == null) throw new IllegalStateException("process-group-tool-unavailable");
+        return executable;
+    }
+
+    private static String shellQuote(String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
+    }
+
+    private static ProcessBuilder withProcessGroup(ProcessBuilder command, File pidFile) {
+        String setsid = requireProcessGroupTool("/system/bin/setsid", "/usr/bin/setsid", "/bin/setsid");
+        String shell = requireProcessGroupTool("/system/bin/sh", "/usr/bin/sh", "/bin/sh");
+        List<String> argv = new ArrayList<>();
+        argv.add(setsid);
+        argv.add(shell);
+        argv.add("-c");
+        argv.add("echo $$ > " + shellQuote(pidFile.getAbsolutePath()) + "; exec \"$@\"");
+        argv.add("alfa-process-group");
+        argv.addAll(command.command());
+        ProcessBuilder grouped = new ProcessBuilder(argv);
+        grouped.directory(command.directory());
+        grouped.environment().clear();
+        grouped.environment().putAll(command.environment());
+        grouped.redirectErrorStream(command.redirectErrorStream());
+        return grouped;
+    }
+
+    private static long readProcessGroupId(File pidFile, long timeoutMs) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+        while (System.nanoTime() < deadline) {
+            if (pidFile.isFile()) {
+                String value = new String(java.nio.file.Files.readAllBytes(pidFile.toPath()), StandardCharsets.US_ASCII).trim();
+                try {
+                    long pid = Long.parseLong(value);
+                    if (pid > 0 && pid <= Integer.MAX_VALUE) return pid;
+                } catch (NumberFormatException ignored) { }
+            }
+            Thread.sleep(10);
+        }
+        throw new IllegalStateException("process-group-pid-unavailable");
+    }
+
+    private static void killProcessGroup(long pid) throws Exception {
+        if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid");
+        String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill");
+        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid)
+                .redirectErrorStream(true)
+                .start();
+        if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly();
+        if (killer.exitValue() != 0) throw new IllegalStateException("process-group-kill-failed:" + killer.exitValue());
+    }
+
+    static CommandResult executeProcess(ProcessBuilder builder, long timeoutMs, int maxOutputChars) throws Exception {
+        File pidFile = File.createTempFile("alfa-process-group-", ".pid");
+        if (!pidFile.delete()) throw new IllegalStateException("process-group-pid-file-create-failed");
+        Process process = null;
+        try {
+            ProcessBuilder groupedBuilder = withProcessGroup(builder, pidFile);
+            process = groupedBuilder.start();
+            long processGroupId = readProcessGroupId(pidFile, 2000);
+            StringBuilder text = new StringBuilder();
+            Process activeProcess = process;
+            Thread readerThread = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(activeProcess.getInputStream(), StandardCharsets.UTF_8))) {
+                    char[] buffer = new char[4096];
+                    int count;
+                    while ((count = reader.read(buffer)) != -1) {
+                        synchronized (text) {
+                            if (text.length() >= maxOutputChars) continue;
+                            int remaining = maxOutputChars - text.length();
+                            text.append(buffer, 0, Math.min(count, remaining));
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // Process termination is reported by the owner thread.
+                }
+            }, "alfa-runtime-command-output");
+            readerThread.start();
+
+            boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
+            if (!finished) {
+                Exception cleanupFailure = null;
+                try {
+                    killProcessGroup(processGroupId);
+                } catch (Exception error) {
+                    cleanupFailure = error;
+                    process.destroyForcibly();
+                }
+                process.waitFor(2, TimeUnit.SECONDS);
+                readerThread.join(2000);
+                if (cleanupFailure != null) throw cleanupFailure;
+                return new CommandResult(text.toString().trim(), 124, true);
+            }
+
+            readerThread.join(2000);
+            return new CommandResult(text.toString().trim(), process.exitValue(), false);
+        } finally {
+            if (process != null && process.isAlive()) process.destroyForcibly();
+            if (pidFile.exists()) pidFile.delete();
+        }
     }
 
     public void runRuntimeCommand(String command, CommandListener listener) {
