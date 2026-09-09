@@ -39,19 +39,10 @@ public final class InteractiveSessionContract {
     }
 
     public InteractiveSessionContract(
-            String sessionId,
-            String requestId,
-            String pipelineRunId,
-            String runtimeId,
-            String sourceCommit,
-            String gate4ContractSha256,
-            String profileSha256,
-            String implementationCommit,
-            File runtimeReadyEvidence,
-            File prootExecutable,
-            File runtimeRoot,
-            File hostCwd,
-            String[] environment) {
+            String sessionId, String requestId, String pipelineRunId, String runtimeId,
+            String sourceCommit, String gate4ContractSha256, String profileSha256,
+            String implementationCommit, File runtimeReadyEvidence, File prootExecutable,
+            File runtimeRoot, File hostCwd, String[] environment) {
         Properties launch = readLaunchContract(runtimeReadyEvidence);
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
@@ -77,12 +68,7 @@ public final class InteractiveSessionContract {
         Properties p = new Properties();
         try (FileInputStream in = new FileInputStream(launchFile)) {
             p.load(in);
-            requireProperty(p, "pipeline_run_id");
-            requireProperty(p, "runtime_id");
-            requireProperty(p, "source_commit");
-            requireProperty(p, "gate4_contract_sha256");
-            requireProperty(p, "profile_sha256");
-            requireProperty(p, "implementation_commit");
+            for (String key : new String[]{"pipeline_run_id", "runtime_id", "source_commit", "gate4_contract_sha256", "profile_sha256", "implementation_commit"}) requireProperty(p, key);
             return p;
         } catch (Exception error) {
             throw new IllegalStateException("Gate 7 launch contract is unreadable", error);
@@ -94,7 +80,9 @@ public final class InteractiveSessionContract {
         for (String entry : base) if (entry != null && entry.startsWith("PROOT_LOADER=")) return base;
         try {
             File loader = new File(prootExecutable.getCanonicalFile().getParentFile(), "libproot-loader.so").getCanonicalFile();
-            return Arrays.copyOf(base, base.length + 1);
+            String[] result = Arrays.copyOf(base, base.length + 1);
+            result[base.length] = "PROOT_LOADER=" + loader.getAbsolutePath();
+            return result;
         } catch (Exception error) {
             return base;
         }
@@ -160,7 +148,7 @@ public final class InteractiveSessionContract {
     public String[] environment() { return environment.clone(); }
 
     public String[] prootArguments() {
-        return new String[] { "-0", "-r", runtimeRoot.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "/bin/sh", "-i" };
+        return new String[]{"-0", "-r", runtimeRoot.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "/bin/sh", "-i"};
     }
 
     private static String requireToken(String value, String name) {
