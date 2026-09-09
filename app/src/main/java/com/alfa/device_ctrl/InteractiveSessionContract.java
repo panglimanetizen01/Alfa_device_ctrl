@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Properties;
 
 /** Android-side representation of interactive-session.v1 with Gate 6 provenance binding. */
@@ -65,7 +66,7 @@ public final class InteractiveSessionContract {
         this.prootExecutable = requireFile(prootExecutable, "prootExecutable");
         this.runtimeRoot = requireFile(runtimeRoot, "runtimeRoot");
         this.hostCwd = requireFile(hostCwd, "hostCwd");
-        this.environment = environment == null ? new String[0] : environment.clone();
+        this.environment = withLoader(environment, this.prootExecutable);
     }
 
     private static Properties readLaunchContract(File runtimeReadyEvidence) {
@@ -93,13 +94,44 @@ public final class InteractiveSessionContract {
         if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) throw new IllegalStateException("Gate 7 launch contract missing " + key);
     }
 
+    private static String[] withLoader(String[] supplied, File prootExecutable) {
+        ArrayList<String> values = new ArrayList<>();
+        if (supplied != null) {
+            for (String entry : supplied) if (entry != null && !entry.startsWith("PROOT_LOADER=")) values.add(entry);
+        }
+        File parent = prootExecutable == null ? null : prootExecutable.getParentFile();
+        File loader = parent == null ? null : new File(parent, "libproot-loader.so");
+        if (loader == null || !loader.isFile() || !loader.canExecute()) {
+            values.add("PROOT_LOADER=");
+        } else {
+            try { values.add("PROOT_LOADER=" + loader.getCanonicalPath()); }
+            catch (Exception error) { values.add("PROOT_LOADER="); }
+        }
+        return values.toArray(new String[0]);
+    }
+
     public boolean isAuthorizedForInteractiveRuntime() {
         return POLICY_ID.equals("interactive-runtime.v1") && POLICY_VERSION == 1
                 && POLICY_SCOPE.equals("full-user-access-inside-selected-rootless-runtime")
                 && RuntimeEvidence.verify(runtimeReadyEvidence, runtimeId, prootExecutable, runtimeRoot)
-                && prootExecutable.isFile() && prootExecutable.canExecute() && runtimeRoot.isDirectory() && hostCwd.isDirectory()
+                && prootExecutable.isFile() && prootExecutable.canExecute()
+                && prootLoaderIsValid() && runtimeRoot.isDirectory() && hostCwd.isDirectory()
                 && !runtimeRoot.getAbsolutePath().startsWith("/home/userland") && !hostCwd.getAbsolutePath().startsWith("/home/userland")
                 && hasValidProotTmpDir() && !hasUnsafeEnvironmentPath();
+    }
+
+    private boolean prootLoaderIsValid() {
+        for (String entry : environment) {
+            if (entry != null && entry.startsWith("PROOT_LOADER=")) {
+                String value = entry.substring("PROOT_LOADER=".length());
+                File loader = new File(value);
+                try {
+                    return !value.isEmpty() && loader.isFile() && loader.canExecute()
+                            && loader.getCanonicalFile().getParentFile().equals(prootExecutable.getCanonicalFile().getParentFile());
+                } catch (Exception error) { return false; }
+            }
+        }
+        return false;
     }
 
     private boolean hasValidProotTmpDir() {
@@ -109,7 +141,11 @@ public final class InteractiveSessionContract {
         try {
             File tmp = new File(value).getCanonicalFile();
             File runtime = runtimeRoot.getCanonicalFile();
-            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland") && tmp.toPath().startsWith(runtime.toPath());
+            File vault = runtime.getParentFile().getParentFile().getCanonicalFile();
+            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
+                    && !tmp.getAbsolutePath().startsWith("/home/userland")
+                    && tmp.toPath().startsWith(vault.toPath())
+                    && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs"));
         } catch (Exception error) { return false; }
     }
 
