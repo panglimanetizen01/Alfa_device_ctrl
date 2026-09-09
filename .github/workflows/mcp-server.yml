@@ -1,0 +1,40 @@
+name: mcp-server
+
+on:
+  push:
+    paths:
+      - "mcp-server/**"
+      - ".github/workflows/mcp-server.yml"
+  pull_request:
+    paths:
+      - "mcp-server/**"
+      - ".github/workflows/mcp-server.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.1"
+          cache-dependency-path: mcp-server/go.sum
+
+      - name: Verify modules
+        run: go mod tidy && git diff --exit-code -- go.mod go.sum
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
