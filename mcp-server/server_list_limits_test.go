@@ -18,26 +18,25 @@ func TestAlfaListDirectoryLimitsEntries(t *testing.T) {
     }
 
     got := alfaListDirectoryAt(root, ".")
-    if strings.HasPrefix(got, "error: ") {
-        return
-    }
-    if len(strings.Split(got, "\n")) > maxMCPDirectoryEntries {
-        t.Fatal("listing exceeded entry limit")
+    want := "error: directory listing exceeds MCP entry limit"
+    if got != want {
+        t.Fatalf("expected %q, got %q", want, got)
     }
 }
 
 func TestAlfaListDirectoryRejectsOversizedResponse(t *testing.T) {
     root := t.TempDir()
-    for i := 0; i < 4; i++ {
-        name := strings.Repeat("x", maxMCPDirectoryResponseBytes/2)
-        path := filepath.Join(root, fmt.Sprintf("%s-%d", name, i))
+    for i := 0; i < maxMCPDirectoryEntries; i++ {
+        name := strings.Repeat("x", 200) + fmt.Sprintf("%03d", i)
+        path := filepath.Join(root, name)
         if err := os.WriteFile(path, []byte("x"), 0600); err != nil {
             t.Fatal(err)
         }
     }
 
     got := alfaListDirectoryAt(root, ".")
-    if !strings.HasPrefix(got, "error: ") {
-        t.Fatalf("expected response-size rejection, got %d bytes", len(got))
+    want := "error: directory listing exceeds MCP response limit"
+    if got != want {
+        t.Fatalf("expected %q, got %q", want, got)
     }
 }
