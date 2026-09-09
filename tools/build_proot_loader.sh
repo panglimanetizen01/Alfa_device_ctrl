@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Build the pinned PRoot ARM64 external loader as a reproducible build input.
-# The generated ELF is intentionally not stored in Git; the build copies it into
-# app/src/main/jniLibs/arm64-v8a/libproot-loader.so before packaging the APK.
+# The generated ELF is intentionally not stored in Git; Gradle packages it from
+# app/build/generated/jniLibs/arm64-v8a/libproot-loader.so.
 set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 NDK_VERSION="28.0.13004108"
-OUT="$ROOT/app/src/main/jniLibs/arm64-v8a/libproot-loader.so"
+OUT="${PROOT_LOADER_OUT:-$ROOT/app/build/generated/jniLibs/arm64-v8a/libproot-loader.so}"
 WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
@@ -15,7 +15,7 @@ WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 NDK="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
 [ -d "$NDK" ] || { echo 'LOADER_STATUS=BLOCKED'; echo "LOADER_REASON=NDK_MISSING:$NDK_VERSION"; exit 20; }
 
-mkdir -p "$ROOT/.build" "$ROOT/app/src/main/jniLibs/arm64-v8a"
+mkdir -p "$ROOT/.build" "$(dirname "$OUT")"
 if [ ! -d "$WORK/.git" ]; then
   rm -rf "$WORK"
   git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"
