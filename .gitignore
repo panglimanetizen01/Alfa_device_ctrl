@@ -1,3 +1,9 @@
+# Gradle / Android build state
+.gradle/
+**/.gradle/
+build/
+**/build/
+
 # Gate 0 temporary provenance evidence
 artifacts/gate0_complete_provenance_evidence_*.txt
 artifacts/gate0_part_*.txt
@@ -6,3 +12,10 @@ artifacts/cde/cde_*.txt
 
 # Local gate verification evidence (generated, never source-controlled)
 artifacts/gates/
+
+# Temporary/editor/backup files
+*.bak
+*.bak.*
+*.tmp
+*.swp
+*~
