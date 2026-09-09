@@ -6,6 +6,12 @@ android {
     namespace 'com.alfa.device_ctrl'
     compileSdk 35
 
+    sourceSets {
+        main {
+            jniLibs.srcDir("$buildDir/generated/jniLibs")
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
@@ -20,6 +26,16 @@ android {
         versionName '0.1.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
+}
+
+tasks.register('prepareProotLoader', Exec) {
+    workingDir rootProject.projectDir
+    environment 'PROOT_LOADER_OUT', file("$buildDir/generated/jniLibs/arm64-v8a/libproot-loader.so").absolutePath
+    commandLine 'bash', 'tools/build_proot_loader.sh'
+}
+
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('prepareProotLoader')
 }
 
 dependencies {
