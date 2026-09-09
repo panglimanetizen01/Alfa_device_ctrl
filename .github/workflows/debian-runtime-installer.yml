@@ -59,4 +59,4 @@ jobs:
           printf '%s  %s\n' "$SHA" artifacts/test-fixtures/debian-bookworm-arm64.tar.gz | sha256sum -c -
       - name: Run Debian installer acceptance test
         shell: bash
-        run: ./gradlew :app:test --no-daemon --stacktrace --tests com.alfa.device_ctrl.DebianRuntimeInstallerTest
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace --tests com.alfa.device_ctrl.DebianRuntimeInstallerTest
