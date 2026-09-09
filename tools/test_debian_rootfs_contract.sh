@@ -19,8 +19,9 @@ grep -Eq '^bin/sh$|^usr/bin/sh$' <<< "$list"
 grep -Eq '^usr/bin/env$' <<< "$list"
 grep -Eq '^usr/$' <<< "$list"
 
+test -n "$(grep -E '^etc/os-release$' <<< "$list")"
 mkdir -p "$TMP_DIR/rootfs"
-tar -xzf "$ARCHIVE" -C "$TMP_DIR/rootfs" etc/os-release
+tar -xzf "$ARCHIVE" -C "$TMP_DIR/rootfs" etc/os-release usr/lib/os-release
 rootfs_id=$(sed -n 's/^ID=//p' "$TMP_DIR/rootfs/etc/os-release" | tr -d '"')
 printf 'ROOTFS_ID=%s\n' "$rootfs_id"
 test "$rootfs_id" = debian
