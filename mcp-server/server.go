@@ -13,7 +13,7 @@ const (
     alfaProjectRoot              = "/sdcard/Alfa_device_ctrl_HOST/Alfa_device_ctrl"
     maxMCPFileSize               = 1 << 20
     maxMCPDirectoryEntries       = 256
-    maxMCPDirectoryResponseBytes = 64 << 10
+    maxMCPDirectoryResponseBytes = 32 << 10
 )
 
 var (
