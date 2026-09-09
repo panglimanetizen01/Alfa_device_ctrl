@@ -19,7 +19,9 @@ public final class OperationEvidence {
     public static File write(InteractiveSessionContract contract, String state, String result, int processPid) {
         if (contract == null || state == null || result == null) return null;
         try {
-            File parent = new File(contract.runtimeReadyEvidence().getParentFile(), "evidence/sessions");
+            File runtimeEvidence = contract.runtimeReadyEvidence();
+            File runtimeVault = runtimeEvidence.getParentFile().getParentFile().getParentFile();
+            File parent = new File(runtimeVault, "evidence/sessions");
             if (!parent.exists() && !parent.mkdirs()) return null;
             String safeState = state.replaceAll("[^A-Za-z0-9._-]", "_");
             File finalFile = new File(parent, contract.sessionId() + "." + safeState + ".properties");
@@ -43,7 +45,7 @@ public final class OperationEvidence {
             p.setProperty("pty_status", "PASS");
             p.setProperty("prompt_observed", "READY".equals(state) ? "PASS" : "PENDING");
             p.setProperty("environment_profile", String.join(";", contract.environment()));
-            p.setProperty("runtime_evidence", contract.runtimeReadyEvidence().getCanonicalPath());
+            p.setProperty("runtime_evidence", runtimeEvidence.getCanonicalPath());
             p.setProperty("engine_path", contract.prootExecutable().getCanonicalPath());
             p.setProperty("rootfs_path", contract.runtimeRoot().getCanonicalPath());
             p.setProperty("android_boundary", "rootless-selected-runtime-only; no-android-root; no-other-app-private-data");
