@@ -14,16 +14,16 @@ printf '%s  %s\n' "$EXPECTED_SHA256" "$ARCHIVE" | sha256sum -c -
 gzip -t "$ARCHIVE"
 
 list=$(tar -tzf "$ARCHIVE")
-printf '%s\n' "$list" | grep -Eq '^etc/os-release$'
-printf '%s\n' "$list" | grep -Eq '^bin/sh$|^usr/bin/sh$'
-printf '%s\n' "$list" | grep -Eq '^usr/bin/env$'
-printf '%s\n' "$list" | grep -Eq '^usr/$'
+grep -Eq '^etc/os-release$' <<< "$list"
+grep -Eq '^bin/sh$|^usr/bin/sh$' <<< "$list"
+grep -Eq '^usr/bin/env$' <<< "$list"
+grep -Eq '^usr/$' <<< "$list"
 
 mkdir -p "$TMP_DIR/rootfs"
 tar -xzf "$ARCHIVE" -C "$TMP_DIR/rootfs" etc/os-release
-printf 'ROOTFS_ID='
-printf '%s\n' "$(sed -n 's/^ID=//p' "$TMP_DIR/rootfs/etc/os-release" | tr -d '"' | head -n 1)"
-test "$(sed -n 's/^ID=//p' "$TMP_DIR/rootfs/etc/os-release" | tr -d '"' | head -n 1)" = debian
+rootfs_id=$(sed -n 's/^ID=//p' "$TMP_DIR/rootfs/etc/os-release" | tr -d '"')
+printf 'ROOTFS_ID=%s\n' "$rootfs_id"
+test "$rootfs_id" = debian
 printf 'DEBIAN_ROOTFS_CONTRACT=PASS\n'
 printf 'SHA256=%s\n' "$EXPECTED_SHA256"
 printf 'URL=%s\n' "$URL"
