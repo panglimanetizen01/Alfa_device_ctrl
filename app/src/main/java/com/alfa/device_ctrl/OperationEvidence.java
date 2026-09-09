@@ -21,7 +21,8 @@ public final class OperationEvidence {
         try {
             File parent = new File(contract.runtimeReadyEvidence().getParentFile(), "evidence/sessions");
             if (!parent.exists() && !parent.mkdirs()) return null;
-            File finalFile = new File(parent, contract.sessionId() + ".properties");
+            String safeState = state.replaceAll("[^A-Za-z0-9._-]", "_");
+            File finalFile = new File(parent, contract.sessionId() + "." + safeState + ".properties");
             File temp = new File(parent, finalFile.getName() + ".part");
             Properties p = new Properties();
             p.setProperty("schema_version", SCHEMA_VERSION);
@@ -45,9 +46,10 @@ public final class OperationEvidence {
             p.setProperty("runtime_evidence", contract.runtimeReadyEvidence().getCanonicalPath());
             p.setProperty("engine_path", contract.prootExecutable().getCanonicalPath());
             p.setProperty("rootfs_path", contract.runtimeRoot().getCanonicalPath());
-            p.setProperty("android_boundary", "rootless-selected-runtime-only; no-android-root; no-other-app-private-data");
             p.setProperty("created_at_epoch_ms", Long.toString(System.currentTimeMillis()));
-            try (FileOutputStream out = new FileOutputStream(temp)) { p.store(out, "Alfa Device Ctrl operation evidence"); }
+            try (FileOutputStream out = new FileOutputStream(temp)) {
+                p.store(out, "Alfa Device Ctrl operation evidence");
+            }
             Files.move(temp.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             return finalFile;
         } catch (Exception ignored) {
