@@ -44,10 +44,13 @@ case "$(uname -m)" in
     ;;
 esac
 
+LOADER_LDFLAGS='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
+
 make -C "$WORK/src" \
   CC="$CC" \
   LD="$CC" \
   STRIP="$STRIP" \
+  LOADER_LDFLAGS="$LOADER_LDFLAGS" \
   loader/loader
 
 install -m 0755 "$WORK/src/loader/loader" "$OUT"
