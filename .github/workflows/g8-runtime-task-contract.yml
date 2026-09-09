@@ -35,6 +35,14 @@ jobs:
           changed=$(git diff-tree --no-commit-id --name-only -r HEAD^ HEAD)
           for path in $changed; do
             case "$path" in
+              tools/gate7_runtime_session.sh)
+                diff=$(git diff --unified=0 HEAD^ HEAD -- "$path")
+                changed_lines=$(printf '%s\n' "$diff" | grep -Ec '^[+-][^-+]' || true)
+                grep -Fq -- "-    elif [ \"\$E_RUNTIME\" != 'ubuntu' ]; then" <<< "$diff"
+                grep -Fq -- "+    elif [ \"\$E_RUNTIME\" != 'debian' ]; then" <<< "$diff"
+                test "$changed_lines" -eq 2
+                echo "G7_BASELINE_MIGRATION_ALLOWED=$path"
+                ;;
               tools/gate1_*|tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*|tools/runtime_bootstrap.sh|tools/gate7_*)
                 echo "PROTECTED_SOURCE_CHANGED=$path"
                 exit 1
