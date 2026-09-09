@@ -21,6 +21,16 @@ public final class CanonicalRuntimeBuildContractTest {
     }
 
     @Test
+    public void gate7LaunchContractMustBeGeneratedOutsideCanonicalSourceAssets() throws Exception {
+        Path buildFile = Paths.get("build.gradle");
+        String text = new String(Files.readAllBytes(buildFile), StandardCharsets.UTF_8);
+        assertTrue("canonical build must expose prepareGate7LaunchContract", text.contains("prepareGate7LaunchContract"));
+        assertTrue("canonical build must package generated assets", text.contains("generated/assets"));
+        assertTrue("Gate 7 asset generation must consume the prepared launch asset", text.contains("ALFA_GATE7_ASSET"));
+        assertFalse("Gate 7 launch contract must not be committed as a static source asset", Files.exists(Paths.get("src/main/assets/gate7-launch.properties")));
+    }
+
+    @Test
     public void ciMustNotMutateSourceToInjectRuntimeLoader() throws Exception {
         Path workflow = Paths.get("../.github/workflows/alfa-ci.yml");
         String text = new String(Files.readAllBytes(workflow), StandardCharsets.UTF_8);
