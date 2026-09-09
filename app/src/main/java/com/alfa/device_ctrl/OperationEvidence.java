@@ -46,6 +46,7 @@ public final class OperationEvidence {
             p.setProperty("runtime_evidence", contract.runtimeReadyEvidence().getCanonicalPath());
             p.setProperty("engine_path", contract.prootExecutable().getCanonicalPath());
             p.setProperty("rootfs_path", contract.runtimeRoot().getCanonicalPath());
+            p.setProperty("android_boundary", "rootless-selected-runtime-only; no-android-root; no-other-app-private-data");
             p.setProperty("created_at_epoch_ms", Long.toString(System.currentTimeMillis()));
             try (FileOutputStream out = new FileOutputStream(temp)) {
                 p.store(out, "Alfa Device Ctrl operation evidence");
