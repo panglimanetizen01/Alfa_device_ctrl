@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
@@ -18,6 +19,9 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         void onTextChanged();
         void onSessionFinished(int exitStatus);
     }
+
+    private static final long COMMAND_TIMEOUT_MS = 30000L;
+    private static final int MAX_COMMAND_OUTPUT_CHARS = 12000;
 
     private final InteractiveSessionContract contract;
     private final Listener listener;
@@ -115,6 +119,50 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public interface CommandListener { void onResult(String output, int exitStatus); }
 
+    static final class CommandResult {
+        final String output;
+        final int exitStatus;
+        final boolean timedOut;
+
+        CommandResult(String output, int exitStatus, boolean timedOut) {
+            this.output = output;
+            this.exitStatus = exitStatus;
+            this.timedOut = timedOut;
+        }
+    }
+
+    static CommandResult executeProcess(ProcessBuilder builder, long timeoutMs, int maxOutputChars) throws Exception {
+        Process process = builder.start();
+        StringBuilder text = new StringBuilder();
+        Thread readerThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                char[] buffer = new char[4096];
+                int count;
+                while ((count = reader.read(buffer)) != -1) {
+                    synchronized (text) {
+                        if (text.length() >= maxOutputChars) continue;
+                        int remaining = maxOutputChars - text.length();
+                        text.append(buffer, 0, Math.min(count, remaining));
+                    }
+                }
+            } catch (Exception ignored) {
+                // Process termination is reported by the owner thread.
+            }
+        }, "alfa-runtime-command-output");
+        readerThread.start();
+
+        boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
+        if (!finished) {
+            process.destroyForcibly();
+            process.waitFor(2, TimeUnit.SECONDS);
+            readerThread.join(2000);
+            return new CommandResult(text.toString().trim(), 124, true);
+        }
+
+        readerThread.join(2000);
+        return new CommandResult(text.toString().trim(), process.exitValue(), false);
+    }
+
     public void runRuntimeCommand(String command, CommandListener listener) {
         if (command == null || command.trim().isEmpty()) {
             if (listener != null) listener.onResult("invalid-command", 2);
@@ -130,9 +178,8 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             activeContract = contract;
         }
         new Thread(() -> {
-            Process process = null;
-            String output = "";
             int status = 126;
+            String output;
             try {
                 List<String> argv = new ArrayList<>();
                 argv.add(activeContract.prootExecutable().getAbsolutePath());
@@ -151,17 +198,11 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                     if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry");
                     builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1));
                 }
-                process = builder.start();
-                StringBuilder text = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null && text.length() < 12000) text.append(line).append('\n');
-                }
-                status = process.waitFor();
-                output = text.toString().trim();
+                CommandResult result = executeProcess(builder, COMMAND_TIMEOUT_MS, MAX_COMMAND_OUTPUT_CHARS);
+                status = result.exitStatus;
+                output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
             } catch (Exception error) {
                 output = error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage());
-                if (process != null) process.destroyForcibly();
             }
             if (listener != null) listener.onResult(output, status);
         }, "alfa-runtime-command").start();

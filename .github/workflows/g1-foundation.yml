@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout exact source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -36,7 +36,7 @@ jobs:
           test "$(sed -n 's/^source_commit=//p' artifacts/gates/g1/foundation-contract.txt)" = "${GITHUB_SHA}"
 
       - name: Upload G1 evidence
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: alfa-g1-foundation-${{ github.sha }}
           path: artifacts/gates/g1/foundation-contract.txt
