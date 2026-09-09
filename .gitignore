@@ -13,6 +13,7 @@ artifacts/cde/cde_*.txt
 
 # Local gate verification evidence (generated, never source-controlled)
 artifacts/gates/
+artifacts/termux-build/
 
 # Temporary/editor/backup files
 *.bak
