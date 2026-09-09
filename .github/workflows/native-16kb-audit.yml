@@ -46,7 +46,9 @@ jobs:
           set -euo pipefail
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          sdkmanager "ndk;28.0.13004108"
+          sdkmanager "ndk;28.0.13004108" "build-tools;35.0.0"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/zipalign"
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
