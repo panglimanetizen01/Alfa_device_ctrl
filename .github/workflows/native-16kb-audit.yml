@@ -44,14 +44,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          sdkmanager "ndk;28.0.13004108" "build-tools;35.0.0"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/35.0.0:$PATH"
+          "$SDKMANAGER" "ndk;28.0.13004108" "build-tools;35.0.0"
           test -x "$ANDROID_HOME/build-tools/35.0.0/zipalign"
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
       - name: Verify 16 KB native alignment
         shell: bash
-        run: bash tools/test_16kb_native_alignment.sh
+        run: |
+          export PATH="$ANDROID_HOME/build-tools/35.0.0:$PATH"
+          bash tools/test_16kb_native_alignment.sh
