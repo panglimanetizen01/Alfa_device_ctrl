@@ -28,8 +28,11 @@ public final class G17AndroidRuntimeExecutionTest {
         assertEquals(PACKAGE, c.getPackageName());
         ApplicationInfo ai = c.getApplicationInfo();
         File engine = new File(ai.nativeLibraryDir, "libproot.so");
+        File loader = new File(ai.nativeLibraryDir, "libproot-loader.so");
         assertTrue("packaged PRoot missing", engine.isFile() && engine.canExecute());
         assertEquals("packaged PRoot SHA mismatch", PROOT_SHA256, sha256(engine));
+        assertTrue("packaged PRoot loader missing", loader.isFile() && loader.canExecute());
+        assertEquals("packaged PRoot loader SHA mismatch", RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256, sha256(loader));
 
         int uid = android.os.Process.myUid();
         assertEquals("instrumented process is not package UID", c.getPackageManager().getApplicationInfo(PACKAGE, 0).uid, uid);
@@ -38,7 +41,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("SELinux context missing", !selinux.isEmpty());
         assertTrue("shell SELinux context must never be accepted", !"u:r:shell:s0".equals(selinux));
 
-        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/ubuntu");
+        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + RuntimeProfile.ID);
         File ready = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
         assertTrue("runtime READY evidence missing", ready.isFile());
@@ -46,7 +49,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("rootfs /proc missing", new File(rootfs, "proc").isDirectory());
         assertTrue("rootfs /dev missing", new File(rootfs, "dev").isDirectory());
         assertTrue("rootfs /sys missing", new File(rootfs, "sys").isDirectory());
-        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, "ubuntu", engine, rootfs));
+        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, RuntimeProfile.ID, engine, rootfs));
 
         String source = arg("source_commit");
         File g16 = new File(arg("gate16_path"));
@@ -79,7 +82,7 @@ public final class G17AndroidRuntimeExecutionTest {
                 "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i",
                 "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
                 "TERM=xterm-256color", "PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath(),
-                "/bin/sh", "-c", script);
+                "PROOT_LOADER=" + loader.getAbsolutePath(), "/bin/sh", "-c", script);
         java.lang.Process p = new ProcessBuilder(x).redirectErrorStream(true).start();
         String output = read(p);
         int rc = p.waitFor();
