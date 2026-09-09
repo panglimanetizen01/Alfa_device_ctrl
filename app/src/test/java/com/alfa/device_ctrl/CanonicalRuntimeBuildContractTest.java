@@ -16,7 +16,7 @@ public final class CanonicalRuntimeBuildContractTest {
         Path buildFile = Paths.get("build.gradle");
         String text = new String(Files.readAllBytes(buildFile), StandardCharsets.UTF_8);
         assertTrue("canonical build must expose prepareProotLoader", text.contains("prepareProotLoader"));
-        assertTrue("canonical build must wire preBuild to prepareProotLoader", text.contains("preBuild.dependsOn prepareProotLoader"));
+        assertTrue("canonical build must wire preBuild to prepareProotLoader", text.contains("dependsOn tasks.named('prepareProotLoader')"));
         assertTrue("canonical build must package generated jniLibs", text.contains("generated/jniLibs"));
     }
 
