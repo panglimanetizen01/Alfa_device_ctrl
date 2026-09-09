@@ -8,6 +8,7 @@ on:
       - 'tools/runtime_stage.sh'
       - 'tools/runtime_execution_result.sh'
       - 'tools/test_gate18_contract_strict.sh'
+      - 'tools/test_gate17_live.sh'
       - 'docs/GATE_18_SPEC_V1.md'
       - '.github/workflows/g18-runtime-result-contract.yml'
   pull_request:
@@ -16,6 +17,7 @@ on:
       - 'tools/runtime_stage.sh'
       - 'tools/runtime_execution_result.sh'
       - 'tools/test_gate18_contract_strict.sh'
+      - 'tools/test_gate17_live.sh'
       - 'docs/GATE_18_SPEC_V1.md'
       - '.github/workflows/g18-runtime-result-contract.yml'
   workflow_dispatch:

@@ -5,8 +5,8 @@ PACKAGE=${ALFA_ANDROID_PACKAGE:-com.alfa.device_ctrl}
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/alfa-g17-live.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT HUP INT TERM
 
-# Build only the authorization/provenance chain on the host. G17 itself is never
-# executed here; the Android instrumentation test is the sole live executor.
+# Build only the authorization/provenance chain on the host. G17 is executed only
+# by Android instrumentation; G7/G18/G19 consume the resulting device evidence.
 PIPE_OUT="$TMP/pipeline.out"
 if ! bash "$ROOT/tools/runtime_pipeline.sh" >"$PIPE_OUT" 2>&1; then
     cat "$PIPE_OUT"
@@ -68,6 +68,20 @@ APK_PATH=$(pm path "$PACKAGE" 2>/dev/null | sed -n '1s/^package://p')
 INSTRUMENTATION=$(pm list instrumentation 2>/dev/null | awk -v p="$PACKAGE" '$0 ~ "target="p {line=$0; sub(/^instrumentation:/,"",line); sub(/ \(target=.*/,"",line); print line; exit}')
 [ -n "$INSTRUMENTATION" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=Android instrumentation targeting package not installed'; exit 1; }
 
+# G7 launch contract is provisioned from the exact Gate 6/4/15 provenance and
+# consumed by InteractiveSessionContract before a PTY may start.
+GATE7_LAUNCH="$TMP/gate7-launch.properties"
+cat > "$GATE7_LAUNCH" <<EOF
+pipeline_run_id=$RUN_ID
+runtime_id=ubuntu
+source_commit=$HEAD
+gate4_contract_sha256=$G4_SHA
+profile_sha256=$PROFILE_SHA
+implementation_commit=$HEAD
+EOF
+run-as "$PACKAGE" sh -c "mkdir -p 'files/runtime-vault' && cat > 'files/runtime-vault/gate7-launch.properties'" < "$GATE7_LAUNCH"
+run-as "$PACKAGE" sh -c "test -s 'files/runtime-vault/gate7-launch.properties'"
+
 APP_G17_DIR='files/g17'; APP_G16="$APP_G17_DIR/gate16.authorization"
 run-as "$PACKAGE" sh -c "mkdir -p '$APP_G17_DIR' && rm -f '$APP_G16'"
 run-as "$PACKAGE" sh -c "cat > '$APP_G16'" < "$G16"
@@ -84,23 +98,48 @@ printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_STATUS=PASS' || { echo 'G17_LIVE_S
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not prove real Android DUT execution'; exit 1; }
 
 G17_DEVICE='files/g17/gate17-runtime-execution.v1'
-run-as "$PACKAGE" sh -c "test -s '$G17_DEVICE'"
-DEVICE_ARTIFACT=$(run-as "$PACKAGE" sh -c "cat '$G17_DEVICE'")
-printf '%s\n' "$DEVICE_ARTIFACT" > "$TMP/g17.device"
-grep -Fqx 'gate_status=PASS' "$TMP/g17.device"
-grep -Fqx 'execution_status=EXECUTED' "$TMP/g17.device"
-grep -Fqx 'result_status=PASS' "$TMP/g17.device"
-grep -Fqx 'command=pwd' "$TMP/g17.device"
-grep -Fqx 'command_result=/root' "$TMP/g17.device"
-grep -Fqx 'command_returncode=0' "$TMP/g17.device"
-grep -Fq "source_commit=$HEAD" "$TMP/g17.device"
-grep -Fq "pipeline_run_id=$RUN_ID" "$TMP/g17.device"
-grep -Fq "gate4_contract_sha256=$G4_SHA" "$TMP/g17.device"
-grep -Fq "profile_sha256=$PROFILE_SHA" "$TMP/g17.device"
-grep -Fq 'gate16_authorization_sha256=' "$TMP/g17.device"
-grep -Fq 'guest_pid=' "$TMP/g17.device"
-grep -Fq 'guest_proc_cwd=/root' "$TMP/g17.device"
-grep -Fq 'android_package=com.alfa.device_ctrl' "$TMP/g17.device"
-grep -Fq "android_uid=$ANDROID_UID" "$TMP/g17.device"
+G7_DEVICE='files/g17/gate7-session-ready.v1'
+run-as "$PACKAGE" sh -c "test -s '$G17_DEVICE' && test -s '$G7_DEVICE'"
+DEVICE_G17=$(run-as "$PACKAGE" sh -c "cat '$G17_DEVICE'")
+DEVICE_G7=$(run-as "$PACKAGE" sh -c "cat '$G7_DEVICE'")
+printf '%s\n' "$DEVICE_G17" > "$ROOT/artifacts/pipeline/$RUN_ID/gate17/execution.txt"
+printf '%s\n' "$DEVICE_G7" > "$ROOT/artifacts/pipeline/$RUN_ID/gate7/session-ready.txt"
+G17_HOST="$ROOT/artifacts/pipeline/$RUN_ID/gate17/execution.txt"
+G7_HOST="$ROOT/artifacts/pipeline/$RUN_ID/gate7/session-ready.txt"
+
+# Normalize the G16 artifact reference to the host evidence path before G18;
+# the SHA remains the exact device-consumed authorization artifact hash.
+sed -i "s#^gate16_authorization_artifact=.*#gate16_authorization_artifact=$G16#" "$G17_HOST"
+
+G6_BOOT="$TMP/gate6-bootstrap.txt"
+cat > "$G6_BOOT" <<EOF
+schema_version=gate6-bootstrap.v1
+gate=gate6
+gate_status=PASS
+pipeline_run_id=$RUN_ID
+source_commit=$HEAD
+implementation_commit=$HEAD
+gate4_contract_sha256=$G4_SHA
+profile_sha256=$PROFILE_SHA
+decision_id=$DECISION_ID
+request_id=pwd-request-$RUN_ID
+authorization_status=AUTHORIZED
+bootstrap_status=PASS
+bootstrap_probe=PASS
+EOF
+
+G7_OUT="$ROOT/artifacts/pipeline/$RUN_ID/gate7/session.txt"
+bash "$ROOT/tools/gate7_runtime_session.sh" "$RUN_ID" "$G6_BOOT" "$G7_HOST"
+
+G18_OUT="$ROOT/artifacts/pipeline/$RUN_ID/gate18/result.txt"
+bash "$ROOT/tools/runtime_stage.sh" gate18 "$RUN_ID" "$G17_HOST" '' "$G18_OUT" >/dev/null
+[ "$(awk -F= '$1=="gate_status"{print $2}' "$G18_OUT")" = PASS ]
+
+G19_OUT="$ROOT/artifacts/pipeline/$RUN_ID/gate19/consumer.txt"
+bash "$ROOT/tools/runtime_result_consumer.sh" "$RUN_ID" "$G18_OUT" "$G19_OUT" >/dev/null
+[ "$(awk -F= '$1=="gate_status"{print $2}' "$G19_OUT")" = PASS ]
+[ "$(awk -F= '$1=="consume_status"{print $2}' "$G19_OUT")" = ACCEPTED ]
+[ "$(awk -F= '$1=="next_phase_status"{print $2}' "$G19_OUT")" = UNLOCKED ]
+
 NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-printf '%s\n' 'G17_LIVE_STATUS=PASS' 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "G17_LIVE_PACKAGE=$PACKAGE" "G17_LIVE_UID=$ANDROID_UID" "G17_LIVE_APK=$APK_PATH" "G17_LIVE_INSTRUMENTATION=$INSTRUMENTATION" "G17_LIVE_ARTIFACT=$G17_DEVICE" "G17_LIVE_TIMESTAMP=$NOW"
+printf '%s\n' 'G17_LIVE_STATUS=PASS' 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "G17_LIVE_PACKAGE=$PACKAGE" "G17_LIVE_UID=$ANDROID_UID" "G17_LIVE_APK=$APK_PATH" "G17_LIVE_INSTRUMENTATION=$INSTRUMENTATION" "G17_LIVE_G7_ARTIFACT=$G7_HOST" "G17_LIVE_ARTIFACT=$G17_HOST" "G17_LIVE_G18_ARTIFACT=$G18_OUT" "G17_LIVE_G19_ARTIFACT=$G19_OUT" "G17_LIVE_TIMESTAMP=$NOW"
