@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.Properties;
 
 /** Android-side representation of interactive-session.v1 with Gate 6 provenance binding. */
@@ -25,7 +26,6 @@ public final class InteractiveSessionContract {
     private final File hostCwd;
     private final String[] environment;
 
-    /** Backward-compatible constructor: provenance is still mandatory through gate7-launch.properties. */
     public InteractiveSessionContract(
             String sessionId, String requestId, String pipelineRunId, String runtimeId,
             File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd,
@@ -65,7 +65,7 @@ public final class InteractiveSessionContract {
         this.prootExecutable = requireFile(prootExecutable, "prootExecutable");
         this.runtimeRoot = requireFile(runtimeRoot, "runtimeRoot");
         this.hostCwd = requireFile(hostCwd, "hostCwd");
-        this.environment = environment == null ? new String[0] : environment.clone();
+        this.environment = withDerivedLoader(environment, prootExecutable);
     }
 
     private static Properties readLaunchContract(File runtimeReadyEvidence) {
@@ -89,6 +89,17 @@ public final class InteractiveSessionContract {
         }
     }
 
+    private static String[] withDerivedLoader(String[] input, File prootExecutable) {
+        String[] base = input == null ? new String[0] : input.clone();
+        for (String entry : base) if (entry != null && entry.startsWith("PROOT_LOADER=")) return base;
+        try {
+            File loader = new File(prootExecutable.getCanonicalFile().getParentFile(), "libproot-loader.so").getCanonicalFile();
+            return Arrays.copyOf(base, base.length + 1);
+        } catch (Exception error) {
+            return base;
+        }
+    }
+
     private static void requireProperty(Properties p, String key) {
         if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) throw new IllegalStateException("Gate 7 launch contract missing " + key);
     }
@@ -99,7 +110,7 @@ public final class InteractiveSessionContract {
                 && RuntimeEvidence.verify(runtimeReadyEvidence, runtimeId, prootExecutable, runtimeRoot)
                 && prootExecutable.isFile() && prootExecutable.canExecute() && runtimeRoot.isDirectory() && hostCwd.isDirectory()
                 && !runtimeRoot.getAbsolutePath().startsWith("/home/userland") && !hostCwd.getAbsolutePath().startsWith("/home/userland")
-                && hasValidProotTmpDir() && !hasUnsafeEnvironmentPath();
+                && hasValidProotTmpDir() && hasValidProotLoader() && !hasUnsafeEnvironmentPath();
     }
 
     private boolean hasValidProotTmpDir() {
@@ -111,6 +122,19 @@ public final class InteractiveSessionContract {
             File runtime = runtimeRoot.getCanonicalFile();
             return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland") && tmp.toPath().startsWith(runtime.toPath());
         } catch (Exception error) { return false; }
+    }
+
+    private boolean hasValidProotLoader() {
+        for (String entry : environment) {
+            if (entry != null && entry.startsWith("PROOT_LOADER=")) {
+                try {
+                    File loader = new File(entry.substring("PROOT_LOADER=".length())).getCanonicalFile();
+                    File nativeDir = prootExecutable.getCanonicalFile().getParentFile();
+                    return loader.isFile() && loader.canExecute() && nativeDir != null && loader.getParentFile().equals(nativeDir);
+                } catch (Exception error) { return false; }
+            }
+        }
+        return false;
     }
 
     private boolean hasUnsafeEnvironmentPath() {
