@@ -186,7 +186,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     private static void killProcessGroup(long pid) throws Exception {
         if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid");
         String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill");
-        Process killer = new ProcessBuilder(kill, "-KILL", "-" + pid)
+        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid)
                 .redirectErrorStream(true)
                 .start();
         if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly();
