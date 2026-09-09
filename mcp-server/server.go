@@ -13,7 +13,11 @@ func alfaDeviceInfo() string {
 }
 
 func alfaProjectStatus(relativePath string) string {
-    root, err := os.OpenRoot(alfaProjectRoot)
+    return alfaProjectStatusAt(alfaProjectRoot, relativePath)
+}
+
+func alfaProjectStatusAt(rootPath, relativePath string) string {
+    root, err := os.OpenRoot(rootPath)
     if err != nil {
         return "error: " + err.Error()
     }
@@ -34,7 +38,11 @@ func alfaProjectStatus(relativePath string) string {
 }
 
 func alfaListDirectory(relativePath string) string {
-    root, err := os.OpenRoot(alfaProjectRoot)
+    return alfaListDirectoryAt(alfaProjectRoot, relativePath)
+}
+
+func alfaListDirectoryAt(rootPath, relativePath string) string {
+    root, err := os.OpenRoot(rootPath)
     if err != nil {
         return "error: " + err.Error()
     }
@@ -62,15 +70,15 @@ func alfaListDirectory(relativePath string) string {
 }
 
 func alfaReadFile(relativePath string) string {
-    data, err := readConfinedFile(relativePath)
+    data, err := readConfinedFile(alfaProjectRoot, relativePath)
     if err != nil {
         return "error: " + err.Error()
     }
     return string(data)
 }
 
-func readConfinedFile(relativePath string) ([]byte, error) {
-    root, err := os.OpenRoot(alfaProjectRoot)
+func readConfinedFile(rootPath, relativePath string) ([]byte, error) {
+    root, err := os.OpenRoot(rootPath)
     if err != nil {
         return nil, err
     }
