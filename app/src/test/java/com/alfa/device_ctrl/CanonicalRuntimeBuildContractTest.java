@@ -29,4 +29,11 @@ public final class CanonicalRuntimeBuildContractTest {
         assertFalse("CI must not inject loader into source jniLibs", text.contains("app/src/main/jniLibs/arm64-v8a/libproot-loader.so"));
         assertFalse("CI must not mutate MainActivity during build", text.contains("Path(\"app/src/main/java/com/alfa/device_ctrl/MainActivity.java\")"));
     }
+
+    @Test
+    public void manifestMustLetModernAgpControlNativeLibraryPackaging() throws Exception {
+        Path manifest = Paths.get("src/main/AndroidManifest.xml");
+        String text = new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8);
+        assertFalse("manifest must not override extractNativeLibs", text.contains("android:extractNativeLibs"));
+    }
 }
