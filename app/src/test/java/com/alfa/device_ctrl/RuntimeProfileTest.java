@@ -12,7 +12,7 @@ public final class RuntimeProfileTest {
         assertTrue(RuntimeProfile.ROOTFS_URL.contains("debuerreotype/docker-debian-artifacts"));
         assertTrue(RuntimeProfile.ROOTFS_URL.contains("14d91d295c23da6cc04d4bfe8b3d74a8a6c54e5c"));
         assertTrue(RuntimeProfile.ROOTFS_URL.endsWith("/bookworm/oci/blobs/rootfs.tar.gz"));
-        assertEquals("445be8da0a7289e4b5d70a5c779ad63d484e76aa14fe2ad45893da9eb077e4e8", RuntimeProfile.ROOTFS_SHA256);
+        assertEquals("c6cbf97176c58c741329cd787e932a1e47931b35f5dc0f23db3e6e82924fef0f", RuntimeProfile.ROOTFS_SHA256);
         assertTrue(RuntimeProfile.ROOTFS_GZIP);
     }
 }
