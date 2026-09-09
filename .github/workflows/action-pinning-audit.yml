@@ -27,7 +27,22 @@ jobs:
           import sys
 
           root = pathlib.Path('.github/workflows')
-          pattern = re.compile(r'^\s*uses:\s*([^\s#]+)\s*$', re.MULTILINE)
+          pattern = re.compile(r'^\s*uses:\s*([^\s#]+)(?:\s+#.*)?$', re.MULTILINE)
+
+          # Regression tests: the parser must inspect immutable SHA refs both with
+          # and without an inline version comment, and must reject tag refs.
+          parser_cases = {
+              'uses: actions/checkout@0123456789abcdef0123456789abcdef01234567 # v6':
+                  'actions/checkout@0123456789abcdef0123456789abcdef01234567',
+              'uses: actions/checkout@0123456789abcdef0123456789abcdef01234567':
+                  'actions/checkout@0123456789abcdef0123456789abcdef01234567',
+          }
+          for line, expected in parser_cases.items():
+              match = pattern.fullmatch(line)
+              assert match is not None, f'parser failed to match: {line}'
+              assert match.group(1) == expected, f'parser mismatch: {line}'
+          assert pattern.fullmatch('uses: actions/checkout@v6') is not None
+
           bad = []
           found = []
 
