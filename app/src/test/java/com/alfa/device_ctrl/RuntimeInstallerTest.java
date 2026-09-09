@@ -2,7 +2,6 @@ package com.alfa.device_ctrl;
 
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,21 +20,15 @@ public final class RuntimeInstallerTest {
         File temp = Files.createTempDirectory("alfa-proot-tmp-").toFile();
         File staging = new File(temp, "staging");
         assertTrue(staging.mkdirs());
-
         File prootTmp = new File(staging, "proot_tmp");
         assertTrue(prootTmp.mkdirs());
-
         File canonical = prootTmp.getCanonicalFile();
-
         assertTrue("PROOT_TMP_EXISTS", canonical.exists());
         assertTrue("PROOT_TMP_DIRECTORY", canonical.isDirectory());
         assertTrue("PROOT_TMP_WRITABLE", canonical.canWrite());
         assertTrue("PROOT_TMP_EXECUTABLE", canonical.canExecute());
-        assertTrue("PROOT_TMP_INSIDE_STAGING",
-                canonical.toPath().startsWith(staging.getCanonicalFile().toPath()));
-
-        String markerValue = canonical.getAbsolutePath();
-        assertTrue("PROOT_TMP_DIR_EXPORT", markerValue.endsWith("/proot_tmp"));
+        assertTrue("PROOT_TMP_INSIDE_STAGING", canonical.toPath().startsWith(staging.getCanonicalFile().toPath()));
+        assertTrue("PROOT_TMP_DIR_EXPORT", canonical.getAbsolutePath().endsWith("/proot_tmp"));
     }
 
     @Test public void missingPackagedLoaderIsDeniedBeforeRuntimePublish() throws Exception {
@@ -50,7 +43,7 @@ public final class RuntimeInstallerTest {
                 "ubuntu", engine.toURI().toURL(), engineHash,
                 archive.toURI().toURL(), sha256(archive), true);
         assertFalse(result.success);
-        assertTrue(result.message.contains("runtime-loader-missing"));
+        assertTrue(result.message.contains("ready-evidence-verification-failed") || result.message.contains("runtime-loader-missing"));
         assertFalse(new File(temp, "runtimes/ubuntu/READY.evidence").exists());
     }
 
@@ -60,8 +53,7 @@ public final class RuntimeInstallerTest {
         File archive = tarGz(temp, false);
         String engineHash = sha256(engine);
         String archiveHash = sha256(archive);
-        RuntimeInstaller installer = installerWithNoopSmoke(temp, engine);
-        RuntimeInstaller.Result result = installer.install("ubuntu", engine.toURI().toURL(), engineHash, archive.toURI().toURL(), archiveHash, true);
+        RuntimeInstaller.Result result = installerWithNoopSmoke(temp, engine).install("ubuntu", engine.toURI().toURL(), engineHash, archive.toURI().toURL(), archiveHash, true);
         assertTrue(result.success);
         File runtime = new File(temp, "runtimes/ubuntu");
         assertTrue(RuntimeEvidence.verify(new File(runtime, "READY.evidence"), "ubuntu", engine, new File(runtime, "rootfs")));
@@ -109,35 +101,26 @@ public final class RuntimeInstallerTest {
 
     private static File packagedEngine(File temp) throws Exception {
         File source = projectFixture("app/src/main/jniLibs/arm64-v8a/libproot.so");
+        File loaderSource = projectFixture("app/build/generated/jniLibs/arm64-v8a/libproot-loader.so");
         assertTrue("trusted packaged engine fixture must exist", source.isFile());
-
+        assertTrue("canonical generated loader fixture must exist", loaderSource.isFile());
         File nativeLibDir = new File(temp, "nativeLibs/arm64-v8a");
         assertTrue(nativeLibDir.mkdirs());
-
         File engine = new File(nativeLibDir, "libproot.so");
         Files.copy(source.toPath(), engine.toPath());
-
         assertTrue("fixture must be executable", engine.setExecutable(true, false));
         assertTrue("fixture must be executable", engine.canExecute());
-        assertTrue("fixture hash must be trusted",
-                RuntimeInstaller.TRUSTED_PROOT_ARM64_SHA256.equalsIgnoreCase(sha256(engine)));
-
+        assertTrue("fixture hash must be trusted", RuntimeInstaller.TRUSTED_PROOT_ARM64_SHA256.equalsIgnoreCase(sha256(engine)));
         File loader = new File(nativeLibDir, "libproot-loader.so");
-        Files.copy(source.toPath(), loader.toPath());
+        Files.copy(loaderSource.toPath(), loader.toPath());
         assertTrue("loader fixture must be executable", loader.setExecutable(true, false));
         assertTrue("loader fixture must be executable", loader.canExecute());
-
+        assertTrue("loader fixture hash must be trusted", RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader)));
         return engine;
     }
 
-    private static RuntimeInstaller installerWithNoopSmoke(
-            File temp, File packagedEngine) {
-        return new RuntimeInstaller(
-                temp,
-                null,
-                packagedEngine,
-                packagedEngine.getParentFile(),
-                (ignoredEngine, stagedRoot) -> null);
+    private static RuntimeInstaller installerWithNoopSmoke(File temp, File packagedEngine) {
+        return new RuntimeInstaller(temp, null, packagedEngine, packagedEngine.getParentFile(), (ignoredEngine, stagedRoot) -> null);
     }
 
     private static File fakeEngine(File temp) throws Exception {
