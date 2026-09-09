@@ -42,7 +42,11 @@ jobs:
           gradle-version: '9.2.1'
       - name: Prepare Android SDK and NDK
         shell: bash
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;28.0.13004108"
+        run: |
+          set -euo pipefail
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;28.0.13004108"
       - name: Download pinned Debian rootfs
         shell: bash
         run: |
