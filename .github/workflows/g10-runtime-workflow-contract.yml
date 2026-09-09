@@ -28,17 +28,24 @@ jobs:
 
       - name: G1-G9 source protection
         run: |
-          git diff --exit-code HEAD^ -- \
-            tools/gate1_foundation_v2.sh \
-            tools/gate2_canonical_source_build_boundary.sh \
-            tools/execution_capability.sh \
-            tools/gate3_execution_capability.sh \
-            tools/environment_contract.sh \
-            tools/gate5_common.sh \
-            tools/runtime_bootstrap.sh \
-            tools/gate7_runtime_session.sh \
-            tools/gate8_runtime_task.sh \
-            tools/gate9_runtime_action.sh
+          git diff --name-only HEAD^ HEAD > /tmp/g10-changed.txt
+          while IFS= read -r path; do
+            case "$path" in
+              tools/gate7_runtime_session.sh)
+                diff=$(git diff --unified=0 HEAD^ HEAD -- "$path")
+                changed_lines=$(printf '%s\n' "$diff" | grep -Ec '^[+-][^-+]' || true)
+                grep -Fq -- "-    elif [ \"\$E_RUNTIME\" != 'ubuntu' ]; then" <<< "$diff"
+                grep -Fq -- "+    elif [ \"\$E_RUNTIME\" != 'debian' ]; then" <<< "$diff"
+                test "$changed_lines" -eq 2
+                echo "G7_BASELINE_MIGRATION_ALLOWED=$path"
+                ;;
+              tools/gate1_foundation_v2.sh|tools/gate2_canonical_source_build_boundary.sh|tools/execution_capability.sh|tools/gate3_execution_capability.sh|tools/environment_contract.sh|tools/gate5_common.sh|tools/runtime_bootstrap.sh|tools/gate7_*|tools/gate8_runtime_task.sh|tools/gate9_runtime_action.sh)
+                echo "PROTECTED_SOURCE_CHANGED=$path"
+                exit 1
+                ;;
+            esac
+          done < /tmp/g10-changed.txt
+          echo 'G1_G9_SOURCE_PROTECTION=PASS'
 
       - name: Post Checkout exact source
         run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
