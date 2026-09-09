@@ -46,3 +46,15 @@ func TestReadConfinedFileRejectsDirectory(t *testing.T) {
         t.Fatal("expected directory rejection")
     }
 }
+
+func TestReadConfinedFileRejectsNonUTF8(t *testing.T) {
+    root := t.TempDir()
+    if err := os.WriteFile(filepath.Join(root, "binary.bin"), []byte{0xff, 0xfe, 0xfd}, 0600); err != nil {
+        t.Fatal(err)
+    }
+
+    _, err := readConfinedFile(root, "binary.bin")
+    if !errors.Is(err, errMCPFileNotText) {
+        t.Fatalf("expected %v, got %v", errMCPFileNotText, err)
+    }
+}
