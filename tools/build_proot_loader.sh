@@ -23,12 +23,31 @@ fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"
 git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 
-TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-CC="$TOOLCHAIN/clang --target=aarch64-linux-android26"
+SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+case "$(uname -m)" in
+  aarch64|arm64)
+    CLANG="${ALFA_NATIVE_CLANG:-$(command -v clang)}"
+    STRIP="${ALFA_NATIVE_STRIP:-$(command -v llvm-strip)}"
+    [ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
+    [ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
+    CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    ;;
+  x86_64)
+    TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    CC="$TOOLCHAIN/clang --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    STRIP="$TOOLCHAIN/llvm-strip"
+    ;;
+  *)
+    echo 'LOADER_STATUS=BLOCKED'
+    echo "LOADER_REASON=UNSUPPORTED_BUILD_HOST:$(uname -m)"
+    exit 20
+    ;;
+esac
+
 make -C "$WORK/src" \
   CC="$CC" \
   LD="$CC" \
-  STRIP="$TOOLCHAIN/llvm-strip" \
+  STRIP="$STRIP" \
   loader/loader
 
 install -m 0755 "$WORK/src/loader/loader" "$OUT"
@@ -37,5 +56,6 @@ readelf -h "$OUT" | grep -E 'Class:|Machine:'
 printf 'LOADER_STATUS=PASS\n'
 printf 'PROOT_COMMIT=%s\n' "$PROOT_COMMIT"
 printf 'NDK_VERSION=%s\n' "$NDK_VERSION"
+printf 'BUILD_HOST=%s\n' "$(uname -m)"
 printf 'LOADER_SHA256=%s\n' "$(sha256sum "$OUT" | awk '{print $1}')"
 printf 'LOADER_PATH=%s\n' "$OUT"
