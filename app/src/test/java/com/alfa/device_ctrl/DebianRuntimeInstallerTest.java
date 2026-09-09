@@ -5,12 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Properties;
 
@@ -62,10 +57,10 @@ public final class DebianRuntimeInstallerTest {
     private static File downloadPinnedDebianArtifact() throws Exception {
         File archive = Files.createTempFile("alfa-debian-bookworm-", ".tar.gz").toFile();
         archive.deleteOnExit();
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder(URI.create(DEBIAN_URL)).GET().build();
-        HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(archive.toPath()));
-        assertEquals("Debian rootfs download failed", 200, response.statusCode());
+        Process process = new ProcessBuilder(
+                "curl", "-fL", "--retry", "3", "--retry-delay", "1",
+                DEBIAN_URL, "-o", archive.getAbsolutePath()).inheritIO().start();
+        assertEquals("Debian rootfs download failed", 0, process.waitFor());
         assertEquals("Debian rootfs digest mismatch", DEBIAN_SHA256, sha256(archive));
         return archive;
     }
