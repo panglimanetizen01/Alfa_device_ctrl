@@ -1,0 +1,53 @@
+name: Native 16 KB Audit
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'app/src/main/jniLibs/**'
+      - 'tools/build_proot_loader.sh'
+      - 'tools/test_16kb_native_alignment.sh'
+      - 'app/build.gradle'
+      - '.github/workflows/native-16kb-audit.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'app/src/main/jniLibs/**'
+      - 'tools/build_proot_loader.sh'
+      - 'tools/test_16kb_native_alignment.sh'
+      - 'app/build.gradle'
+      - '.github/workflows/native-16kb-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Setup Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '9.2.1'
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager "ndk;28.0.13004108"
+      - name: Build debug APK
+        shell: bash
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Verify 16 KB native alignment
+        shell: bash
+        run: bash tools/test_16kb_native_alignment.sh
