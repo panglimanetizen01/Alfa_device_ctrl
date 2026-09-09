@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import android.view.View;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -131,8 +132,47 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         }
     }
 
+    private static String findExecutable(String... candidates) {
+        for (String candidate : candidates) {
+            File file = new File(candidate);
+            if (file.isFile() && file.canExecute()) return candidate;
+        }
+        return null;
+    }
+
+    private static String requireProcessGroupTool(String... candidates) {
+        String executable = findExecutable(candidates);
+        if (executable == null) throw new IllegalStateException("process-group-tool-unavailable");
+        return executable;
+    }
+
+    private static ProcessBuilder withProcessGroup(ProcessBuilder command) {
+        String setsid = requireProcessGroupTool("/system/bin/setsid", "/usr/bin/setsid", "/bin/setsid");
+        List<String> argv = new ArrayList<>();
+        argv.add(setsid);
+        argv.addAll(command.command());
+        ProcessBuilder grouped = new ProcessBuilder(argv);
+        grouped.directory(command.directory());
+        grouped.environment().clear();
+        grouped.environment().putAll(command.environment());
+        grouped.redirectErrorStream(command.redirectErrorStream());
+        return grouped;
+    }
+
+    private static void killProcessGroup(long pid) throws Exception {
+        if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid");
+        String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill");
+        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid)
+                .redirectErrorStream(true)
+                .start();
+        if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly();
+        if (killer.exitValue() != 0) throw new IllegalStateException("process-group-kill-failed:" + killer.exitValue());
+    }
+
     static CommandResult executeProcess(ProcessBuilder builder, long timeoutMs, int maxOutputChars) throws Exception {
-        Process process = builder.start();
+        ProcessBuilder groupedBuilder = withProcessGroup(builder);
+        Process process = groupedBuilder.start();
+        long processGroupId = process.pid();
         StringBuilder text = new StringBuilder();
         Thread readerThread = new Thread(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
@@ -153,9 +193,16 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
         boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
         if (!finished) {
-            process.destroyForcibly();
+            Exception cleanupFailure = null;
+            try {
+                killProcessGroup(processGroupId);
+            } catch (Exception error) {
+                cleanupFailure = error;
+                process.destroyForcibly();
+            }
             process.waitFor(2, TimeUnit.SECONDS);
             readerThread.join(2000);
+            if (cleanupFailure != null) throw cleanupFailure;
             return new CommandResult(text.toString().trim(), 124, true);
         }
 
