@@ -5,6 +5,7 @@ import (
     "io"
     "os"
     "runtime"
+    "unicode/utf8"
 )
 
 const (
@@ -12,7 +13,10 @@ const (
     maxMCPFileSize  = 1 << 20
 )
 
-var errMCPFileTooLarge = errors.New("file exceeds MCP read limit")
+var (
+    errMCPFileTooLarge = errors.New("file exceeds MCP read limit")
+    errMCPFileNotText  = errors.New("file is not valid UTF-8 text")
+)
 
 func alfaDeviceInfo() string {
     return runtime.GOOS + "/" + runtime.GOARCH
@@ -117,6 +121,9 @@ func readConfinedFile(rootPath, relativePath string) ([]byte, error) {
     }
     if len(data) > maxMCPFileSize {
         return nil, errMCPFileTooLarge
+    }
+    if !utf8.Valid(data) {
+        return nil, errMCPFileNotText
     }
     return data, nil
 }
