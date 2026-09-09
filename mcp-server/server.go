@@ -2,11 +2,17 @@ package main
 
 import (
     "errors"
+    "io"
     "os"
     "runtime"
 )
 
-const alfaProjectRoot = "/sdcard/Alfa_device_ctrl_HOST/Alfa_device_ctrl"
+const (
+    alfaProjectRoot = "/sdcard/Alfa_device_ctrl_HOST/Alfa_device_ctrl"
+    maxMCPFileSize  = 1 << 20
+)
+
+var errMCPFileTooLarge = errors.New("file exceeds MCP read limit")
 
 func alfaDeviceInfo() string {
     return runtime.GOOS + "/" + runtime.GOARCH
@@ -88,5 +94,29 @@ func readConfinedFile(rootPath, relativePath string) ([]byte, error) {
         return nil, errors.New("empty relative path")
     }
 
-    return root.ReadFile(relativePath)
+    file, err := root.Open(relativePath)
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
+
+    info, err := file.Stat()
+    if err != nil {
+        return nil, err
+    }
+    if !info.Mode().IsRegular() {
+        return nil, errors.New("path is not a regular file")
+    }
+    if info.Size() > maxMCPFileSize {
+        return nil, errMCPFileTooLarge
+    }
+
+    data, err := io.ReadAll(io.LimitReader(file, maxMCPFileSize+1))
+    if err != nil {
+        return nil, err
+    }
+    if len(data) > maxMCPFileSize {
+        return nil, errMCPFileTooLarge
+    }
+    return data, nil
 }
