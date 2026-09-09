@@ -24,10 +24,31 @@ public final class RuntimeEvidence {
             if (!"arm64-v8a".equals(p.getProperty("engine_abi"))) return false;
             if (!"libproot.so".equals(engine.getName())) return false;
             if (!engine.isFile() || !engine.canExecute() || !rootfs.isDirectory()) return false;
+            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();
+            if (!loader.isFile() || !loader.canExecute() || !isArm64Elf(loader)) return false;
             String expected = p.getProperty("engine_sha256", "");
             return expected.length() == 64 && expected.equalsIgnoreCase(sha256(engine));
         } catch (Exception ignored) {
             return false;
+        }
+    }
+
+    private static boolean isArm64Elf(File file) throws IOException {
+        byte[] header = new byte[20];
+        try (FileInputStream input = new FileInputStream(file)) {
+            int offset = 0;
+            while (offset < header.length) {
+                int count = input.read(header, offset, header.length - offset);
+                if (count < 0) break;
+                offset += count;
+            }
+            return offset >= 20
+                    && (header[0] & 0xff) == 0x7f
+                    && header[1] == 'E' && header[2] == 'L' && header[3] == 'F'
+                    && (header[4] & 0xff) == 2
+                    && (header[5] & 0xff) == 1
+                    && (header[18] & 0xff) == 0xb7
+                    && (header[19] & 0xff) == 0x00;
         }
     }
 
