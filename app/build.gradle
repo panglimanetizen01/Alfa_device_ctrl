@@ -9,6 +9,7 @@ android {
     sourceSets {
         main {
             jniLibs.srcDir("$buildDir/generated/jniLibs")
+            assets.srcDir("$buildDir/generated/assets")
         }
     }
 
@@ -34,8 +35,34 @@ tasks.register('prepareProotLoader', Exec) {
     commandLine 'bash', 'tools/build_proot_loader.sh'
 }
 
+tasks.register('prepareGate7LaunchContract') {
+    inputs.property('gate7AssetPath', providers.environmentVariable('ALFA_GATE7_ASSET').orElse(''))
+    outputs.file(file("$buildDir/generated/assets/gate7-launch.properties"))
+    doLast {
+        def sourcePath = System.getenv('ALFA_GATE7_ASSET')
+        def required = System.getenv('ALFA_GATE7_REQUIRED') == 'true'
+        def output = file("$buildDir/generated/assets/gate7-launch.properties")
+        output.parentFile.mkdirs()
+        output.delete()
+        if (sourcePath == null || sourcePath.trim().isEmpty()) {
+            if (required) throw new GradleException('ALFA_GATE7_REQUIRED=true but ALFA_GATE7_ASSET is missing')
+            return
+        }
+        def source = file(sourcePath)
+        if (!source.isFile()) throw new GradleException("ALFA_GATE7_ASSET is not a regular file: ${source}")
+        def text = source.getText('UTF-8')
+        ['pipeline_run_id=', 'runtime_id=debian', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key ->
+            if (!text.readLines().any { it.startsWith(key) && it.substring(key.length()).trim() }) {
+                throw new GradleException("Gate 7 launch contract missing ${key}")
+            }
+        }
+        source.withInputStream { input -> output.withOutputStream { out -> out << input } }
+    }
+}
+
 tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareProotLoader')
+    dependsOn tasks.named('prepareGate7LaunchContract')
 }
 
 tasks.withType(Test).configureEach {
