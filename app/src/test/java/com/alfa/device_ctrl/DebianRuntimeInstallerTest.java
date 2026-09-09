@@ -5,7 +5,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.security.MessageDigest;
 import java.util.Properties;
@@ -13,8 +16,12 @@ import java.util.Properties;
 import org.junit.Test;
 
 public final class DebianRuntimeInstallerTest {
+    private static final String DEBIAN_URL = RuntimeProfile.ROOTFS_URL;
+    private static final String DEBIAN_SHA256 = RuntimeProfile.ROOTFS_SHA256;
+
     @Test public void canonicalDebianArtifactInstallsAndProducesVerifiedReadyEvidence() throws Exception {
         File archive = fixture("artifacts/test-fixtures/debian-bookworm-arm64.tar.gz");
+        if (!archive.isFile()) archive = downloadPinnedDebianArtifact();
         assertTrue("Debian acceptance fixture missing: " + archive, archive.isFile());
         File temp = Files.createTempDirectory("alfa-debian-installer-").toFile();
         File nativeDir = new File(temp, "nativeLibs/arm64-v8a");
@@ -49,6 +56,17 @@ public final class DebianRuntimeInstallerTest {
         File direct = new File(System.getProperty("user.dir"), relative);
         if (direct.isFile()) return direct;
         return new File(new File(System.getProperty("user.dir")).getParentFile(), relative);
+    }
+
+    private static File downloadPinnedDebianArtifact() throws Exception {
+        File archive = Files.createTempFile("alfa-debian-bookworm-", ".tar.gz").toFile();
+        archive.deleteOnExit();
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder(URI.create(DEBIAN_URL)).GET().build();
+        HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(archive.toPath()));
+        assertEquals("Debian rootfs download failed", 200, response.statusCode());
+        assertEquals("Debian rootfs digest mismatch", DEBIAN_SHA256, sha256(archive));
+        return archive;
     }
 
     private static String sha256(File file) throws Exception {
