@@ -38,6 +38,10 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareProotLoader')
 }
 
+tasks.withType(Test).configureEach {
+    dependsOn tasks.named('prepareProotLoader')
+}
+
 dependencies {
     implementation project(":terminal-view")
     implementation 'org.tukaani:xz:1.12'
