@@ -36,4 +36,13 @@ public final class CanonicalRuntimeBuildContractTest {
         String text = new String(Files.readAllBytes(manifest), StandardCharsets.UTF_8);
         assertFalse("manifest must not override extractNativeLibs", text.contains("android:extractNativeLibs"));
     }
+
+    @Test
+    public void mainActivityMustUseCanonicalRuntimeProfile() throws Exception {
+        Path activity = Paths.get("../app/src/main/java/com/alfa/device_ctrl/MainActivity.java");
+        String text = new String(Files.readAllBytes(activity), StandardCharsets.UTF_8);
+        assertTrue("MainActivity must reference RuntimeProfile", text.contains("RuntimeProfile"));
+        assertFalse("MainActivity must not hard-code Ubuntu as the acceptance runtime", text.contains("ubuntu"));
+        assertFalse("MainActivity must not hard-code the legacy Ubuntu download URL", text.contains("ubuntu-base/releases"));
+    }
 }
