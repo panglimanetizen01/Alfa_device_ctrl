@@ -44,6 +44,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           sdkmanager "ndk;28.0.13004108"
       - name: Build debug APK
         shell: bash
