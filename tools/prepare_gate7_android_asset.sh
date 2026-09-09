@@ -15,7 +15,7 @@ OUT="$ROOT/app/src/main/assets/gate7-launch.properties"
 field(){ awk -F= -v k="$1" '$1==k {sub(/^[^=]*=/,""); print; exit}' "$GATE6"; }
 RUN=$(field pipeline_run_id)
 STATUS=$(field gate_status)
-RUNTIME=${RUNTIME_ID:-ubuntu}
+RUNTIME=${RUNTIME_ID:-debian}
 SOURCE=$(field source_commit)
 CONTRACT=$(field gate4_contract_sha256)
 PROFILE=$(field profile_sha256)
@@ -23,6 +23,7 @@ IMPL=$(field implementation_commit)
 
 [ "$RUN" = "$RUN_ID" ] || { echo 'GATE7_ASSET_STATUS=BLOCKED'; echo 'GATE7_ASSET_REASON=RUN_ID_MISMATCH'; exit 20; }
 [ "$STATUS" = PASS ] || { echo 'GATE7_ASSET_STATUS=BLOCKED'; echo 'GATE7_ASSET_REASON=GATE6_NOT_PASS'; exit 20; }
+[ "$RUNTIME" = debian ] || { echo 'GATE7_ASSET_STATUS=BLOCKED'; echo 'GATE7_ASSET_REASON=RUNTIME_ID_NOT_DEBIAN'; exit 20; }
 printf '%s\n' "$SOURCE" | grep -Eq '^[0-9a-fA-F]{40}$'
 printf '%s\n' "$IMPL" | grep -Eq '^[0-9a-fA-F]{40}$'
 printf '%s\n' "$CONTRACT" | grep -Eq '^[0-9a-fA-F]{64}$'
