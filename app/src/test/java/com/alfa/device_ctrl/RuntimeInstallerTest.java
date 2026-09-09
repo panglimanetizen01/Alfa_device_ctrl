@@ -38,6 +38,22 @@ public final class RuntimeInstallerTest {
         assertTrue("PROOT_TMP_DIR_EXPORT", markerValue.endsWith("/proot_tmp"));
     }
 
+    @Test public void missingPackagedLoaderIsDeniedBeforeRuntimePublish() throws Exception {
+        File temp = Files.createTempDirectory("alfa-loader-required-").toFile();
+        File engine = packagedEngine(temp);
+        File loader = new File(engine.getParentFile(), "libproot-loader.so");
+        assertTrue("loader fixture must exist", loader.isFile());
+        assertTrue(loader.delete());
+        File archive = tarGz(temp, false);
+        String engineHash = sha256(engine);
+        RuntimeInstaller.Result result = installerWithNoopSmoke(temp, engine).install(
+                "ubuntu", engine.toURI().toURL(), engineHash,
+                archive.toURI().toURL(), sha256(archive), true);
+        assertFalse(result.success);
+        assertTrue(result.message.contains("runtime-loader-missing"));
+        assertFalse(new File(temp, "runtimes/ubuntu/READY.evidence").exists());
+    }
+
     @Test public void verifiedInstallCreatesEvidenceAndPublishesAtomically() throws Exception {
         File temp = Files.createTempDirectory("alfa-installer-test-").toFile();
         File engine = packagedEngine(temp);
@@ -106,13 +122,10 @@ public final class RuntimeInstallerTest {
         assertTrue("fixture hash must be trusted",
                 RuntimeInstaller.TRUSTED_PROOT_ARM64_SHA256.equalsIgnoreCase(sha256(engine)));
 
-        File loaderSource = projectFixture("app/src/main/jniLibs/arm64-v8a/libproot-loader.so");
-        if (loaderSource.isFile()) {
-            File loader = new File(nativeLibDir, "libproot-loader.so");
-            Files.copy(loaderSource.toPath(), loader.toPath());
-            assertTrue("loader fixture must be executable", loader.setExecutable(true, false));
-            assertTrue("loader fixture must be executable", loader.canExecute());
-        }
+        File loader = new File(nativeLibDir, "libproot-loader.so");
+        Files.copy(source.toPath(), loader.toPath());
+        assertTrue("loader fixture must be executable", loader.setExecutable(true, false));
+        assertTrue("loader fixture must be executable", loader.canExecute());
 
         return engine;
     }
