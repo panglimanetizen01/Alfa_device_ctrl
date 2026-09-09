@@ -8,6 +8,8 @@ import java.util.Properties;
 
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "663ef19c278dc39bb4a242ba244d5af6776610a936f33e5205c28fc016350b3a";
+
     private RuntimeEvidence() { }
 
     public static boolean verify(File evidence, String runtimeId, File engine, File rootfs) {
@@ -26,6 +28,7 @@ public final class RuntimeEvidence {
             if (!engine.isFile() || !engine.canExecute() || !rootfs.isDirectory()) return false;
             File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();
             if (!loader.isFile() || !loader.canExecute() || !isArm64Elf(loader)) return false;
+            if (!TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader))) return false;
             String expected = p.getProperty("engine_sha256", "");
             return expected.length() == 64 && expected.equalsIgnoreCase(sha256(engine));
         } catch (Exception ignored) {
