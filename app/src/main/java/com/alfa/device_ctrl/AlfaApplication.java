@@ -47,7 +47,7 @@ public final class AlfaApplication extends Application {
         require(p, "gate4_contract_sha256");
         require(p, "profile_sha256");
         require(p, "implementation_commit");
-        if (!"ubuntu".equals(p.getProperty("runtime_id"))) throw new IllegalStateException("unsupported-runtime-id");
+        if (!RuntimeProfile.ID.equals(p.getProperty("runtime_id"))) throw new IllegalStateException("unsupported-runtime-id");
         if (!p.getProperty("source_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-source-commit");
         if (!p.getProperty("implementation_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-implementation-commit");
         if (!p.getProperty("gate4_contract_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-gate4-hash");
