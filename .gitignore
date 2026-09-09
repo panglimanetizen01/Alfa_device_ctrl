@@ -3,6 +3,7 @@
 **/.gradle/
 build/
 **/build/
+.build/
 
 # Gate 0 temporary provenance evidence
 artifacts/gate0_complete_provenance_evidence_*.txt
