@@ -6,6 +6,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -39,18 +40,16 @@ public final class AlfaUiTheme {
         root.setBackgroundColor(CANVAS);
         float density = activity.getResources().getDisplayMetrics().density;
         applyTree(root, 0, density);
-        root.post(() -> adaptRuntimeDashboard(root, density));
+        root.post(() -> adaptRuntimeDashboard(activity, root, density));
     }
 
     private static void applyTree(View view, int depth, float density) {
         if (view.getClass().getName().contains("TerminalView")) return;
-
         int min = Math.round(TOUCH_TARGET_DP * density);
         if (view.isClickable() || view instanceof Button) {
             view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
             view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
         }
-
         if (view instanceof Button) {
             Button button = (Button) view;
             int original = button.getTextColors() == null ? TEXT : button.getTextColors().getDefaultColor();
@@ -67,16 +66,11 @@ public final class AlfaUiTheme {
             text.setTextColor(normalizeTextColor(original));
             if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
             Typeface current = text.getTypeface();
-            if (current != null) {
-                text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
-            }
+            if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
         }
-
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                applyTree(group.getChildAt(i), depth + 1, density);
-            }
+            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), depth + 1, density);
         }
     }
 
@@ -88,59 +82,67 @@ public final class AlfaUiTheme {
         return color;
     }
 
-    /**
-     * Adapts runtime cards to the measured dashboard window. It never uses physical display size
-     * or device-class assumptions. Every card remains at least 48dp high, including its controls.
-     */
-    private static void adaptRuntimeDashboard(View root, float density) {
-        LinearLayout dashboard = findRuntimeDashboard(root);
-        if (dashboard == null || dashboard.getHeight() <= 0) return;
-        int runtimeCount = RuntimeRegistry.all().size();
-        if (runtimeCount <= 0) return;
+    /** Uses the current Activity window bounds and keeps terminal space available in compact windows. */
+    private static void adaptRuntimeDashboard(Activity activity, View root, float density) {
+        LinearLayout content = findContentColumn(root);
+        if (content == null || content.getHeight() <= 0) return;
+        int runtimeCount = Math.max(1, RuntimeRegistry.all().size());
+        int windowHeightDp = currentWindowHeightDp(activity, density, content.getHeight());
+        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(windowHeightDp, runtimeCount);
 
-        int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
-        int separatorHeight = Math.max(1, Math.round(2 * density));
-        int separators = Math.max(0, runtimeCount - 1);
-        int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight);
-        int cardHeight = Math.max(Math.round(48 * density), available / runtimeCount);
-
-        int cards = 0;
-        for (int i = 0; i < dashboard.getChildCount(); i++) {
-            View child = dashboard.getChildAt(i);
-            ViewGroup.LayoutParams lp = child.getLayoutParams();
-            if (!(lp instanceof LinearLayout.LayoutParams)) continue;
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) lp;
-            if (child instanceof LinearLayout && cards < runtimeCount) {
-                params.height = cardHeight;
-                params.weight = 0;
-                child.setLayoutParams(params);
-                cards++;
-            } else {
-                params.height = separatorHeight;
-                params.weight = 0;
-                child.setLayoutParams(params);
-            }
+        View runtimeWindow = content.getChildAt(0);
+        View monitorWindow = content.getChildAt(2);
+        View terminalWindow = content.getChildAt(4);
+        setFixedHeight(runtimeWindow, dp(layout.runtimeDp, density));
+        setFixedHeight(monitorWindow, dp(layout.monitorDp, density));
+        if (terminalWindow.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams terminal = (LinearLayout.LayoutParams) terminalWindow.getLayoutParams();
+            terminal.height = 0;
+            terminal.weight = 1f;
+            terminalWindow.setLayoutParams(terminal);
+            terminalWindow.setMinimumHeight(dp(layout.terminalMinDp, density));
         }
-        dashboard.requestLayout();
+        content.requestLayout();
     }
 
-    private static LinearLayout findRuntimeDashboard(View root) {
+    private static int currentWindowHeightDp(Activity activity, float density, int fallbackPx) {
+        try {
+            WindowManager windowManager = (WindowManager) activity.getSystemService(Activity.WINDOW_SERVICE);
+            if (windowManager != null && android.os.Build.VERSION.SDK_INT >= 30) {
+                android.view.WindowMetrics metrics = windowManager.getCurrentWindowMetrics();
+                return Math.max(1, Math.round(metrics.getBounds().height() / metrics.getDensity()));
+            }
+        } catch (RuntimeException ignored) { }
+        return Math.max(1, Math.round(fallbackPx / density));
+    }
+
+    private static LinearLayout findContentColumn(View root) {
         if (!(root instanceof ViewGroup)) return null;
         ViewGroup group = (ViewGroup) root;
-        int expected = RuntimeRegistry.all().size();
-        if (expected > 0 && group.getChildCount() >= expected * 2 - 1) {
-            int cards = 0;
-            for (int i = 0; i < group.getChildCount(); i += 2) {
-                if (group.getChildAt(i) instanceof LinearLayout) cards++;
-            }
-            if (cards == expected) return (LinearLayout) group;
+        if (group instanceof LinearLayout && group.getOrientation() == LinearLayout.VERTICAL && group.getChildCount() == 5
+                && group.getChildAt(0) instanceof LinearLayout
+                && group.getChildAt(2) instanceof LinearLayout
+                && group.getChildAt(4) instanceof LinearLayout) {
+            return (LinearLayout) group;
         }
         for (int i = 0; i < group.getChildCount(); i++) {
-            LinearLayout found = findRuntimeDashboard(group.getChildAt(i));
+            LinearLayout found = findContentColumn(group.getChildAt(i));
             if (found != null) return found;
         }
         return null;
     }
+
+    private static void setFixedHeight(View view, int heightPx) {
+        ViewGroup.LayoutParams lp = view.getLayoutParams();
+        if (lp instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) lp;
+            params.height = heightPx;
+            params.weight = 0f;
+            view.setLayoutParams(params);
+        }
+    }
+
+    private static int dp(int value, float density) { return Math.round(value * density); }
 
     private static GradientDrawable controlBackground(int accent, float density) {
         GradientDrawable drawable = new GradientDrawable();
