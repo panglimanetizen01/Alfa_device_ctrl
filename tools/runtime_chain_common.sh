@@ -19,6 +19,23 @@ chain_now() {
     date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || printf '%s' 'UNKNOWN'
 }
 
+chain_runtime_supported() {
+    local ROOT RUNTIME_ID REGISTRY
+    ROOT=$1
+    RUNTIME_ID=$2
+    REGISTRY="$ROOT/runtime/runtimes.v1.json"
+    [ -f "$REGISTRY" ] || return 1
+    python3 - "$REGISTRY" "$RUNTIME_ID" <<'PY'
+import json
+import sys
+registry_path, runtime_id = sys.argv[1:]
+with open(registry_path, encoding="utf-8") as stream:
+    document = json.load(stream)
+ids = {item.get("runtime_id") for item in document.get("runtimes", [])}
+raise SystemExit(0 if runtime_id in ids else 1)
+PY
+}
+
 chain_gate4() {
     local ROOT RUN CONTRACT
     ROOT=$1
