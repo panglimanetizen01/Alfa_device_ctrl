@@ -57,7 +57,10 @@ public final class InteractiveSessionContract {
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
         this.pipelineRunId = requireToken(launch.getProperty("pipeline_run_id", pipelineRunId), "pipelineRunId");
-        this.runtimeId = requireToken(launch.getProperty("runtime_id", runtimeId), "runtimeId");
+        String attestedRuntimeId = requireToken(launch.getProperty("runtime_id"), "attestedRuntimeId");
+        if (RuntimeRegistry.get(attestedRuntimeId) == null) throw new IllegalArgumentException("unsupported-attested-runtime-id");
+        this.runtimeId = requireToken(runtimeId, "runtimeId");
+        if (RuntimeRegistry.get(this.runtimeId) == null) throw new IllegalArgumentException("unsupported-runtime-id");
         this.sourceCommit = requireHex(launch.getProperty("source_commit", sourceCommit), 40, "sourceCommit");
         this.gate4ContractSha256 = requireHex(launch.getProperty("gate4_contract_sha256", gate4ContractSha256), 64, "gate4ContractSha256");
         this.profileSha256 = requireHex(launch.getProperty("profile_sha256", profileSha256), 64, "profileSha256");
@@ -113,6 +116,7 @@ public final class InteractiveSessionContract {
     public boolean isAuthorizedForInteractiveRuntime() {
         return POLICY_ID.equals("interactive-runtime.v1") && POLICY_VERSION == 1
                 && POLICY_SCOPE.equals("full-user-access-inside-selected-rootless-runtime")
+                && RuntimeRegistry.get(runtimeId) != null
                 && RuntimeEvidence.verify(runtimeReadyEvidence, runtimeId, prootExecutable, runtimeRoot)
                 && prootExecutable.isFile() && prootExecutable.canExecute()
                 && prootLoaderIsValid() && runtimeRoot.isDirectory() && hostCwd.isDirectory()
