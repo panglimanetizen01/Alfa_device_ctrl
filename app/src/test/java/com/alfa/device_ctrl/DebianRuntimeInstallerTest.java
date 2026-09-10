@@ -17,8 +17,9 @@ public final class DebianRuntimeInstallerTest {
     @Test public void canonicalDebianArtifactInstallsAndProducesVerifiedReadyEvidence() throws Exception {
         assertTrue("Debian profile missing from canonical registry", DEBIAN != null);
         File archive = fixture("artifacts/test-fixtures/debian-bookworm-arm64.tar.gz");
-        if (!archive.isFile()) archive = downloadPinnedDebianArtifact();
+        if (!archive.isFile() || !DEBIAN.rootfsSha256().equalsIgnoreCase(sha256(archive))) archive = downloadPinnedDebianArtifact();
         assertTrue("Debian acceptance fixture missing: " + archive, archive.isFile());
+        assertEquals("Debian artifact must match current registry identity", DEBIAN.rootfsSha256(), sha256(archive));
         File temp = Files.createTempDirectory("alfa-debian-installer-").toFile();
         File nativeDir = new File(temp, "nativeLibs/arm64-v8a");
         assertTrue(nativeDir.mkdirs());
@@ -55,7 +56,7 @@ public final class DebianRuntimeInstallerTest {
     }
 
     private static File downloadPinnedDebianArtifact() throws Exception {
-        File archive = Files.createTempFile("alfa-debian-bookworm-", ".tar.gz").toFile();
+        File archive = Files.createTempFile("alfa-debian-installer-", ".tar.gz").toFile();
         archive.deleteOnExit();
         Process process = new ProcessBuilder(
                 "curl", "-fL", "--retry", "3", "--retry-delay", "1",
