@@ -17,14 +17,14 @@ public final class SessionUiState {
                 return Status.STARTING;
             case "READY":
             case "RUNNING":
+            case "BACKGROUND_SESSION_PRESERVED":
                 return Status.RUNNING;
             case "FINISHED":
                 return Status.FINISHED;
             case "BLOCKED":
             case "BLOCKED_FGS_START":
-            case "STOPPING":
                 return Status.FAILED;
-            case "BACKGROUND_SESSION_PRESERVED":
+            case "STOPPING":
             default:
                 return Status.NOT_READY;
         }
