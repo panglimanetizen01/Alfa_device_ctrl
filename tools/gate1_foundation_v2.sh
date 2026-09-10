@@ -100,13 +100,13 @@ if registry.get("target_architecture") != "arm64-v8a":
     errors.append("registry-target-abi-invalid")
 
 runtimes = registry.get("runtimes")
-expected = ["debian", "ubuntu", "alpine", "kali", "generic"]
+expected = ["debian", "ubuntu", "alpine", "kali"]
 if not isinstance(runtimes, list) or [r.get("runtime_id") for r in runtimes] != expected:
     errors.append("registry-order-invalid")
 else:
     for order, item in enumerate(runtimes, 1):
-        if item.get("acceptance_status") != "PLANNED":
-            errors.append(f"runtime-not-planned:{item.get('runtime_id')}")
+        if item.get("acceptance_status") != "SUPPORTED":
+            errors.append(f"runtime-not-supported:{item.get('runtime_id')}")
         if item.get("acceptance_order") != order:
             errors.append(f"runtime-order-invalid:{item.get('runtime_id')}")
         if item.get("architecture") != "aarch64":
@@ -126,7 +126,7 @@ out.write_text("\n".join([
     "architecture_contract=MULTI_DISTRO_LINUX_RUNTIME_FOUNDATION",
     "runtime_engine_contract=DISTRIBUTION_NEUTRAL",
     "gate_sequence=G1>G2>G3>G4>G5>G6>G7>G8>G9>G10>G11>G12>G13>G14>G15>G16>G17>G18>G19",
-    "acceptance_order=debian>ubuntu>alpine>kali>generic",
+    "acceptance_order=debian>ubuntu>alpine>kali",
     "stale_evidence_policy=REJECT",
     "unknown_policy=REJECT_AS_PASS",
     "apk_release_before_g19=FORBIDDEN",
