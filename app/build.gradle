@@ -37,9 +37,11 @@ tasks.register('prepareProotLoader', Exec) {
 
 tasks.register('prepareGate7LaunchContract') {
     inputs.property('gate7AssetPath', providers.environmentVariable('ALFA_GATE7_ASSET').orElse(''))
+    inputs.property('gate7RuntimeId', providers.environmentVariable('ALFA_GATE7_RUNTIME_ID').orElse(''))
     outputs.file(file("$buildDir/generated/assets/gate7-launch.properties"))
     doLast {
         def sourcePath = System.getenv('ALFA_GATE7_ASSET')
+        def selectedRuntime = System.getenv('ALFA_GATE7_RUNTIME_ID')
         def required = System.getenv('ALFA_GATE7_REQUIRED') == 'true'
         def output = file("$buildDir/generated/assets/gate7-launch.properties")
         output.parentFile.mkdirs()
@@ -48,13 +50,27 @@ tasks.register('prepareGate7LaunchContract') {
             if (required) throw new GradleException('ALFA_GATE7_REQUIRED=true but ALFA_GATE7_ASSET is missing')
             return
         }
+        if (selectedRuntime == null || selectedRuntime.trim().isEmpty()) {
+            throw new GradleException('ALFA_GATE7_RUNTIME_ID is required when Gate 7 asset is supplied')
+        }
+        def registry = new groovy.json.JsonSlurper().parse(file("${rootProject.projectDir}/runtime/runtimes.v1.json"))
+        def runtime = registry.runtimes.find { it.runtime_id == selectedRuntime.trim() }
+        if (runtime == null) throw new GradleException("Gate 7 runtime is not in canonical registry: ${selectedRuntime}")
         def source = file(sourcePath)
         if (!source.isFile()) throw new GradleException("ALFA_GATE7_ASSET is not a regular file: ${source}")
         def text = source.getText('UTF-8')
-        ['pipeline_run_id=', 'runtime_id=debian', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key ->
+        ['pipeline_run_id=', 'runtime_id=', 'runtime_registry_sha256=', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key ->
             if (!text.readLines().any { it.startsWith(key) && it.substring(key.length()).trim() }) {
                 throw new GradleException("Gate 7 launch contract missing ${key}")
             }
+        }
+        def lines = text.readLines()
+        def value = { key -> lines.find { it.startsWith(key) }?.substring(key.length())?.trim() }
+        if (value('runtime_id') != selectedRuntime.trim()) {
+            throw new GradleException("Gate 7 runtime provenance mismatch: asset=${value('runtime_id')} selected=${selectedRuntime}")
+        }
+        if (!value('runtime_registry_sha256').matches('[0-9a-fA-F]{64}')) {
+            throw new GradleException('Gate 7 runtime_registry_sha256 is invalid')
         }
         source.withInputStream { input -> output.withOutputStream { out -> out << input } }
     }
