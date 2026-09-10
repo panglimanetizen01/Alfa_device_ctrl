@@ -48,35 +48,32 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, re, subprocess
-          files=subprocess.check_output(['git','ls-files'],text=True).splitlines()
-          bad=[]
-          intentionally_audited=[]
-          patterns=[r'/storage/emulated/0/Alfa_device_ctrl(?:/|$)',r'/storage/emulated/0/UserLAnd',r'UserLAnd_home_migration',r'/storage/emulated/0/android-sdk',r'fix/post-g19-android-launch-contract-final']
-          intentional={'.github/workflows/alfa-ci.yml'}
-          for path in files:
-              if path == '.github/workflows/canonical-hardening.yml': continue
-              try: text=open(path,encoding='utf-8',errors='ignore').read()
-              except (OSError,IsADirectoryError): continue
-              for pattern in patterns:
-                  if re.search(pattern,text):
-                      item={'path':path,'pattern':pattern}
-                      if path in intentional:
-                          intentionally_audited.append(item)
-                      else:
-                          bad.append(item)
-          report={'status':'PASS' if not bad else 'FAIL','stale_references':bad,'intentional_audit_patterns':intentionally_audited}
-          json.dump(report,open('stale-audit.json','w'),indent=2)
-          if intentionally_audited:
-              print('INTENTIONAL_AUDIT_PATTERNS_BEGIN')
-              for item in intentionally_audited: print(f"{item['path']} :: {item['pattern']}")
-              print('INTENTIONAL_AUDIT_PATTERNS_END')
-          if bad:
-              print('STALE_REFERENCE_MATCHES_BEGIN')
-              for item in bad: print(f"{item['path']} :: {item['pattern']}")
-              print('STALE_REFERENCE_MATCHES_END')
-              raise SystemExit(1)
-          PY
+import json,re,subprocess
+files=subprocess.check_output(['git','ls-files'],text=True).splitlines()
+bad=[]; intentionally_audited=[]
+patterns=[r'/storage/emulated/0/Alfa_device_ctrl(?:/|$)',r'/storage/emulated/0/UserLAnd',r'UserLAnd_home_migration',r'/storage/emulated/0/android-sdk',r'fix/post-g19-android-launch-contract-final']
+intentional={'.github/workflows/alfa-ci.yml','.github/workflows/canonical-hardening.yml'}
+for path in files:
+    if path == '.github/workflows/canonical-hardening.yml': continue
+    try: text=open(path,encoding='utf-8',errors='ignore').read()
+    except (OSError,IsADirectoryError): continue
+    for pattern in patterns:
+        if re.search(pattern,text):
+            item={'path':path,'pattern':pattern}
+            if path in intentional: intentionally_audited.append(item)
+            else: bad.append(item)
+report={'status':'PASS' if not bad else 'FAIL','stale_references':bad,'intentional_audit_patterns':intentionally_audited}
+json.dump(report,open('stale-audit.json','w'),indent=2)
+if intentionally_audited:
+    print('INTENTIONAL_AUDIT_PATTERNS_BEGIN')
+    for item in intentionally_audited: print(f"{item['path']} :: {item['pattern']}")
+    print('INTENTIONAL_AUDIT_PATTERNS_END')
+if bad:
+    print('STALE_REFERENCE_MATCHES_BEGIN')
+    for item in bad: print(f"{item['path']} :: {item['pattern']}")
+    print('STALE_REFERENCE_MATCHES_END')
+    raise SystemExit(1)
+PY
 
       - name: Registry consistency and unit tests
         run: |
@@ -94,18 +91,37 @@ jobs:
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/debug/app-debug.apk"
+          REPORT="native-16kb-verification.json"
           READELF="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          test -f "$APK"
           test -x "$READELF"
           TMP="$(mktemp -d)"
           trap 'rm -rf "$TMP"' EXIT
           unzip -q "$APK" 'lib/*/*.so' -d "$TMP"
-          found=0
-          while IFS= read -r -d '' lib; do
-            found=1
-            "$READELF" -lW "$lib" | awk '$1 == "LOAD" {if ($NF != "0x4000") bad=1} END {exit bad}'
-          done < <(find "$TMP/lib" -type f -name '*.so' -print0)
-          test "$found" = 1
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+          python3 - "$TMP" "$REPORT" "$READELF" <<'PY'
+import json,os,subprocess,sys
+root,report,readelf=sys.argv[1:]
+libs=[]
+for base,_,names in os.walk(root):
+    for name in names:
+        if not name.endswith('.so'): continue
+        path=os.path.join(base,name)
+        lines=subprocess.check_output([readelf,'-lW',path],text=True).splitlines()
+        aligns=[line.split()[-1] for line in lines if line.split() and line.split()[0]=='LOAD']
+        item={'path':os.path.relpath(path,root),'load_alignments':aligns,'pass':bool(aligns) and all(x=='0x4000' for x in aligns)}
+        libs.append(item)
+        print(f"{item['path']} :: {','.join(aligns) if aligns else 'NO_LOAD_SEGMENTS'} :: {'PASS' if item['pass'] else 'FAIL'}")
+status='PASS' if libs and all(x['pass'] for x in libs) else 'FAIL'
+json.dump({'gate':'C2','status':status,'elf_load_alignment_required':'0x4000','libraries':libs},open(report,'w'),indent=2)
+PY
+          cat "$REPORT"
+          python3 - "$REPORT" <<'PY'
+import json,sys
+raise SystemExit(0 if json.load(open(sys.argv[1],encoding='utf-8'))['status']=='PASS' else 1)
+PY
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK" > zipalign-16kb.txt 2>&1
+          cat zipalign-16kb.txt
+          printf '%s\n' 'zipalign_status=PASS' >> zipalign-16kb.txt
 
       - name: Upload hardening evidence
         if: always()
@@ -114,6 +130,8 @@ jobs:
           name: alfa-hardening-${{ github.sha }}
           path: |
             stale-audit.json
+            native-16kb-verification.json
+            zipalign-16kb.txt
             app/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 30
