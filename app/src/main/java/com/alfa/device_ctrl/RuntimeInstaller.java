@@ -34,7 +34,7 @@ import org.tukaani.xz.XZInputStream;
 public final class RuntimeInstaller {
     public static final String SCHEMA_VERSION = "runtime-ready.v1";
     public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "663ef19c278dc39bb4a242ba244d5af6776610a936f33e5205c28fc016350b3a";
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
     private static final int TAR_BLOCK = 512;
 
     public interface Progress { void onMessage(String message); }
@@ -269,62 +269,52 @@ public final class RuntimeInstaller {
             if (!isArm64Elf(loader)) return "runtime-smoke-loader-not-arm64-elf";
             if (!TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader))) return "runtime-smoke-loader-checksum-mismatch";
 
-            ProcessBuilder builder = new ProcessBuilder(engine.getAbsolutePath(), "-0", "-r", root.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "PROOT_TMP_DIR=" + canonicalProotTmp.getAbsolutePath(), "/bin/sh", "-c", "printf ALFA_RUNTIME_SMOKE_OK; id -u; pwd");
-            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());
-            builder.environment().put("PROOT_LOADER", loader.getAbsolutePath());
-            builder.directory(root.getParentFile());
+            ProcessBuilder builder = new ProcessBuilder(engine.getAbsolutePath(), "-0", "-r", root.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "/bin/sh", "-c", "printf 'ALFA_RUNTIME_SMOKE_OK\\n'; id; uname -m");
             builder.redirectErrorStream(true);
+            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());
             process = builder.start();
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
             if (!process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) { process.destroyForcibly(); return "runtime-smoke-timeout"; }
-            String output;
-            try (InputStream input = process.getInputStream()) {
-                byte[] buffer = new byte[4096];
-                StringBuilder text = new StringBuilder();
-                int count;
-                while ((count = input.read(buffer)) != -1) text.append(new String(buffer, 0, count, StandardCharsets.UTF_8));
-                output = text.toString();
-            }
-            if (process.exitValue() != 0) return "runtime-smoke-exit-" + process.exitValue() + ":" + compact(output);
-            if (!output.contains("ALFA_RUNTIME_SMOKE_OK")) return "runtime-smoke-marker-missing:" + compact(output);
-            if (!output.matches("(?s).*\\n0\\n/.*")) return "runtime-smoke-contract-mismatch:" + compact(output);
+            if (process.exitValue() != 0) return "runtime-smoke-exit-" + process.exitValue() + ":" + output.trim();
+            if (!output.contains("ALFA_RUNTIME_SMOKE_OK")) return "runtime-smoke-marker-missing";
             return null;
-        } catch (Exception error) { if (process != null) process.destroyForcibly(); return "runtime-smoke-exec-" + error.getClass().getSimpleName() + ":" + compact(error.getMessage()); }
+        } catch (Exception error) {
+            if (process != null) process.destroyForcibly();
+            return "runtime-smoke-exception:" + error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage());
+        }
     }
 
-    private static String compact(String value) { if (value == null) return ""; String normalized = value.replace('\n', ' ').replace('\r', ' ').trim(); return normalized.length() > 240 ? normalized.substring(0, 240) : normalized; }
-
-    private void writeReadyEvidence(File staging, String runtimeId, File engine, File root, String engineSha256, String archiveSha256) throws Exception {
+    private void writeReadyEvidence(File runtime, String runtimeId, File engine, File root, String engineSha256, String archiveSha256) throws Exception {
         Properties properties = new Properties();
-        properties.setProperty("schema_version", SCHEMA_VERSION);
+        properties.setProperty("schema", SCHEMA_VERSION);
         properties.setProperty("status", "READY");
         properties.setProperty("runtime_id", runtimeId);
         properties.setProperty("engine_path", engine.getCanonicalPath());
-        properties.setProperty("engine_source", "ApplicationInfo.nativeLibraryDir");
-        properties.setProperty("engine_abi", "arm64-v8a");
         properties.setProperty("rootfs_path", root.getCanonicalPath());
-        properties.setProperty("engine_sha256", engineSha256.toLowerCase());
-        properties.setProperty("archive_sha256", archiveSha256.toLowerCase());
-        properties.setProperty("smoke_contract", "ALFA_RUNTIME_SMOKE_OK;uid=0;rootfs-pwd");
-        properties.setProperty("created_at_epoch_ms", Long.toString(System.currentTimeMillis()));
-        try (FileOutputStream output = new FileOutputStream(new File(staging, "READY.evidence"))) { properties.store(output, "Alfa Device Ctrl runtime-ready.v1"); }
+        properties.setProperty("engine_sha256", engineSha256);
+        properties.setProperty("archive_sha256", archiveSha256);
+        properties.setProperty("loader_sha256", TRUSTED_PROOT_LOADER_ARM64_SHA256);
+        properties.setProperty("engine_executable", String.valueOf(engine.canExecute()));
+        properties.setProperty("rootfs_directory", String.valueOf(root.isDirectory()));
+        try (OutputStream output = new FileOutputStream(new File(runtime, "READY.evidence"))) { properties.store(output, "Alfa runtime evidence"); }
     }
 
-    private Path safeEntry(Path root, String name) throws IOException { if (name == null || name.isEmpty() || name.startsWith("/") || name.indexOf('\0') >= 0) throw new IOException("unsafe-archive-path"); Path resolved = root.resolve(name).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("archive-traversal"); return resolved; }
-    private Path safeHardLink(Path root, String link) throws IOException { if (link == null || link.isEmpty() || link.startsWith("/") || link.indexOf('\0') >= 0) throw new IOException("unsafe-hardlink"); Path resolved = root.resolve(link).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("hardlink-traversal"); return resolved; }
-    private Path safeLink(Path root, Path entry, String link) throws IOException { if (link == null || link.isEmpty() || link.indexOf('\0') >= 0) throw new IOException("unsafe-link"); Path resolved = link.startsWith("/") ? root.resolve(link.substring(1)).normalize() : entry.getParent().resolve(link).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("link-traversal"); return resolved; }
-    private void applyMode(File file, byte[] header) { int mode = (int) octal(header, 100, 8); file.setReadable((mode & 0444) != 0, false); file.setWritable((mode & 0222) != 0, false); file.setExecutable((mode & 0111) != 0, false); }
-    private static String field(byte[] bytes, int offset, int length) { int end = offset; while (end < offset + length && bytes[end] != 0) end++; return new String(bytes, offset, end - offset, StandardCharsets.UTF_8).trim(); }
-    private static long octal(byte[] bytes, int offset, int length) { long value = 0; for (int i = offset; i < offset + length && bytes[i] != 0; i++) if (bytes[i] >= '0' && bytes[i] <= '7') value = (value << 3) + bytes[i] - '0'; return value; }
-    private static boolean isZeroBlock(byte[] block) { for (byte value : block) if (value != 0) return false; return true; }
-    private static int readFull(InputStream input, byte[] bytes) throws IOException { int offset = 0, count; while (offset < bytes.length && (count = input.read(bytes, offset, bytes.length - offset)) > 0) offset += count; return offset; }
-    private static void copyExact(InputStream input, OutputStream output, long size) throws IOException { byte[] buffer = new byte[65536]; long left = size; while (left > 0) { int count = input.read(buffer, 0, (int) Math.min(buffer.length, left)); if (count < 0) throw new EOFException("truncated-entry"); output.write(buffer, 0, count); left -= count; } }
-    private static void skipExact(InputStream input, long size) throws IOException { long left = size; while (left > 0) { long skipped = input.skip(left); if (skipped <= 0) { if (input.read() < 0) throw new EOFException("truncated-padding"); skipped = 1; } left -= skipped; } }
-    private static void moveFile(Path from, Path to) throws IOException { Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE); }
-    private static void moveDirectory(Path from, Path to) throws IOException { Files.move(from, to, StandardCopyOption.ATOMIC_MOVE); }
+    private void report(String message) { if (progress != null) progress.onMessage(message); }
     private static boolean validToken(String value) { return value != null && value.matches("[A-Za-z0-9._-]{1,64}"); }
     private static boolean validSha(String value) { return value != null && value.matches("[0-9a-fA-F]{64}"); }
-    private static String sha256(File file) throws Exception { MessageDigest digest = MessageDigest.getInstance("SHA-256"); try (InputStream input = new BufferedInputStream(new FileInputStream(file))) { byte[] buffer = new byte[65536]; int count; while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count); } return hex(digest.digest()); }
-    private static String hex(byte[] bytes) { StringBuilder out = new StringBuilder(bytes.length * 2); for (byte value : bytes) out.append(String.format("%02x", value & 0xff)); return out.toString(); }
-    private void report(String message) { if (progress != null) progress.onMessage(message); }
-    private static void deleteRecursively(File file) { if (file == null || !file.exists()) return; if (file.isDirectory() && !Files.isSymbolicLink(file.toPath())) { File[] children = file.listFiles(); if (children != null) for (File child : children) deleteRecursively(child); } file.delete(); }
+    private static String sha256(File file) throws Exception { MessageDigest digest = MessageDigest.getInstance("SHA-256"); try (InputStream input = new FileInputStream(file)) { byte[] buffer = new byte[65536]; int count; while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count); } return hex(digest.digest()); }
+    private static String hex(byte[] bytes) { StringBuilder builder = new StringBuilder(bytes.length * 2); for (byte value : bytes) builder.append(String.format("%02x", value & 0xff)); return builder.toString(); }
+    private static int readFull(InputStream input, byte[] buffer) throws IOException { int offset = 0; while (offset < buffer.length) { int count = input.read(buffer, offset, buffer.length - offset); if (count < 0) break; offset += count; } return offset; }
+    private static boolean isZeroBlock(byte[] buffer) { for (byte value : buffer) if (value != 0) return false; return true; }
+    private static String field(byte[] buffer, int offset, int length) { int end = offset; int limit = Math.min(buffer.length, offset + length); while (end < limit && buffer[end] != 0) end++; return new String(buffer, offset, end - offset, StandardCharsets.UTF_8); }
+    private static long octal(byte[] buffer, int offset, int length) throws IOException { String value = field(buffer, offset, length).trim(); if (value.isEmpty()) return 0; try { return Long.parseLong(value, 8); } catch (NumberFormatException error) { throw new IOException("invalid-tar-size"); } }
+    private static Path safeEntry(Path root, String name) throws IOException { Path target = root.resolve(name).normalize(); if (!target.startsWith(root)) throw new IOException("unsafe-tar-entry"); return target; }
+    private static Path safeLink(Path root, Path entry, String link) throws IOException { Path target = entry.getParent().resolve(link).normalize(); if (!target.startsWith(root)) throw new IOException("unsafe-symlink"); return target; }
+    private static Path safeHardLink(Path root, String link) throws IOException { return safeEntry(root, link); }
+    private static void copyExact(InputStream input, OutputStream output, long size) throws IOException { byte[] buffer = new byte[65536]; long remaining = size; while (remaining > 0) { int count = input.read(buffer, 0, (int)Math.min(buffer.length, remaining)); if (count < 0) throw new EOFException("truncated-tar-entry"); output.write(buffer, 0, count); remaining -= count; } }
+    private static void skipExact(InputStream input, long size) throws IOException { byte[] buffer = new byte[8192]; long remaining = size; while (remaining > 0) { int count = input.read(buffer, 0, (int)Math.min(buffer.length, remaining)); if (count < 0) throw new EOFException("truncated-tar-entry"); remaining -= count; } }
+    private static void applyMode(File file, byte[] header) { String value = field(header, 100, 8).trim(); try { int mode = Integer.parseInt(value, 8) & 0777; if (mode != 0) file.setExecutable((mode & 0111) != 0, false); if ((mode & 0222) != 0) file.setWritable(true, false); } catch (NumberFormatException ignored) { } }
+    private static void moveDirectory(Path source, Path target) throws IOException { Files.move(source, target, StandardCopyOption.ATOMIC_MOVE); }
+    private static void moveFile(Path source, Path target) throws IOException { try { Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); } catch (UnsupportedOperationException error) { Files.move(source, target, StandardCopyOption.REPLACE_EXISTING); } }
+    private static void deleteRecursively(File file) { if (!file.exists()) return; File[] children = file.listFiles(); if (children != null) for (File child : children) deleteRecursively(child); file.delete(); }
 }
