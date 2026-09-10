@@ -35,14 +35,15 @@ public final class MainActivityAdaptiveInsetsSemanticContractTest {
         assertTrue(state.contains("return Status.RUNNING;"));
     }
 
-    @Test public void layoutUsesCurrentWindowMetricsAndInsets() throws Exception {
+    @Test public void layoutUsesInsetAdjustedActualContentSpace() throws Exception {
         String theme = source("src/main/java/com/alfa/device_ctrl/AlfaUiTheme.java");
         String app = source("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
         String policy = source("src/main/java/com/alfa/device_ctrl/AdaptiveRuntimeLayoutPolicy.java");
-        assertTrue(theme.contains("getCurrentWindowMetrics()"));
+        assertTrue(theme.contains("content.getHeight() / density"));
         assertTrue(theme.contains("AdaptiveRuntimeLayoutPolicy.resolve"));
         assertTrue(app.contains("WindowCompat.enableEdgeToEdge"));
         assertTrue(app.contains("setOnApplyWindowInsetsListener"));
+        assertTrue(app.contains("setInsets(handledTypes, Insets.NONE)"));
         assertTrue(policy.contains("terminalMinDp"));
     }
 }
