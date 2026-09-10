@@ -19,6 +19,14 @@ public final class AdaptiveRuntimeLayoutPolicyTest {
         assertTrue(compact.runtimeDp + compact.monitorDp + compact.terminalMinDp <= 334);
     }
 
+    @Test public void tenRuntimeProfilesCannotBreakCompactFit() {
+        AdaptiveRuntimeLayoutPolicy.Layout compact = AdaptiveRuntimeLayoutPolicy.resolve(350, 10);
+        assertTrue(compact.runtimeDp + compact.monitorDp + compact.terminalMinDp <= 334);
+        assertTrue(compact.runtimeDp >= 112);
+        assertTrue(compact.monitorDp >= 72);
+        assertTrue(compact.terminalMinDp >= 140);
+    }
+
     @Test public void expandedWindowKeepsPreferredRuntimeAndMonitorSizes() {
         AdaptiveRuntimeLayoutPolicy.Layout expanded = AdaptiveRuntimeLayoutPolicy.resolve(1100, 4);
         assertTrue(expanded.runtimeDp >= 220 && expanded.runtimeDp <= 280);
