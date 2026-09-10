@@ -43,7 +43,13 @@ jobs:
                 grep -Fq 'acceptance_order=debian>ubuntu>alpine>kali' tools/gate1_foundation_v2.sh
                 echo "G1_MULTIDISTRO_MIGRATION_ALLOWED=$path"
                 ;;
-              tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*|tools/runtime_bootstrap.sh)
+              tools/runtime_bootstrap.sh)
+                grep -Fq 'RUNTIME_ID=${2:-}' tools/runtime_bootstrap.sh
+                grep -Fq 'runtime_registry_sha256=' tools/runtime_bootstrap.sh
+                grep -Fq 'runtime_id=$RUNTIME_ID' tools/runtime_bootstrap.sh
+                echo "G6_RUNTIME_BINDING_ALLOWED=$path"
+                ;;
+              tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*)
                 echo "PROTECTED_SOURCE_CHANGED=$path"
                 exit 1
                 ;;
