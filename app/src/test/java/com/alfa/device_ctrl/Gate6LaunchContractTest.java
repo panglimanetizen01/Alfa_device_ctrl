@@ -23,7 +23,7 @@ public final class Gate6LaunchContractTest {
 
             assertTrue(Gate6LaunchContract.verify(launch, "alpine"));
             assertFalse(Gate6LaunchContract.verify(launch, "ubuntu"));
-            String text = Files.readString(launch.toPath(), StandardCharsets.UTF_8);
+            String text = new String(Files.readAllBytes(launch.toPath()), StandardCharsets.UTF_8);
             assertTrue(text.contains("runtime_id=alpine"));
         } finally {
             delete(dir);
@@ -53,7 +53,7 @@ public final class Gate6LaunchContractTest {
         File dir = Files.createTempDirectory("alfa-g6-").toFile();
         try {
             File launch = new File(dir, "gate7.properties");
-            Files.writeString(launch.toPath(), "runtime_id=debian\n", StandardCharsets.UTF_8);
+            Files.write(launch.toPath(), "runtime_id=debian\n".getBytes(StandardCharsets.UTF_8));
             assertFalse(Gate6LaunchContract.verify(launch, "debian"));
         } finally {
             delete(dir);
@@ -78,7 +78,7 @@ public final class Gate6LaunchContractTest {
                 + "authorization_status=AUTHORIZED\n"
                 + "bootstrap_status=PASS\n"
                 + "bootstrap_probe=PASS\n";
-        Files.writeString(file.toPath(), text, StandardCharsets.UTF_8);
+        Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
     }
 
     private static void delete(File file) {
