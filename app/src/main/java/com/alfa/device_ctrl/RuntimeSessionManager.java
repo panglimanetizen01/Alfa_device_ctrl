@@ -1,7 +1,5 @@
 package com.alfa.device_ctrl;
 
-import android.view.View;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -84,7 +82,8 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             if (!promptReady && changedSession == session && changedSession.getEmulator() != null
                     && changedSession.getEmulator().getScreen() != null) {
                 String transcript = changedSession.getEmulator().getScreen().getTranscriptText();
-                if (transcript.contains("alfa:ubuntu:") || transcript.matches("(?s).*([#$] )$")) {
+                String runtimePrompt = "alfa:" + contract.runtimeId() + ":";
+                if (transcript.contains(runtimePrompt) || transcript.matches("(?s).*([#$] )$")) {
                     promptReady = true;
                     OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid());
                     if (listener != null) listener.onState("READY");
@@ -124,12 +123,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         final String output;
         final int exitStatus;
         final boolean timedOut;
-
-        CommandResult(String output, int exitStatus, boolean timedOut) {
-            this.output = output;
-            this.exitStatus = exitStatus;
-            this.timedOut = timedOut;
-        }
+        CommandResult(String output, int exitStatus, boolean timedOut) { this.output = output; this.exitStatus = exitStatus; this.timedOut = timedOut; }
     }
 
     private static String findExecutable(String... candidates) {
@@ -146,24 +140,17 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         return executable;
     }
 
-    private static String shellQuote(String value) {
-        return "'" + value.replace("'", "'\\''") + "'";
-    }
+    private static String shellQuote(String value) { return "'" + value.replace("'", "'\\''") + "'"; }
 
     private static ProcessBuilder withProcessGroup(ProcessBuilder command, File pidFile) {
         String setsid = requireProcessGroupTool("/system/bin/setsid", "/usr/bin/setsid", "/bin/setsid");
         String shell = requireProcessGroupTool("/system/bin/sh", "/usr/bin/sh", "/bin/sh");
         List<String> argv = new ArrayList<>();
-        argv.add(setsid);
-        argv.add(shell);
-        argv.add("-c");
+        argv.add(setsid); argv.add(shell); argv.add("-c");
         argv.add("echo $$ > " + shellQuote(pidFile.getAbsolutePath()) + "; exec \"$@\"");
-        argv.add("alfa-process-group");
-        argv.addAll(command.command());
+        argv.add("alfa-process-group"); argv.addAll(command.command());
         ProcessBuilder grouped = new ProcessBuilder(argv);
-        grouped.directory(command.directory());
-        grouped.environment().clear();
-        grouped.environment().putAll(command.environment());
+        grouped.directory(command.directory()); grouped.environment().clear(); grouped.environment().putAll(command.environment());
         grouped.redirectErrorStream(command.redirectErrorStream());
         return grouped;
     }
@@ -173,10 +160,8 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         while (System.nanoTime() < deadline) {
             if (pidFile.isFile()) {
                 String value = new String(java.nio.file.Files.readAllBytes(pidFile.toPath()), StandardCharsets.US_ASCII).trim();
-                try {
-                    long pid = Long.parseLong(value);
-                    if (pid > 0 && pid <= Integer.MAX_VALUE) return pid;
-                } catch (NumberFormatException ignored) { }
+                try { long pid = Long.parseLong(value); if (pid > 0 && pid <= Integer.MAX_VALUE) return pid; }
+                catch (NumberFormatException ignored) { }
             }
             Thread.sleep(10);
         }
@@ -186,9 +171,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     private static void killProcessGroup(long pid) throws Exception {
         if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid");
         String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill");
-        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid)
-                .redirectErrorStream(true)
-                .start();
+        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid).redirectErrorStream(true).start();
         if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly();
         if (killer.exitValue() != 0) throw new IllegalStateException("process-group-kill-failed:" + killer.exitValue());
     }
@@ -205,36 +188,25 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             Process activeProcess = process;
             Thread readerThread = new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(activeProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                    char[] buffer = new char[4096];
-                    int count;
+                    char[] buffer = new char[4096]; int count;
                     while ((count = reader.read(buffer)) != -1) {
                         synchronized (text) {
                             if (text.length() >= maxOutputChars) continue;
-                            int remaining = maxOutputChars - text.length();
-                            text.append(buffer, 0, Math.min(count, remaining));
+                            int remaining = maxOutputChars - text.length(); text.append(buffer, 0, Math.min(count, remaining));
                         }
                     }
-                } catch (Exception ignored) {
-                    // Process termination is reported by the owner thread.
-                }
+                } catch (Exception ignored) { }
             }, "alfa-runtime-command-output");
             readerThread.start();
-
             boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
             if (!finished) {
                 Exception cleanupFailure = null;
-                try {
-                    killProcessGroup(processGroupId);
-                } catch (Exception error) {
-                    cleanupFailure = error;
-                    process.destroyForcibly();
-                }
-                process.waitFor(2, TimeUnit.SECONDS);
-                readerThread.join(2000);
+                try { killProcessGroup(processGroupId); }
+                catch (Exception error) { cleanupFailure = error; process.destroyForcibly(); }
+                process.waitFor(2, TimeUnit.SECONDS); readerThread.join(2000);
                 if (cleanupFailure != null) throw cleanupFailure;
                 return new CommandResult(text.toString().trim(), 124, true);
             }
-
             readerThread.join(2000);
             return new CommandResult(text.toString().trim(), process.exitValue(), false);
         } finally {
@@ -244,46 +216,34 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     }
 
     public void runRuntimeCommand(String command, CommandListener listener) {
-        if (command == null || command.trim().isEmpty()) {
-            if (listener != null) listener.onResult("invalid-command", 2);
-            return;
-        }
+        if (command == null || command.trim().isEmpty()) { if (listener != null) listener.onResult("invalid-command", 2); return; }
         final String requested = command;
         final InteractiveSessionContract activeContract;
         synchronized (this) {
             if (!promptReady || session == null || !session.isRunning() || !contract.isAuthorizedForInteractiveRuntime()) {
-                if (listener != null) listener.onResult("runtime-session-not-ready", 126);
-                return;
+                if (listener != null) listener.onResult("runtime-session-not-ready", 126); return;
             }
             activeContract = contract;
         }
         new Thread(() -> {
-            int status = 126;
-            String output;
+            int status = 126; String output;
             try {
                 List<String> argv = new ArrayList<>();
                 argv.add(activeContract.prootExecutable().getAbsolutePath());
                 argv.add("-0"); argv.add("-r"); argv.add(activeContract.runtimeRoot().getAbsolutePath());
                 argv.add("-b"); argv.add("/dev"); argv.add("-b"); argv.add("/proc"); argv.add("-b"); argv.add("/sys");
-                argv.add("-w"); argv.add("/root");
-                argv.add("/usr/bin/env"); argv.add("-i");
+                argv.add("-w"); argv.add("/root"); argv.add("/usr/bin/env"); argv.add("-i");
                 argv.add("HOME=/root"); argv.add("PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
                 argv.add("TERM=xterm-256color"); argv.add("/bin/sh"); argv.add("-c"); argv.add(requested);
-                ProcessBuilder builder = new ProcessBuilder(argv);
-                builder.directory(activeContract.hostCwd());
-                builder.redirectErrorStream(true);
+                ProcessBuilder builder = new ProcessBuilder(argv); builder.directory(activeContract.hostCwd()); builder.redirectErrorStream(true);
                 for (String entry : activeContract.environment()) {
-                    if (entry == null) continue;
-                    int separator = entry.indexOf('=');
+                    if (entry == null) continue; int separator = entry.indexOf('=');
                     if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry");
                     builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1));
                 }
                 CommandResult result = executeProcess(builder, COMMAND_TIMEOUT_MS, MAX_COMMAND_OUTPUT_CHARS);
-                status = result.exitStatus;
-                output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
-            } catch (Exception error) {
-                output = error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage());
-            }
+                status = result.exitStatus; output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
+            } catch (Exception error) { output = error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage()); }
             if (listener != null) listener.onResult(output, status);
         }, "alfa-runtime-command").start();
     }
