@@ -15,12 +15,12 @@ GATE4_SHA=$(printf '%s' 'gate4-test-contract' | sha256sum | awk '{print $1}')
 PROFILE_SHA=$(printf '%s' 'profile-test' | sha256sum | awk '{print $1}')
 RUNTIME_REGISTRY_SHA=$(sha256sum "$ROOT/runtime/runtimes.v1.json" | awk '{print $1}')
 IMPLEMENTATION_COMMIT="$SOURCE_COMMIT"
-cat > "$BOOTSTRAP" <<EOF
+write_bootstrap(){ cat > "$BOOTSTRAP" <<EOF
 schema_version=gate6-bootstrap.v1
 gate=gate6
 gate_status=PASS
 pipeline_run_id=$RUN_ID
-runtime_id=debian
+runtime_id=$1
 runtime_registry_sha256=$RUNTIME_REGISTRY_SHA
 source_commit=$SOURCE_COMMIT
 implementation_commit=$IMPLEMENTATION_COMMIT
@@ -32,6 +32,8 @@ authorization_status=AUTHORIZED
 bootstrap_status=PASS
 bootstrap_probe=PASS
 EOF
+}
+write_bootstrap debian
 write_evidence(){ cat > "$EVIDENCE" <<EOF
 schema_version=operation-evidence.v1
 session_id=session-g7-test
@@ -52,7 +54,7 @@ rootfs_path=/app/runtime/rootfs
 runtime_evidence=/app/runtime/READY.evidence
 EOF
 }
-write_evidence ubuntu
+write_evidence debian
 expect_green(){ bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; }
 expect_blocked(){ ! bash "$VALIDATOR" "$RUN_ID" "$BOOTSTRAP" "$EVIDENCE" >/dev/null 2>&1; }
 printf '%s\n' '=== G7 STATIC BOUNDARY CHECK ==='
@@ -63,9 +65,11 @@ if ! grep -q 'gate7-launch.properties' "$ROOT/app/src/main/java/com/alfa/device_
 printf '%s\n' 'NO_G7_PROPAGATION=PASS' 'JNI_CWD_RELEASE=PASS' 'ANDROID_LAUNCH_PROVENANCE=PASS'
 printf '%s\n' '=== G7 MULTI-DISTRO CONTRACT TEST ==='
 for runtime in debian ubuntu alpine kali; do
+  write_bootstrap "$runtime"
   write_evidence "$runtime"
   if expect_green; then printf 'POSITIVE_RUNTIME_%s=PASS\n' "$(printf '%s' "$runtime" | tr '[:lower:]' '[:upper:]')"; else printf 'POSITIVE_RUNTIME_%s=FAIL\n' "$(printf '%s' "$runtime" | tr '[:lower:]' '[:upper:]')"; exit 1; fi
 done
+write_bootstrap debian
 write_evidence debian
 sed 's/^pipeline_run_id=.*/pipeline_run_id=wrong-run/' "$EVIDENCE" > "$EVIDENCE.bad"; mv "$EVIDENCE.bad" "$EVIDENCE"
 if expect_blocked; then printf '%s\n' 'NEGATIVE_WRONG_RUN=PASS'; else printf '%s\n' 'NEGATIVE_WRONG_RUN=FAIL'; exit 1; fi
