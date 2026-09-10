@@ -34,11 +34,19 @@ public final class RuntimeProfileTest {
             assertEquals("-0", args[0]);
             assertEquals("-r", args[1]);
             assertEquals("{RUNTIME_ROOT}", args[2]);
-            assertEquals("/usr/bin/env", args[11]);
-            assertEquals("-i", args[12]);
+            int envIndex = find(args, "/usr/bin/env");
+            assertEquals("/usr/bin/env", args[envIndex]);
+            assertEquals("-i", args[envIndex + 1]);
             assertEquals("{PROMPT}", args[args.length - 3]);
             assertEquals("{SHELL}", args[args.length - 2]);
             assertEquals("-i", args[args.length - 1]);
         }
+    }
+
+    private static int find(String[] values, String expected) {
+        for (int i = 0; i < values.length; i++) {
+            if (expected.equals(values[i])) return i;
+        }
+        throw new AssertionError("missing argument: " + expected);
     }
 }
