@@ -31,7 +31,7 @@ public final class DebianRuntimeInstallerTest {
         assertTrue(engine.setExecutable(true, false));
         assertTrue(loader.setExecutable(true, false));
         assertEquals(RuntimeInstaller.TRUSTED_PROOT_ARM64_SHA256, sha256(engine));
-        assertEquals(RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256, sha256(loader));
+        assertTrue("loader fixture hash must be trusted", RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader)));
 
         RuntimeInstaller installer = new RuntimeInstaller(temp, null, engine, nativeDir, (ignored, root) -> null);
         RuntimeInstaller.Result result = installer.install(RuntimeProfile.ID, null, sha256(engine), archive.toURI().toURL(), sha256(archive), true);
