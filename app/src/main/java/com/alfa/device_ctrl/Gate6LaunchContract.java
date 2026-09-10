@@ -30,6 +30,7 @@ public final class Gate6LaunchContract {
         String source = hex(input, "source_commit", 40);
         String contract = hex(input, "gate4_contract_sha256", 64);
         String profile = hex(input, "profile_sha256", 64);
+        String runtimeRegistry = hex(input, "runtime_registry_sha256", 64);
         String implementation = hex(input, "implementation_commit", 40);
         String decision = token(input, "decision_id");
         String request = token(input, "request_id");
@@ -49,6 +50,7 @@ public final class Gate6LaunchContract {
             text.append("launch_source=gate6-bootstrap\n");
             text.append("pipeline_run_id=").append(run).append('\n');
             text.append("runtime_id=").append(runtimeId).append('\n');
+            text.append("runtime_registry_sha256=").append(runtimeRegistry).append('\n');
             text.append("source_commit=").append(source).append('\n');
             text.append("gate4_contract_sha256=").append(contract).append('\n');
             text.append("profile_sha256=").append(profile).append('\n');
@@ -82,6 +84,7 @@ public final class Gate6LaunchContract {
             if (!runtimeId.equals(p.getProperty("runtime_id"))) return false;
             if (RuntimeRegistry.get(runtimeId) == null) return false;
             token(p, "pipeline_run_id");
+            hex(p, "runtime_registry_sha256", 64);
             hex(p, "source_commit", 40);
             hex(p, "gate4_contract_sha256", 64);
             hex(p, "profile_sha256", 64);
