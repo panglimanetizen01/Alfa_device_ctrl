@@ -1,6 +1,7 @@
 package com.alfa.device_ctrl;
 
-import android.view.View;
+import android.os.Handler;
+import android.os.Looper;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,97 +14,68 @@ import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
 
-/** Owns one foreground-scoped terminal session and emits evidence for the exact G7 contract. */
+/** Owns one runtime session; the foreground service owns its process lifetime when the Activity stops. */
 public final class RuntimeSessionManager implements TerminalSessionClient {
-    public interface Listener {
-        void onState(String state);
-        void onTextChanged();
-        void onSessionFinished(int exitStatus);
-    }
-
+    public interface Listener { void onState(String state); void onTextChanged(); void onSessionFinished(int exitStatus); }
     private static final long COMMAND_TIMEOUT_MS = 30000L;
     private static final int MAX_COMMAND_OUTPUT_CHARS = 12000;
-
     private final InteractiveSessionContract contract;
-    private final Listener listener;
+    private volatile Listener listener;
     private TerminalSession session;
     private boolean promptReady;
 
-    public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) {
-        if (contract == null) throw new IllegalArgumentException("contract is required");
-        this.contract = contract;
-        this.listener = listener;
-    }
+    public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) { if (contract == null) throw new IllegalArgumentException("contract is required"); this.contract = contract; this.listener = listener; }
 
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
-        if (session != null && session.isRunning()) {
-            if (listener != null) listener.onState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT");
-            return promptReady;
-        }
-        if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) {
-            if (listener != null) listener.onState("BLOCKED");
+        if (session != null && session.isRunning()) { if (listener != null) listener.onState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
+        if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { if (listener != null) listener.onState("BLOCKED"); return false; }
+        promptReady = false;
+        session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
+        session.mSessionName = contract.sessionId(); session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
+        try {
+            RuntimeKeepAliveService.start(AlfaApplication.getInstance(), this);
+        } catch (RuntimeException error) {
+            session.finishIfRunning();
+            session = null;
+            promptReady = false;
+            if (listener != null) listener.onState("BLOCKED_FGS_START");
             return false;
         }
-        promptReady = false;
-        session = new TerminalSession(
-                contract.prootExecutable().getAbsolutePath(),
-                contract.hostCwd().getAbsolutePath(),
-                contract.prootArguments(),
-                contract.environment(),
-                2000,
-                this);
-        session.mSessionName = contract.sessionId();
-        session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
-        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid());
-        if (listener != null) listener.onState("PTY_CREATED");
-        return true;
+        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid()); if (listener != null) listener.onState("PTY_CREATED"); return true;
     }
 
-    public synchronized void attachTo(TerminalView view) {
-        if (view == null) throw new IllegalArgumentException("view is required");
-        if (session == null) throw new IllegalStateException("session is not started");
-        view.attachSession(session);
+    public synchronized void attachTo(TerminalView view) { if (view == null) throw new IllegalArgumentException("view is required"); if (session == null) throw new IllegalStateException("session is not started"); view.attachSession(session); }
+
+    public void stop() {
+        synchronized (this) { if (session == null || !session.isRunning()) return; }
+        if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { if (listener != null) listener.onState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
     }
 
-    public synchronized void stop() {
-        if (session != null) {
-            OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid());
-            session.finishIfRunning();
-        }
-        if (listener != null) listener.onState("STOPPING");
+    private void finishNow() {
+        synchronized (this) { if (session != null) { OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid()); session.finishIfRunning(); } if (listener != null) listener.onState("STOPPING"); }
+        RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this);
     }
 
-    public synchronized boolean isRunning() {
-        return session != null && session.isRunning();
+    void finishForKeepAliveStop() {
+        synchronized (this) { if (session != null && session.isRunning()) { OperationEvidence.write(contract, "STOPPING", "FOREGROUND_SERVICE_STOP", session.getPid()); session.finishIfRunning(); } }
     }
 
+    public synchronized boolean isRunning() { return session != null && session.isRunning(); }
     public synchronized TerminalSession currentSession() { return session; }
 
     @Override public void onTextChanged(TerminalSession changedSession) {
         synchronized (this) {
-            if (!promptReady && changedSession == session && changedSession.getEmulator() != null
-                    && changedSession.getEmulator().getScreen() != null) {
+            if (!promptReady && changedSession == session && changedSession.getEmulator() != null && changedSession.getEmulator().getScreen() != null) {
                 String transcript = changedSession.getEmulator().getScreen().getTranscriptText();
-                if (transcript.contains("alfa:ubuntu:") || transcript.matches("(?s).*([#$] )$")) {
-                    promptReady = true;
-                    OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid());
-                    if (listener != null) listener.onState("READY");
-                }
+                String runtimePrompt = "alfa:" + contract.runtimeId() + ":";
+                if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); if (listener != null) listener.onState("READY"); }
             }
         }
         if (listener != null) listener.onTextChanged();
     }
 
-    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) {
-        int status = finishedSession.getExitStatus();
-        if (session == finishedSession) {
-            OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid());
-            session = null;
-            promptReady = false;
-        }
-        if (listener != null) listener.onSessionFinished(status);
-    }
-
+    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } if (listener != null) listener.onSessionFinished(status); }
     @Override public void onTitleChanged(TerminalSession changedSession) { }
     @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
     @Override public void onPasteTextFromClipboard(TerminalSession session) { }
@@ -119,171 +91,49 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     public synchronized boolean isPromptReady() { return promptReady; }
 
     public interface CommandListener { void onResult(String output, int exitStatus); }
+    static final class CommandResult { final String output; final int exitStatus; final boolean timedOut; CommandResult(String output, int exitStatus, boolean timedOut) { this.output = output; this.exitStatus = exitStatus; this.timedOut = timedOut; } }
 
-    static final class CommandResult {
-        final String output;
-        final int exitStatus;
-        final boolean timedOut;
-
-        CommandResult(String output, int exitStatus, boolean timedOut) {
-            this.output = output;
-            this.exitStatus = exitStatus;
-            this.timedOut = timedOut;
-        }
-    }
-
-    private static String findExecutable(String... candidates) {
-        for (String candidate : candidates) {
-            File file = new File(candidate);
-            if (file.isFile() && file.canExecute()) return candidate;
-        }
-        return null;
-    }
-
-    private static String requireProcessGroupTool(String... candidates) {
-        String executable = findExecutable(candidates);
-        if (executable == null) throw new IllegalStateException("process-group-tool-unavailable");
-        return executable;
-    }
-
-    private static String shellQuote(String value) {
-        return "'" + value.replace("'", "'\\''") + "'";
-    }
+    private static String findExecutable(String... candidates) { for (String candidate : candidates) { File file = new File(candidate); if (file.isFile() && file.canExecute()) return candidate; } return null; }
+    private static String requireProcessGroupTool(String... candidates) { String executable = findExecutable(candidates); if (executable == null) throw new IllegalStateException("process-group-tool-unavailable"); return executable; }
+    private static String shellQuote(String value) { return "'" + value.replace("'", "'\\''") + "'"; }
 
     private static ProcessBuilder withProcessGroup(ProcessBuilder command, File pidFile) {
-        String setsid = requireProcessGroupTool("/system/bin/setsid", "/usr/bin/setsid", "/bin/setsid");
-        String shell = requireProcessGroupTool("/system/bin/sh", "/usr/bin/sh", "/bin/sh");
-        List<String> argv = new ArrayList<>();
-        argv.add(setsid);
-        argv.add(shell);
-        argv.add("-c");
-        argv.add("echo $$ > " + shellQuote(pidFile.getAbsolutePath()) + "; exec \"$@\"");
-        argv.add("alfa-process-group");
-        argv.addAll(command.command());
-        ProcessBuilder grouped = new ProcessBuilder(argv);
-        grouped.directory(command.directory());
-        grouped.environment().clear();
-        grouped.environment().putAll(command.environment());
-        grouped.redirectErrorStream(command.redirectErrorStream());
-        return grouped;
+        String setsid = requireProcessGroupTool("/system/bin/setsid", "/usr/bin/setsid", "/bin/setsid"); String shell = requireProcessGroupTool("/system/bin/sh", "/usr/bin/sh", "/bin/sh");
+        List<String> argv = new ArrayList<>(); argv.add(setsid); argv.add(shell); argv.add("-c"); argv.add("echo $$ > " + shellQuote(pidFile.getAbsolutePath()) + "; exec \"$@\""); argv.add("alfa-process-group"); argv.addAll(command.command());
+        ProcessBuilder grouped = new ProcessBuilder(argv); grouped.directory(command.directory()); grouped.environment().clear(); grouped.environment().putAll(command.environment()); grouped.redirectErrorStream(command.redirectErrorStream()); return grouped;
     }
 
-    private static long readProcessGroupId(File pidFile, long timeoutMs) throws Exception {
-        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
-        while (System.nanoTime() < deadline) {
-            if (pidFile.isFile()) {
-                String value = new String(java.nio.file.Files.readAllBytes(pidFile.toPath()), StandardCharsets.US_ASCII).trim();
-                try {
-                    long pid = Long.parseLong(value);
-                    if (pid > 0 && pid <= Integer.MAX_VALUE) return pid;
-                } catch (NumberFormatException ignored) { }
-            }
-            Thread.sleep(10);
-        }
-        throw new IllegalStateException("process-group-pid-unavailable");
-    }
-
-    private static void killProcessGroup(long pid) throws Exception {
-        if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid");
-        String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill");
-        Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid)
-                .redirectErrorStream(true)
-                .start();
-        if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly();
-        if (killer.exitValue() != 0) throw new IllegalStateException("process-group-kill-failed:" + killer.exitValue());
-    }
+    private static long readProcessGroupId(File pidFile, long timeoutMs) throws Exception { long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs); while (System.nanoTime() < deadline) { if (pidFile.isFile()) { String value = new String(java.nio.file.Files.readAllBytes(pidFile.toPath()), StandardCharsets.US_ASCII).trim(); try { long pid = Long.parseLong(value); if (pid > 0 && pid <= Integer.MAX_VALUE) return pid; } catch (NumberFormatException ignored) { } } Thread.sleep(10); } throw new IllegalStateException("process-group-pid-unavailable"); }
+    private static void killProcessGroup(long pid) throws Exception { if (pid <= 0 || pid > Integer.MAX_VALUE) throw new IllegalArgumentException("invalid-process-group-pid"); String kill = requireProcessGroupTool("/system/bin/kill", "/usr/bin/kill", "/bin/kill"); Process killer = new ProcessBuilder(kill, "-KILL", "--", "-" + pid).redirectErrorStream(true).start(); if (!killer.waitFor(2, TimeUnit.SECONDS)) killer.destroyForcibly(); if (killer.exitValue() != 0) throw new IllegalStateException("process-group-kill-failed:" + killer.exitValue()); }
 
     static CommandResult executeProcess(ProcessBuilder builder, long timeoutMs, int maxOutputChars) throws Exception {
-        File pidFile = File.createTempFile("alfa-process-group-", ".pid");
-        if (!pidFile.delete()) throw new IllegalStateException("process-group-pid-file-create-failed");
-        Process process = null;
+        File pidFile = File.createTempFile("alfa-process-group-", ".pid"); if (!pidFile.delete()) throw new IllegalStateException("process-group-pid-file-create-failed"); Process process = null;
         try {
-            ProcessBuilder groupedBuilder = withProcessGroup(builder, pidFile);
-            process = groupedBuilder.start();
-            long processGroupId = readProcessGroupId(pidFile, 2000);
-            StringBuilder text = new StringBuilder();
-            Process activeProcess = process;
-            Thread readerThread = new Thread(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(activeProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                    char[] buffer = new char[4096];
-                    int count;
-                    while ((count = reader.read(buffer)) != -1) {
-                        synchronized (text) {
-                            if (text.length() >= maxOutputChars) continue;
-                            int remaining = maxOutputChars - text.length();
-                            text.append(buffer, 0, Math.min(count, remaining));
-                        }
-                    }
-                } catch (Exception ignored) {
-                    // Process termination is reported by the owner thread.
-                }
-            }, "alfa-runtime-command-output");
-            readerThread.start();
-
-            boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
-            if (!finished) {
-                Exception cleanupFailure = null;
-                try {
-                    killProcessGroup(processGroupId);
-                } catch (Exception error) {
-                    cleanupFailure = error;
-                    process.destroyForcibly();
-                }
-                process.waitFor(2, TimeUnit.SECONDS);
-                readerThread.join(2000);
-                if (cleanupFailure != null) throw cleanupFailure;
-                return new CommandResult(text.toString().trim(), 124, true);
-            }
-
-            readerThread.join(2000);
-            return new CommandResult(text.toString().trim(), process.exitValue(), false);
-        } finally {
-            if (process != null && process.isAlive()) process.destroyForcibly();
-            if (pidFile.exists()) pidFile.delete();
-        }
+            ProcessBuilder groupedBuilder = withProcessGroup(builder, pidFile); process = groupedBuilder.start(); long processGroupId = readProcessGroupId(pidFile, 2000); StringBuilder text = new StringBuilder(); Process activeProcess = process;
+            Thread readerThread = new Thread(() -> { try (BufferedReader reader = new BufferedReader(new InputStreamReader(activeProcess.getInputStream(), StandardCharsets.UTF_8))) { char[] buffer = new char[4096]; int count; while ((count = reader.read(buffer)) != -1) synchronized (text) { if (text.length() >= maxOutputChars) continue; int remaining = maxOutputChars - text.length(); text.append(buffer, 0, Math.min(count, remaining)); } } catch (Exception ignored) { } }, "alfa-runtime-command-output");
+            readerThread.start(); boolean finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
+            if (!finished) { Exception cleanupFailure = null; try { killProcessGroup(processGroupId); } catch (Exception error) { cleanupFailure = error; process.destroyForcibly(); } process.waitFor(2, TimeUnit.SECONDS); readerThread.join(2000); if (cleanupFailure != null) throw cleanupFailure; return new CommandResult(text.toString().trim(), 124, true); }
+            readerThread.join(2000); return new CommandResult(text.toString().trim(), process.exitValue(), false);
+        } finally { if (process != null && process.isAlive()) process.destroyForcibly(); if (pidFile.exists()) pidFile.delete(); }
     }
 
     public void runRuntimeCommand(String command, CommandListener listener) {
-        if (command == null || command.trim().isEmpty()) {
-            if (listener != null) listener.onResult("invalid-command", 2);
-            return;
-        }
-        final String requested = command;
-        final InteractiveSessionContract activeContract;
-        synchronized (this) {
-            if (!promptReady || session == null || !session.isRunning() || !contract.isAuthorizedForInteractiveRuntime()) {
-                if (listener != null) listener.onResult("runtime-session-not-ready", 126);
-                return;
-            }
-            activeContract = contract;
-        }
+        if (command == null || command.trim().isEmpty()) { if (listener != null) listener.onResult("invalid-command", 2); return; }
+        final String requested = command; final InteractiveSessionContract activeContract;
+        synchronized (this) { if (!promptReady || session == null || !session.isRunning() || !contract.isAuthorizedForInteractiveRuntime()) { if (listener != null) listener.onResult("runtime-session-not-ready", 126); return; } activeContract = contract; }
         new Thread(() -> {
-            int status = 126;
-            String output;
+            int status = 126; String output;
             try {
+                String[] profileArgs = activeContract.prootArguments();
                 List<String> argv = new ArrayList<>();
-                argv.add(activeContract.prootExecutable().getAbsolutePath());
-                argv.add("-0"); argv.add("-r"); argv.add(activeContract.runtimeRoot().getAbsolutePath());
-                argv.add("-b"); argv.add("/dev"); argv.add("-b"); argv.add("/proc"); argv.add("-b"); argv.add("/sys");
-                argv.add("-w"); argv.add("/root");
-                argv.add("/usr/bin/env"); argv.add("-i");
-                argv.add("HOME=/root"); argv.add("PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
-                argv.add("TERM=xterm-256color"); argv.add("/bin/sh"); argv.add("-c"); argv.add(requested);
-                ProcessBuilder builder = new ProcessBuilder(argv);
-                builder.directory(activeContract.hostCwd());
-                builder.redirectErrorStream(true);
-                for (String entry : activeContract.environment()) {
-                    if (entry == null) continue;
-                    int separator = entry.indexOf('=');
-                    if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry");
-                    builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1));
-                }
-                CommandResult result = executeProcess(builder, COMMAND_TIMEOUT_MS, MAX_COMMAND_OUTPUT_CHARS);
-                status = result.exitStatus;
-                output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
-            } catch (Exception error) {
-                output = error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage());
-            }
+                for (String value : profileArgs) argv.add(value);
+                if (argv.size() < 2 || !"-i".equals(argv.get(argv.size() - 1))) throw new IllegalStateException("profile-proot-command-contract-invalid");
+                argv.set(argv.size() - 1, "-c"); argv.add(requested);
+                argv.add(0, activeContract.prootExecutable().getAbsolutePath());
+                ProcessBuilder builder = new ProcessBuilder(argv); builder.directory(activeContract.hostCwd()); builder.redirectErrorStream(true);
+                for (String entry : activeContract.environment()) { if (entry == null) continue; int separator = entry.indexOf('='); if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry"); builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1)); }
+                CommandResult result = executeProcess(builder, COMMAND_TIMEOUT_MS, MAX_COMMAND_OUTPUT_CHARS); status = result.exitStatus; output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
+            } catch (Exception error) { output = error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage()); }
             if (listener != null) listener.onResult(output, status);
         }, "alfa-runtime-command").start();
     }

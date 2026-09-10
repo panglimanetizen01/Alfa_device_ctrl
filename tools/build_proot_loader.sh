@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Build the pinned PRoot ARM64 external loader as a reproducible build input.
-# The generated ELF is intentionally not stored in Git; the build copies it into
-# app/src/main/jniLibs/arm64-v8a/libproot-loader.so before packaging the APK.
+# The generated ELF is intentionally not stored in Git; Gradle packages it from
+# app/build/generated/jniLibs/arm64-v8a/libproot-loader.so.
 set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 NDK_VERSION="28.0.13004108"
-OUT="$ROOT/app/src/main/jniLibs/arm64-v8a/libproot-loader.so"
+OUT="${PROOT_LOADER_OUT:-$ROOT/app/build/generated/jniLibs/arm64-v8a/libproot-loader.so}"
 WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
@@ -15,7 +15,7 @@ WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 NDK="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
 [ -d "$NDK" ] || { echo 'LOADER_STATUS=BLOCKED'; echo "LOADER_REASON=NDK_MISSING:$NDK_VERSION"; exit 20; }
 
-mkdir -p "$ROOT/.build" "$ROOT/app/src/main/jniLibs/arm64-v8a"
+mkdir -p "$ROOT/.build" "$(dirname "$OUT")"
 if [ ! -d "$WORK/.git" ]; then
   rm -rf "$WORK"
   git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"
@@ -23,12 +23,34 @@ fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"
 git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 
-TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-CC="$TOOLCHAIN/clang --target=aarch64-linux-android26"
+SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+case "$(uname -m)" in
+  aarch64|arm64)
+    CLANG="${ALFA_NATIVE_CLANG:-$(command -v clang)}"
+    STRIP="${ALFA_NATIVE_STRIP:-$(command -v llvm-strip)}"
+    [ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
+    [ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
+    CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    ;;
+  x86_64)
+    TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+    CC="$TOOLCHAIN/clang --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    STRIP="$TOOLCHAIN/llvm-strip"
+    ;;
+  *)
+    echo 'LOADER_STATUS=BLOCKED'
+    echo "LOADER_REASON=UNSUPPORTED_BUILD_HOST:$(uname -m)"
+    exit 20
+    ;;
+esac
+
+LOADER_LDFLAGS='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
+
 make -C "$WORK/src" \
   CC="$CC" \
   LD="$CC" \
-  STRIP="$TOOLCHAIN/llvm-strip" \
+  STRIP="$STRIP" \
+  LOADER_LDFLAGS="$LOADER_LDFLAGS" \
   loader/loader
 
 install -m 0755 "$WORK/src/loader/loader" "$OUT"
@@ -37,5 +59,6 @@ readelf -h "$OUT" | grep -E 'Class:|Machine:'
 printf 'LOADER_STATUS=PASS\n'
 printf 'PROOT_COMMIT=%s\n' "$PROOT_COMMIT"
 printf 'NDK_VERSION=%s\n' "$NDK_VERSION"
+printf 'BUILD_HOST=%s\n' "$(uname -m)"
 printf 'LOADER_SHA256=%s\n' "$(sha256sum "$OUT" | awk '{print $1}')"
 printf 'LOADER_PATH=%s\n' "$OUT"
