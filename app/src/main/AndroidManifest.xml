@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".AlfaApplication"
@@ -22,6 +25,15 @@
             android:name=".Gate6ImportActivity"
             android:exported="false"
             android:label="Alfa Runtime Provisioning" />
+
+        <service
+            android:name=".RuntimeKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="keep an explicitly user-started Alfa interactive Linux runtime PTY alive while the user backgrounds the app" />
+        </service>
 
         <activity
             android:name="com.alfa.device_ctrl.HostStorageDeviceProofActivity"
