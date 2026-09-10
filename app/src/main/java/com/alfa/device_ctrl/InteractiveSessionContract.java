@@ -176,7 +176,15 @@ public final class InteractiveSessionContract {
     public String[] environment() { return environment.clone(); }
 
     public String[] prootArguments() {
-        return new String[] { "-0", "-r", runtimeRoot.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "/bin/sh", "-i" };
+        RuntimeProfile profile = RuntimeRegistry.get(runtimeId);
+        if (profile == null) throw new IllegalStateException("unsupported-runtime-id");
+        String[] template = profile.prootArguments();
+        String[] resolved = new String[template.length];
+        for (int i = 0; i < template.length; i++) {
+            String value = template[i].replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell());
+            resolved[i] = value;
+        }
+        return resolved;
     }
 
     private static String requireToken(String value, String name) {
