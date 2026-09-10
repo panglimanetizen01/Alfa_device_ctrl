@@ -6,11 +6,11 @@
     {
       "runtime_id": "debian",
       "family": "Debian",
-      "version": "bookworm",
+      "version": "trixie",
       "architecture": "aarch64",
       "archive_format": "tar.gz",
-      "rootfs_uri": "https://github.com/debuerreotype/docker-debian-artifacts/raw/14d91d295c23da6cc04d4bfe8b3d74a8a6c54e5c/bookworm/oci/blobs/rootfs.tar.gz",
-      "rootfs_sha256": "c6cbf97176c58c741329cd787e932a1e47931b35f5dc0f23db3e6e82924fef0f",
+      "rootfs_uri": "https://github.com/debuerreotype/docker-debian-artifacts/raw/fb7215b47dab72bdbdd59204a7b7914311431d90/trixie/oci/blobs/rootfs.tar.gz",
+      "rootfs_sha256": "6b89e501e8efce0d3d87e3f6b0f85c417e799a3b36b8f44419609ba7fecf9563",
       "shell_path": "/bin/sh",
       "acceptance_status": "SUPPORTED",
       "acceptance_order": 1
