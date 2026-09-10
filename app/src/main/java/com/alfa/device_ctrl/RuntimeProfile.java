@@ -18,7 +18,7 @@ public final class RuntimeProfile {
     private final boolean rootfsGzip;
 
     public RuntimeProfile(String id,String displayName,String architecture,String rootfsUrl,String rootfsSha256,boolean rootfsGzip) {
-        this(id,displayName,"unknown",architecture,rootfsUrl,rootfsSha256,rootfsGzip?"tar.gz":"tar.xz","/bin/sh","unknown","alfa:<runtime-id>:<cwd>",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"});
+        this(id,displayName,"unknown",architecture,rootfsUrl,rootfsSha256,rootfsGzip,"tar.gz","/bin/sh","unknown","alfa:<runtime-id>:<cwd>",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"});
     }
 
     public RuntimeProfile(String id,String displayName,String version,String architecture,String rootfsUrl,String rootfsSha256,boolean rootfsGzip,String archiveFormat,String shell,String packageManager,String promptContract,String[] environment,String[] requiredPaths,String[] capabilities) {
