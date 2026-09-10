@@ -17,18 +17,18 @@ public final class AdaptiveRuntimeLayoutPolicy {
     private AdaptiveRuntimeLayoutPolicy() { }
 
     public static Layout resolve(int availableHeightDp, int runtimeCount) {
-        if (availableHeightDp <= 0) return new Layout(112, 80, 160);
+        if (availableHeightDp <= 0) return new Layout(112, 80, 140);
         int count = Math.max(1, runtimeCount);
         int gaps = 16;
         int usable = Math.max(0, availableHeightDp - gaps);
-        int terminalMin = availableHeightDp < 480 ? 160 : 220;
+        int terminalMin = availableHeightDp < 400 ? 140 : (availableHeightDp < 480 ? 160 : 220);
         int monitor;
         int runtime;
         if (usable >= 600) {
             runtime = 248;
             monitor = 158;
         } else {
-            monitor = clamp(Math.round(usable * 0.22f), 80, 158);
+            monitor = clamp(Math.round(usable * 0.22f), 72, 158);
             runtime = clamp(usable - monitor - terminalMin, 112, 248);
             int overflow = runtime + monitor + terminalMin - usable;
             if (overflow > 0) {
@@ -36,7 +36,7 @@ public final class AdaptiveRuntimeLayoutPolicy {
                 int reduceRuntime = Math.min(reducibleRuntime, overflow);
                 runtime -= reduceRuntime;
                 overflow -= reduceRuntime;
-                if (overflow > 0) monitor = Math.max(80, monitor - overflow);
+                if (overflow > 0) monitor = Math.max(72, monitor - overflow);
             }
         }
         if (count > 4) runtime = Math.max(runtime, 136);
