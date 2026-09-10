@@ -4,7 +4,7 @@
 set -u
 
 main() {
-    local ROOT RUN_ID RUNTIME_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT
+    local ROOT RUN_ID RUNTIME_ID DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT RUNTIME_REGISTRY_SHA
     local CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA DECISION_ID REQUEST_ID
     local AUTH_STATUS AUTH_DECISION_ID AUTH_REQUEST_ID AUTH_RUN AUTH_SOURCE AUTH_PROFILE AUTH_CONTRACT
     local STATUS REASON PROBE NOW MARKER_CONTENT MARKER_READ
@@ -22,6 +22,12 @@ main() {
     if ! chain_runtime_supported "$ROOT" "$RUNTIME_ID"; then
         printf '%s\n' 'GATE6_STATUS=BLOCKED'
         printf '%s\n' 'GATE6_REASON=unsupported-runtime-id'
+        return 1
+    fi
+    RUNTIME_REGISTRY_SHA=$(sha256sum "$ROOT/runtime/runtimes.v1.json" 2>/dev/null | awk '{print $1}')
+    if [ -z "$RUNTIME_REGISTRY_SHA" ] || ! printf '%s' "$RUNTIME_REGISTRY_SHA" | grep -Eq '^[0-9a-f]{64}$'; then
+        printf '%s\n' 'GATE6_STATUS=BLOCKED'
+        printf '%s\n' 'GATE6_REASON=runtime-registry-integrity-unavailable'
         return 1
     fi
 
@@ -77,7 +83,7 @@ main() {
         if ! mkdir -p "$STATE_DIR"; then
             STATUS=ERROR; PROBE=ERROR; REASON='bootstrap state directory creation failed'
         else
-            MARKER_CONTENT="pipeline_run_id=$RUN_ID|runtime_id=$RUNTIME_ID|source_commit=$SOURCE_COMMIT|profile_sha256=$PROFILE_SHA|gate4_contract_sha256=$CONTRACT_SHA|decision_id=$DECISION_ID|request_id=$REQUEST_ID"
+            MARKER_CONTENT="pipeline_run_id=$RUN_ID|runtime_id=$RUNTIME_ID|runtime_registry_sha256=$RUNTIME_REGISTRY_SHA|source_commit=$SOURCE_COMMIT|profile_sha256=$PROFILE_SHA|gate4_contract_sha256=$CONTRACT_SHA|decision_id=$DECISION_ID|request_id=$REQUEST_ID"
             if ! printf '%s\n' "$MARKER_CONTENT" > "$MARKER"; then
                 STATUS=ERROR; PROBE=ERROR; REASON='bootstrap marker write failed'
             elif ! MARKER_READ=$(cat "$MARKER" 2>/dev/null); then
@@ -108,6 +114,7 @@ main() {
         printf '%s\n' "gate_status=$STATUS"
         printf '%s\n' "pipeline_run_id=$RUN_ID"
         printf '%s\n' "runtime_id=$RUNTIME_ID"
+        printf '%s\n' "runtime_registry_sha256=$RUNTIME_REGISTRY_SHA"
         printf '%s\n' "source_commit=$SOURCE_COMMIT"
         printf '%s\n' "implementation_commit=$IMPLEMENTATION_COMMIT"
         printf '%s\n' "gate4_contract_sha256=$CONTRACT_SHA"
@@ -126,6 +133,7 @@ main() {
     printf '%s\n' '=== ALFA GATE 6 V1 BOOTSTRAP ==='
     printf '%s\n' "pipeline_run_id=$RUN_ID"
     printf '%s\n' "runtime_id=$RUNTIME_ID"
+    printf '%s\n' "runtime_registry_sha256=$RUNTIME_REGISTRY_SHA"
     printf '%s\n' "GATE6_STATUS=$STATUS"
     printf '%s\n' "GATE6_RESULT=$([ "$STATUS" = 'PASS' ] && printf '%s' 'BOOTSTRAP_PASS' || printf '%s' "$STATUS")"
     printf '%s\n' "bootstrap_status=$STATUS"
