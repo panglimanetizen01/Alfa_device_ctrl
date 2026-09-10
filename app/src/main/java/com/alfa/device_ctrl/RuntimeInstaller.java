@@ -27,10 +27,7 @@ import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 import org.tukaani.xz.XZInputStream;
 
-/**
- * Installs one verified ARM64 rootless runtime. PRoot is read-only packaged code
- * from ApplicationInfo.nativeLibraryDir; only the rootfs and evidence are writable.
- */
+/** Installs one verified ARM64 rootless runtime from the canonical runtime registry. */
 public final class RuntimeInstaller {
     public static final String SCHEMA_VERSION = "runtime-ready.v1";
     public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
@@ -45,12 +42,7 @@ public final class RuntimeInstaller {
         public final String runtimeId;
         public final String message;
         public final File runtimeDirectory;
-        private Result(boolean success, String runtimeId, String message, File runtimeDirectory) {
-            this.success = success;
-            this.runtimeId = runtimeId;
-            this.message = message;
-            this.runtimeDirectory = runtimeDirectory;
-        }
+        private Result(boolean success, String runtimeId, String message, File runtimeDirectory) { this.success = success; this.runtimeId = runtimeId; this.message = message; this.runtimeDirectory = runtimeDirectory; }
         public static Result ok(String id, File dir) { return new Result(true, id, "READY", dir); }
         public static Result fail(String id, String message, File dir) { return new Result(false, id, message, dir); }
     }
@@ -61,25 +53,19 @@ public final class RuntimeInstaller {
     private final File nativeLibraryDir;
     private final SmokeRunner smokeRunner;
 
-    public RuntimeInstaller(File vault, Progress progress) {
-        this(vault, progress, null, null, RuntimeInstaller::runRuntimeSmokeTest);
-    }
-
-    public RuntimeInstaller(File vault, Progress progress, File packagedEngine, File nativeLibraryDir) {
-        this(vault, progress, packagedEngine, nativeLibraryDir, RuntimeInstaller::runRuntimeSmokeTest);
-    }
-
+    public RuntimeInstaller(File vault, Progress progress) { this(vault, progress, null, null, RuntimeInstaller::runRuntimeSmokeTest); }
+    public RuntimeInstaller(File vault, Progress progress, File packagedEngine, File nativeLibraryDir) { this(vault, progress, packagedEngine, nativeLibraryDir, RuntimeInstaller::runRuntimeSmokeTest); }
     RuntimeInstaller(File vault, Progress progress, File packagedEngine, File nativeLibraryDir, SmokeRunner smokeRunner) {
         if (vault == null || vault.getAbsolutePath().startsWith("/home/userland")) throw new IllegalArgumentException("vault is outside Alfa boundary");
-        this.vault = vault;
-        this.progress = progress;
-        this.packagedEngine = packagedEngine;
-        this.nativeLibraryDir = nativeLibraryDir;
+        this.vault = vault; this.progress = progress; this.packagedEngine = packagedEngine; this.nativeLibraryDir = nativeLibraryDir;
         this.smokeRunner = smokeRunner == null ? RuntimeInstaller::runRuntimeSmokeTest : smokeRunner;
     }
 
     public Result install(String runtimeId, URL ignoredEngineUrl, String engineSha256, URL archiveUrl, String archiveSha256, boolean gzip) {
+        RuntimeProfile profile = RuntimeRegistry.get(runtimeId);
+        if (profile == null) return Result.fail(runtimeId, "unsupported-runtime-id", null);
         if (!validToken(runtimeId) || archiveUrl == null || !validSha(engineSha256) || !validSha(archiveSha256)) return Result.fail(runtimeId, "invalid-install-request", null);
+        if (!profile.rootfsUrl().equals(archiveUrl.toString()) || !profile.rootfsSha256().equalsIgnoreCase(archiveSha256) || profile.rootfsGzip() != gzip) return Result.fail(runtimeId, "runtime-artifact-does-not-match-registry", null);
         File runtime = new File(vault, "runtimes/" + runtimeId);
         File staging = new File(vault, ".staging/" + runtimeId + "." + UUID.randomUUID());
         File stagedRoot = new File(staging, "rootfs");
@@ -111,8 +97,7 @@ public final class RuntimeInstaller {
             report("INSTALL_COMMITTED");
             return Result.ok(runtimeId, runtime);
         } catch (Exception error) {
-            report("INSTALL_FAILED " + error.getClass().getSimpleName());
-            deleteRecursively(staging);
+            report("INSTALL_FAILED " + error.getClass().getSimpleName()); deleteRecursively(staging);
             return Result.fail(runtimeId, error.getClass().getSimpleName() + ":" + String.valueOf(error.getMessage()), runtime);
         }
     }
@@ -120,9 +105,7 @@ public final class RuntimeInstaller {
     private void validatePackagedEngine(File engine, File libraryDir) throws Exception {
         if (!engine.isFile()) throw new IOException("runtime-engine-missing");
         if (!engine.getName().equals("libproot.so")) throw new IOException("runtime-engine-name-invalid");
-        File canonicalEngine = engine.getCanonicalFile();
-        File canonicalDir = libraryDir.getCanonicalFile();
-        File parent = canonicalEngine.getParentFile();
+        File canonicalEngine = engine.getCanonicalFile(); File canonicalDir = libraryDir.getCanonicalFile(); File parent = canonicalEngine.getParentFile();
         if (parent == null || !canonicalDir.equals(parent)) throw new IOException("runtime-engine-not-nativeLibraryDir");
         if (!canonicalEngine.canExecute()) throw new IOException("runtime-engine-not-executable");
         if (!isArm64Elf(canonicalEngine)) throw new IOException("runtime-engine-not-arm64-elf");
@@ -132,8 +115,7 @@ public final class RuntimeInstaller {
     }
 
     private void validatePackagedLoader(File engine, File libraryDir) throws Exception {
-        File canonicalDir = libraryDir.getCanonicalFile();
-        File loader = new File(canonicalDir, "libproot-loader.so").getCanonicalFile();
+        File canonicalDir = libraryDir.getCanonicalFile(); File loader = new File(canonicalDir, "libproot-loader.so").getCanonicalFile();
         if (!loader.isFile()) throw new IOException("runtime-loader-missing");
         if (!loader.canExecute()) throw new IOException("runtime-loader-not-executable");
         if (!isArm64Elf(loader)) throw new IOException("runtime-loader-not-arm64-elf");
@@ -146,11 +128,7 @@ public final class RuntimeInstaller {
         byte[] header = new byte[20];
         try (InputStream input = new FileInputStream(engine)) {
             int offset = 0;
-            while (offset < header.length) {
-                int count = input.read(header, offset, header.length - offset);
-                if (count < 0) break;
-                offset += count;
-            }
+            while (offset < header.length) { int count = input.read(header, offset, header.length - offset); if (count < 0) break; offset += count; }
             return offset >= 20 && (header[0] & 0xff) == 0x7f && header[1] == 'E' && header[2] == 'L' && header[3] == 'F' && (header[4] & 0xff) == 2 && (header[5] & 0xff) == 1 && (header[18] & 0xff) == 0xb7 && (header[19] & 0xff) == 0x00;
         }
     }
@@ -158,157 +136,71 @@ public final class RuntimeInstaller {
     private void publishAtomically(File target, File staging, String runtimeId, File engine, String engineSha256, String archiveSha256) throws Exception {
         File parent = target.getParentFile();
         if (parent == null || (!parent.exists() && !parent.mkdirs())) throw new IOException("runtime-parent-missing");
-        File previous = new File(parent, target.getName() + ".previous");
-        deleteRecursively(previous);
+        File previous = new File(parent, target.getName() + ".previous"); deleteRecursively(previous);
         if (target.exists()) moveDirectory(target.toPath(), previous.toPath());
         try {
-            moveDirectory(staging.toPath(), target.toPath());
-            File finalRoot = new File(target, "rootfs");
+            moveDirectory(staging.toPath(), target.toPath()); File finalRoot = new File(target, "rootfs");
             writeReadyEvidence(target, runtimeId, engine, finalRoot, engineSha256, archiveSha256);
             if (!RuntimeEvidence.verify(new File(target, "READY.evidence"), runtimeId, engine, finalRoot)) throw new IOException("ready-evidence-verification-failed");
             deleteRecursively(previous);
         } catch (Exception publishFailure) {
-            deleteRecursively(target);
-            if (previous.exists()) moveDirectory(previous.toPath(), target.toPath());
-            throw publishFailure;
+            deleteRecursively(target); if (previous.exists()) moveDirectory(previous.toPath(), target.toPath()); throw publishFailure;
         }
     }
 
     private void downloadVerified(URL url, File destination, String expectedSha256) throws Exception {
-        File temp = new File(destination.getParentFile(), destination.getName() + ".part");
-        deleteRecursively(temp);
-        URLConnection connection = url.openConnection();
-        connection.setConnectTimeout(30000);
-        connection.setReadTimeout(120000);
-        if (connection instanceof HttpURLConnection) {
-            int code = ((HttpURLConnection) connection).getResponseCode();
-            if (code != HttpURLConnection.HTTP_OK) throw new IOException("HTTP-" + code);
-        }
+        File temp = new File(destination.getParentFile(), destination.getName() + ".part"); deleteRecursively(temp);
+        URLConnection connection = url.openConnection(); connection.setConnectTimeout(30000); connection.setReadTimeout(120000);
+        if (connection instanceof HttpURLConnection) { int code = ((HttpURLConnection) connection).getResponseCode(); if (code != HttpURLConnection.HTTP_OK) throw new IOException("HTTP-" + code); }
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         try (InputStream input = new BufferedInputStream(connection.getInputStream()); OutputStream output = new BufferedOutputStream(new FileOutputStream(temp))) {
-            byte[] buffer = new byte[65536];
-            int count;
-            while ((count = input.read(buffer)) != -1) { output.write(buffer, 0, count); digest.update(buffer, 0, count); }
+            byte[] buffer = new byte[65536]; int count; while ((count = input.read(buffer)) != -1) { output.write(buffer, 0, count); digest.update(buffer, 0, count); }
         }
-        String actual = hex(digest.digest());
-        if (!expectedSha256.equalsIgnoreCase(actual)) { deleteRecursively(temp); throw new IOException("checksum-mismatch expected=" + expectedSha256 + " actual=" + actual); }
+        String actual = hex(digest.digest()); if (!expectedSha256.equalsIgnoreCase(actual)) { deleteRecursively(temp); throw new IOException("checksum-mismatch expected=" + expectedSha256 + " actual=" + actual); }
         moveFile(temp.toPath(), destination.toPath());
     }
 
     private void extractTar(File archive, File root, boolean gzip) throws Exception {
         try (InputStream raw = new BufferedInputStream(new FileInputStream(archive)); InputStream input = gzip ? new GZIPInputStream(raw) : new XZInputStream(raw)) {
-            List<HardLink> pendingHardLinks = new ArrayList<>();
-            byte[] header = new byte[TAR_BLOCK];
+            List<HardLink> pendingHardLinks = new ArrayList<>(); byte[] header = new byte[TAR_BLOCK];
             while (true) {
-                int count = readFull(input, header);
-                if (count == 0) break;
-                if (count != TAR_BLOCK) throw new EOFException("truncated-tar-header");
-                if (isZeroBlock(header)) break;
-                String name = field(header, 0, 100);
-                long size = octal(header, 124, 12);
-                int type = header[156] & 0xff;
-                String link = field(header, 157, 100);
-                Path target = safeEntry(root.toPath(), name);
-                if (type == '5') {
-                    Files.createDirectories(target);
-                } else if (type == '2' || type == '1') {
-                    Path linkTarget = type == '1' ? safeHardLink(root.toPath(), link) : safeLink(root.toPath(), target, link);
-                    Files.createDirectories(target.getParent());
-                    if (type == '2') { try { Files.createSymbolicLink(target, Paths.get(link)); } catch (FileAlreadyExistsException ignored) { } }
-                    else pendingHardLinks.add(new HardLink(target, linkTarget));
-                    skipExact(input, size);
-                } else if (type == 0 || type == '0') {
-                    Files.createDirectories(target.getParent());
-                    try (OutputStream output = new BufferedOutputStream(new FileOutputStream(target.toFile()))) { copyExact(input, output, size); }
-                    applyMode(target.toFile(), header);
-                } else skipExact(input, size);
-                long padding = (TAR_BLOCK - (size % TAR_BLOCK)) % TAR_BLOCK;
-                skipExact(input, padding);
+                int count = readFull(input, header); if (count == 0) break; if (count != TAR_BLOCK) throw new EOFException("truncated-tar-header"); if (isZeroBlock(header)) break;
+                String name = field(header, 0, 100); long size = octal(header, 124, 12); int type = header[156] & 0xff; String link = field(header, 157, 100); Path target = safeEntry(root.toPath(), name);
+                if (type == '5') Files.createDirectories(target);
+                else if (type == '2' || type == '1') {
+                    Path linkTarget = type == '1' ? safeHardLink(root.toPath(), link) : safeLink(root.toPath(), target, link); Files.createDirectories(target.getParent());
+                    if (type == '2') { try { Files.createSymbolicLink(target, Paths.get(link)); } catch (FileAlreadyExistsException ignored) { } } else pendingHardLinks.add(new HardLink(target, linkTarget)); skipExact(input, size);
+                } else if (type == 0 || type == '0') { Files.createDirectories(target.getParent()); try (OutputStream output = new BufferedOutputStream(new FileOutputStream(target.toFile()))) { copyExact(input, output, size); } applyMode(target.toFile(), header); }
+                else skipExact(input, size);
+                long padding = (TAR_BLOCK - (size % TAR_BLOCK)) % TAR_BLOCK; skipExact(input, padding);
             }
             for (HardLink hardLink : pendingHardLinks) materializeHardLink(hardLink);
         }
     }
 
     private void materializeHardLink(HardLink hardLink) throws IOException {
-        if (!Files.exists(hardLink.target, LinkOption.NOFOLLOW_LINKS)) throw new IOException("hardlink-target-missing");
-        Files.createDirectories(hardLink.entry.getParent());
+        if (!Files.exists(hardLink.target, LinkOption.NOFOLLOW_LINKS)) throw new IOException("hardlink-target-missing"); Files.createDirectories(hardLink.entry.getParent());
         try { Files.createLink(hardLink.entry, hardLink.target); } catch (UnsupportedOperationException | IOException linkFailure) { Files.copy(hardLink.target, hardLink.entry, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES); }
     }
-
     private static final class HardLink { final Path entry; final Path target; HardLink(Path entry, Path target) { this.entry = entry; this.target = target; } }
-
-    private void validateRootfs(File root) throws IOException {
-        if (!root.isDirectory()) throw new IOException("rootfs-missing");
-        String[] required = {"bin", "etc", "usr", "usr/bin/env"};
-        for (String entry : required) if (!new File(root, entry).exists()) throw new IOException("rootfs-missing-" + entry);
-        if (!new File(root, "bin/sh").exists()) throw new IOException("rootfs-shell-missing");
-    }
-
-    private void writeResolver(File root) throws IOException {
-        File resolver = new File(root, "etc/resolv.conf");
-        if (resolver.exists() && !resolver.delete()) throw new IOException("resolver-replace-failed");
-        File parent = resolver.getParentFile();
-        if (parent == null || !parent.exists() && !parent.mkdirs()) throw new IOException("resolver-parent-missing");
-        try (FileOutputStream output = new FileOutputStream(resolver)) { output.write("# Alfa runtime default; network capability remains evidence-dependent.\nnameserver 1.1.1.1\nnameserver 8.8.8.8\n".getBytes(StandardCharsets.UTF_8)); }
-    }
+    private void validateRootfs(File root) throws IOException { if (!root.isDirectory()) throw new IOException("rootfs-missing"); String[] required = {"bin", "etc", "usr", "usr/bin/env"}; for (String entry : required) if (!new File(root, entry).exists()) throw new IOException("rootfs-missing-" + entry); if (!new File(root, "bin/sh").exists()) throw new IOException("rootfs-shell-missing"); }
+    private void writeResolver(File root) throws IOException { File resolver = new File(root, "etc/resolv.conf"); if (resolver.exists() && !resolver.delete()) throw new IOException("resolver-replace-failed"); File parent = resolver.getParentFile(); if (parent == null || !parent.exists() && !parent.mkdirs()) throw new IOException("resolver-parent-missing"); try (FileOutputStream output = new FileOutputStream(resolver)) { output.write("# Alfa runtime default; network capability remains evidence-dependent.\nnameserver 1.1.1.1\nnameserver 8.8.8.8\n".getBytes(StandardCharsets.UTF_8)); } }
 
     private static String runRuntimeSmokeTest(File engine, File root) {
         Process process = null;
         try {
-            if (!engine.isFile()) return "runtime-smoke-engine-missing";
-            if (!engine.canExecute()) return "runtime-smoke-engine-not-executable";
-            if (!root.isDirectory()) return "runtime-smoke-rootfs-missing";
-            File prootTmp = new File(root.getParentFile(), "proot_tmp");
-            File canonicalProotTmp = prootTmp.getCanonicalFile();
-            if (!canonicalProotTmp.isDirectory()) return "runtime-smoke-proot-tmp-missing";
-            if (!canonicalProotTmp.canWrite()) return "runtime-smoke-proot-tmp-not-writable";
-            if (!canonicalProotTmp.canExecute()) return "runtime-smoke-proot-tmp-not-executable";
-            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();
-            if (!loader.isFile()) return "runtime-smoke-loader-missing";
-            if (!loader.canExecute()) return "runtime-smoke-loader-not-executable";
-            if (!isArm64Elf(loader)) return "runtime-smoke-loader-not-arm64-elf";
-            if (!RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader))) return "runtime-smoke-loader-checksum-mismatch";
-
+            if (!engine.isFile()) return "runtime-smoke-engine-missing"; if (!engine.canExecute()) return "runtime-smoke-engine-not-executable"; if (!root.isDirectory()) return "runtime-smoke-rootfs-missing";
+            File prootTmp = new File(root.getParentFile(), "proot_tmp"); File canonicalProotTmp = prootTmp.getCanonicalFile(); if (!canonicalProotTmp.isDirectory()) return "runtime-smoke-proot-tmp-missing"; if (!canonicalProotTmp.canWrite()) return "runtime-smoke-proot-tmp-not-writable"; if (!canonicalProotTmp.canExecute()) return "runtime-smoke-proot-tmp-not-executable";
+            File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile(); if (!loader.isFile()) return "runtime-smoke-loader-missing"; if (!loader.canExecute()) return "runtime-smoke-loader-not-executable"; if (!isArm64Elf(loader)) return "runtime-smoke-loader-not-arm64-elf"; if (!RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader))) return "runtime-smoke-loader-checksum-mismatch";
             ProcessBuilder builder = new ProcessBuilder(engine.getAbsolutePath(), "-0", "-r", root.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "PROOT_TMP_DIR=" + canonicalProotTmp.getAbsolutePath(), "/bin/sh", "-c", "printf ALFA_RUNTIME_SMOKE_OK; id -u; pwd");
-            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());
-            builder.environment().put("PROOT_LOADER", loader.getAbsolutePath());
-            builder.directory(root.getParentFile());
-            builder.redirectErrorStream(true);
-            process = builder.start();
+            builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath()); builder.environment().put("PROOT_LOADER", loader.getAbsolutePath()); builder.directory(root.getParentFile()); builder.redirectErrorStream(true); process = builder.start();
             if (!process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)) { process.destroyForcibly(); return "runtime-smoke-timeout"; }
-            String output;
-            try (InputStream input = process.getInputStream()) {
-                byte[] buffer = new byte[4096];
-                StringBuilder text = new StringBuilder();
-                int count;
-                while ((count = input.read(buffer)) != -1) text.append(new String(buffer, 0, count, StandardCharsets.UTF_8));
-                output = text.toString();
-            }
-            if (process.exitValue() != 0) return "runtime-smoke-exit-" + process.exitValue() + ":" + compact(output);
-            if (!output.contains("ALFA_RUNTIME_SMOKE_OK")) return "runtime-smoke-marker-missing:" + compact(output);
-            if (!output.matches("(?s).*\\n0\\n/.*")) return "runtime-smoke-contract-mismatch:" + compact(output);
-            return null;
+            String output; try (InputStream input = process.getInputStream()) { byte[] buffer = new byte[4096]; StringBuilder text = new StringBuilder(); int count; while ((count = input.read(buffer)) != -1) text.append(new String(buffer, 0, count, StandardCharsets.UTF_8)); output = text.toString(); }
+            if (process.exitValue() != 0) return "runtime-smoke-exit-" + process.exitValue() + ":" + compact(output); if (!output.contains("ALFA_RUNTIME_SMOKE_OK")) return "runtime-smoke-marker-missing:" + compact(output); if (!output.matches("(?s).*\\n0\\n/.*")) return "runtime-smoke-contract-mismatch:" + compact(output); return null;
         } catch (Exception error) { if (process != null) process.destroyForcibly(); return "runtime-smoke-exec-" + error.getClass().getSimpleName() + ":" + compact(error.getMessage()); }
     }
-
     private static String compact(String value) { if (value == null) return ""; String normalized = value.replace('\n', ' ').replace('\r', ' ').trim(); return normalized.length() > 240 ? normalized.substring(0, 240) : normalized; }
-
-    private void writeReadyEvidence(File staging, String runtimeId, File engine, File root, String engineSha256, String archiveSha256) throws Exception {
-        Properties properties = new Properties();
-        properties.setProperty("schema_version", SCHEMA_VERSION);
-        properties.setProperty("status", "READY");
-        properties.setProperty("runtime_id", runtimeId);
-        properties.setProperty("engine_path", engine.getCanonicalPath());
-        properties.setProperty("engine_source", "ApplicationInfo.nativeLibraryDir");
-        properties.setProperty("engine_abi", "arm64-v8a");
-        properties.setProperty("rootfs_path", root.getCanonicalPath());
-        properties.setProperty("engine_sha256", engineSha256.toLowerCase());
-        properties.setProperty("archive_sha256", archiveSha256.toLowerCase());
-        properties.setProperty("smoke_contract", "ALFA_RUNTIME_SMOKE_OK;uid=0;rootfs-pwd");
-        properties.setProperty("created_at_epoch_ms", Long.toString(System.currentTimeMillis()));
-        try (FileOutputStream output = new FileOutputStream(new File(staging, "READY.evidence"))) { properties.store(output, "Alfa Device Ctrl runtime-ready.v1"); }
-    }
-
+    private void writeReadyEvidence(File staging, String runtimeId, File engine, File root, String engineSha256, String archiveSha256) throws Exception { Properties properties = new Properties(); properties.setProperty("schema_version", SCHEMA_VERSION); properties.setProperty("status", "READY"); properties.setProperty("runtime_id", runtimeId); properties.setProperty("engine_path", engine.getCanonicalPath()); properties.setProperty("engine_source", "ApplicationInfo.nativeLibraryDir"); properties.setProperty("engine_abi", "arm64-v8a"); properties.setProperty("rootfs_path", root.getCanonicalPath()); properties.setProperty("engine_sha256", engineSha256.toLowerCase()); properties.setProperty("archive_sha256", archiveSha256.toLowerCase()); properties.setProperty("smoke_contract", "ALFA_RUNTIME_SMOKE_OK;uid=0;rootfs-pwd"); properties.setProperty("created_at_epoch_ms", Long.toString(System.currentTimeMillis())); try (FileOutputStream output = new FileOutputStream(new File(staging, "READY.evidence"))) { properties.store(output, "Alfa Device Ctrl runtime-ready.v1"); } }
     private Path safeEntry(Path root, String name) throws IOException { if (name == null || name.isEmpty() || name.startsWith("/") || name.indexOf('\0') >= 0) throw new IOException("unsafe-archive-path"); Path resolved = root.resolve(name).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("archive-traversal"); return resolved; }
     private Path safeHardLink(Path root, String link) throws IOException { if (link == null || link.isEmpty() || link.startsWith("/") || link.indexOf('\0') >= 0) throw new IOException("unsafe-hardlink"); Path resolved = root.resolve(link).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("hardlink-traversal"); return resolved; }
     private Path safeLink(Path root, Path entry, String link) throws IOException { if (link == null || link.isEmpty() || link.indexOf('\0') >= 0) throw new IOException("unsafe-link"); Path resolved = link.startsWith("/") ? root.resolve(link.substring(1)).normalize() : entry.getParent().resolve(link).normalize(); if (!resolved.startsWith(root.normalize())) throw new IOException("link-traversal"); return resolved; }
