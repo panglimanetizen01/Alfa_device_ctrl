@@ -26,7 +26,7 @@ public final class ExecutionLaneIsolationContractTest {
     @Test
     public void mainActivityDoesNotOwnExternalBridgeExecution() throws Exception {
         File source = new File("src/main/java/com/alfa/device_ctrl/MainActivity.java");
-        String text = Files.readString(source.toPath(), StandardCharsets.UTF_8);
+        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         assertFalse(text.contains("com.termux.api"));
         assertFalse(text.contains("rikka.shizuku"));
         assertFalse(text.contains("Shizuku"));
