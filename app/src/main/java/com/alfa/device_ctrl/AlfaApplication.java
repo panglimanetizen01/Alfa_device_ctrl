@@ -41,21 +41,20 @@ public final class AlfaApplication extends Application {
     /**
      * Android 15+ lays out target-SDK-35 apps edge-to-edge. Keep the existing native Views
      * hierarchy intact, but reserve system-bar insets for interactive/content roots so top and
-     * bottom controls cannot be obscured. The listener preserves each activity's pre-existing
-     * content padding and only adds the current system-bar insets.
+     * bottom controls cannot be obscured. The listener preserves the activity's original
+     * content padding rather than accumulating padding across repeated inset dispatches.
      */
     private static void installWindowInsetsPolicy(Activity activity) {
+        View content = activity.findViewById(android.R.id.content);
+        if (!(content instanceof FrameLayout)) return;
+        final int baseLeft = content.getPaddingLeft();
+        final int baseTop = content.getPaddingTop();
+        final int baseRight = content.getPaddingRight();
+        final int baseBottom = content.getPaddingBottom();
         activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> {
-            View content = activity.findViewById(android.R.id.content);
-            if (content instanceof FrameLayout) {
-                final int baseLeft = content.getPaddingLeft();
-                final int baseTop = content.getPaddingTop();
-                final int baseRight = content.getPaddingRight();
-                final int baseBottom = content.getPaddingBottom();
-                final int top = insets.getSystemWindowInsetTop();
-                final int bottom = insets.getSystemWindowInsetBottom();
-                content.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom);
-            }
+            final int top = insets.getSystemWindowInsetTop();
+            final int bottom = insets.getSystemWindowInsetBottom();
+            content.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom);
             return insets;
         });
         activity.getWindow().getDecorView().requestApplyInsets();
