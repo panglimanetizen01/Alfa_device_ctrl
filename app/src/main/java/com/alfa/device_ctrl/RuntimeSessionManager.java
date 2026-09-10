@@ -31,6 +31,14 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         if (current != null) current.onState(SessionUiState.resolve(event).name());
     }
 
+    /** Rebinds the presentation listener without replacing the live runtime session. */
+    public synchronized boolean rebindListener(Listener newListener) {
+        listener = newListener;
+        if (session == null || !session.isRunning()) return false;
+        notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT");
+        return true;
+    }
+
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
         if (session != null && session.isRunning()) { notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
         if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { notifyState("BLOCKED"); return false; }
@@ -77,10 +85,11 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); notifyState("READY"); }
             }
         }
-        if (listener != null) listener.onTextChanged();
+        Listener current = listener;
+        if (current != null) current.onTextChanged();
     }
 
-    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } if (listener != null) listener.onSessionFinished(status); }
+    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } Listener current = listener; if (current != null) current.onSessionFinished(status); }
     @Override public void onTitleChanged(TerminalSession changedSession) { }
     @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
     @Override public void onPasteTextFromClipboard(TerminalSession session) { }
