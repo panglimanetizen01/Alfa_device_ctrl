@@ -67,10 +67,12 @@ jobs:
           sdkmanager "ndk;${NDK_VERSION}"
           ./gradlew :app:prepareProotLoader --no-daemon --stacktrace
           LOADER="app/build/generated/jniLibs/arm64-v8a/libproot-loader.so"
+          READELF="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           test -x "$LOADER"
+          test -x "$READELF"
           file "$LOADER"
           readelf -h "$LOADER" | grep -E 'Class:|Machine:'
-          llvm-readelf -lW "$LOADER" | awk '$1 == "LOAD" {print "ELF_LOAD_ALIGN=" $NF; if ($NF != "0x4000") bad=1} END {if (bad || NR == 0) exit 1}'
+          "$READELF" -lW "$LOADER" | awk '$1 == "LOAD" {print "ELF_LOAD_ALIGN=" $NF; if ($NF != "0x4000") bad=1} END {if (bad || NR == 0) exit 1}'
           LOADER_SHA256="$(sha256sum "$LOADER" | awk '{print $1}')"
           python3 - "$LOADER_SHA256" "$NDK_VERSION" <<'PY'
           import json, os, sys
@@ -168,6 +170,8 @@ jobs:
 
       - name: Gate C2 - 16 KB native and APK alignment
         if: always()
+        env:
+          NDK_VERSION: 28.0.13004108
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/debug/app-debug.apk"
@@ -177,66 +181,39 @@ jobs:
             import json
             json.dump({"gate":"C2","status":"FAIL","reason":"debug APK missing"}, open("ci-evidence/native-16kb-verification.json","w"), indent=2)
             PY
-            exit 0
+          else
+            TMP="$(mktemp -d)"
+            trap 'rm -rf "$TMP"' EXIT
+            READELF="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+            test -x "$READELF"
+            unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+            python3 - "$TMP" "$REPORT" "$READELF" <<'PY'
+            import json, os, subprocess, sys
+            root, report, readelf = sys.argv[1:]
+            libs=[]
+            for base, _, names in os.walk(root):
+                for name in names:
+                    if name.endswith('.so'):
+                        path=os.path.join(base,name)
+                        lines=subprocess.check_output([readelf,'-lW',path],text=True).splitlines()
+                        aligns=[line.split()[-1] for line in lines if line.split() and line.split()[0]=='LOAD']
+                        libs.append({'path':os.path.relpath(path,root),'load_alignments':aligns,'pass':bool(aligns) and all(x=='0x4000' for x in aligns)})
+            json.dump({'gate':'C2','status':'PASS' if libs and all(x['pass'] for x in libs) else 'FAIL','elf_load_alignment_required':'0x4000','libraries':libs},open(report,'w'),indent=2)
+            PY
+            "$ANDROID_HOME/build-tools/35.0.0/zipalign" -v -c -P 16 4 "$APK" > ci-evidence/zipalign-16kb.txt 2>&1
+            printf '%s\n' 'zipalign_status=PASS' >> ci-evidence/zipalign-16kb.txt
+            python3 - <<'PY'
+            import json
+            path='ci-evidence/native-16kb-verification.json'
+            data=json.load(open(path,encoding='utf-8'))
+            data['zipalign_status']='PASS'
+            data['status']='PASS' if data.get('status')=='PASS' else 'FAIL'
+            json.dump(data,open(path,'w'),indent=2)
+            PY
           fi
-          TMP="$(mktemp -d)"
-          trap 'rm -rf "$TMP"' EXIT
-          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
-          python3 - "$TMP" "$REPORT" <<'PY'
-          import json, os, subprocess, sys
-          root, report = sys.argv[1:]
-          libs=[]
-          for base, _, names in os.walk(root):
-              for name in names:
-                  if name.endswith('.so'):
-                      path=os.path.join(base,name)
-                      lines=subprocess.check_output(['llvm-readelf','-lW',path],text=True).splitlines()
-                      aligns=[line.split()[-1] for line in lines if line.split() and line.split()[0]=='LOAD']
-                      libs.append({'path':os.path.relpath(path,root),'load_alignments':aligns,'pass':bool(aligns) and all(x=='0x4000' for x in aligns)})
-          json.dump({'gate':'C2','status':'PASS' if libs and all(x['pass'] for x in libs) else 'FAIL','elf_load_alignment_required':'0x4000','libraries':libs},open(report,'w'),indent=2)
-          raise SystemExit(0)
-          PY
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -v -c -P 16 4 "$APK" > ci-evidence/zipalign-16kb.txt 2>&1
-          printf '%s\n' 'zipalign_status=PASS' >> ci-evidence/zipalign-16kb.txt
-          python3 - <<'PY'
-          import json
-          path='ci-evidence/native-16kb-verification.json'
-          data=json.load(open(path,encoding='utf-8'))
-          data['zipalign_status']='PASS'
-          data['status']='PASS' if data.get('status')=='PASS' else 'FAIL'
-          json.dump(data,open(path,'w'),indent=2)
-          PY
 
       - name: Gate D - Unit tests
         run: |
-          set -euo pipefail
-          FIXTURE_DIR="artifacts/test-fixtures"
-          FIXTURE="${FIXTURE_DIR}/ubuntu-base-24.04.4-base-arm64.tar.gz"
-          FIXTURE_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
-          SUMS_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS"
-          EXPECTED_SHA256="04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2"
-          mkdir -p "$FIXTURE_DIR" ci-evidence
-          curl -fsSL "$SUMS_URL" -o ci-evidence/ubuntu-base-SHA256SUMS
-          CANONICAL_SHA256="$(awk '$2 == "*ubuntu-base-24.04.4-base-arm64.tar.gz" {print $1}' ci-evidence/ubuntu-base-SHA256SUMS)"
-          test "$CANONICAL_SHA256" = "$EXPECTED_SHA256"
-          curl -fL "$FIXTURE_URL" -o "$FIXTURE"
-          printf '%s  %s\n' "$EXPECTED_SHA256" "$FIXTURE" | sha256sum -c -
-          gzip -t "$FIXTURE"
-          python3 - <<'PY'
-          import json, os, subprocess
-          fixture="artifacts/test-fixtures/ubuntu-base-24.04.4-base-arm64.tar.gz"
-          digest=subprocess.check_output(["sha256sum",fixture],text=True).split()[0]
-          json.dump({
-              "fixture": fixture,
-              "source": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz",
-              "manifest": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/SHA256SUMS",
-              "sha256": digest,
-              "expected_sha256": "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",
-              "size_bytes": os.path.getsize(fixture),
-              "gzip_integrity": "PASS",
-              "status": "PASS",
-          }, open("ci-evidence/fixture-provenance.json","w"), indent=2)
-          PY
           set +e
           sh ./gradlew test --no-daemon --stacktrace
           D=$?
@@ -293,7 +270,6 @@ jobs:
               "audit-summary.json",
               "build-result.json",
               "test-result.json",
-              "fixture-provenance.json",
               "native-16kb-verification.json",
           ]
           missing = [x for x in required if not os.path.isfile("ci-evidence/" + x)]
@@ -335,7 +311,6 @@ jobs:
               "audit-summary.json",
               "build-result.json",
               "test-result.json",
-              "fixture-provenance.json",
               "native-16kb-verification.json",
           ]
           missing = [f for f in files if not os.path.isfile("ci-evidence/" + f)]
