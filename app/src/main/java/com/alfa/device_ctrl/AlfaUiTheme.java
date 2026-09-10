@@ -75,11 +75,7 @@ public final class AlfaUiTheme {
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                View child = group.getChildAt(i);
-                if (!(child instanceof TextView) && !(child instanceof Button) && depth == 0) {
-                    child.setBackgroundColor(SURFACE_1);
-                }
-                applyTree(child, depth + 1, density);
+                applyTree(group.getChildAt(i), depth + 1, density);
             }
         }
     }
