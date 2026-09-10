@@ -34,7 +34,7 @@ import org.tukaani.xz.XZInputStream;
 public final class RuntimeInstaller {
     public static final String SCHEMA_VERSION = "runtime-ready.v1";
     public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "663ef19c278dc39bb4a242ba244d5af6776610a936f33e5205c28fc016350b3a";
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
     private static final int TAR_BLOCK = 512;
 
     public interface Progress { void onMessage(String message); }

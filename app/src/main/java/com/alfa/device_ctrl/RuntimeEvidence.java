@@ -8,7 +8,7 @@ import java.util.Properties;
 
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
-    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "663ef19c278dc39bb4a242ba244d5af6776610a936f33e5205c28fc016350b3a";
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
 
     private RuntimeEvidence() { }
 
