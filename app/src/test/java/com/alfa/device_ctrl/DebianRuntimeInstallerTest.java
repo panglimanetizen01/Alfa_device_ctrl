@@ -16,8 +16,7 @@ public final class DebianRuntimeInstallerTest {
 
     @Test public void canonicalDebianArtifactInstallsAndProducesVerifiedReadyEvidence() throws Exception {
         assertTrue("Debian profile missing from canonical registry", DEBIAN != null);
-        File archive = fixture("artifacts/test-fixtures/debian-bookworm-arm64.tar.gz");
-        if (!archive.isFile() || !DEBIAN.rootfsSha256().equalsIgnoreCase(sha256(archive))) archive = downloadPinnedDebianArtifact();
+        File archive = downloadPinnedDebianArtifact();
         assertTrue("Debian acceptance fixture missing: " + archive, archive.isFile());
         assertEquals("Debian artifact must match current registry identity", DEBIAN.rootfsSha256(), sha256(archive));
         File temp = Files.createTempDirectory("alfa-debian-installer-").toFile();
@@ -35,7 +34,7 @@ public final class DebianRuntimeInstallerTest {
         assertTrue("loader fixture hash must be trusted", RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader)));
 
         RuntimeInstaller installer = new RuntimeInstaller(temp, null, engine, nativeDir, (ignored, root) -> null);
-        RuntimeInstaller.Result result = installer.install(DEBIAN, null, sha256(engine), archive.toURI().toURL(), sha256(archive), DEBIAN.rootfsGzip());
+        RuntimeInstaller.Result result = installer.install(DEBIAN, null, sha256(engine), new java.net.URL(DEBIAN.rootfsUrl()), DEBIAN.rootfsSha256(), DEBIAN.rootfsGzip());
         assertTrue(result.message, result.success);
 
         File runtime = new File(temp, "runtimes/" + DEBIAN.id());
