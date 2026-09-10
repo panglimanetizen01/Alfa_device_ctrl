@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Properties;
 
-/** Android-side representation of interactive-session.v1 with Gate 6 provenance binding. */
+/** Android-side representation of interactive-session.v1 with runtime-bound Gate 7 provenance. */
 public final class InteractiveSessionContract {
     public static final String SCHEMA_VERSION = "interactive-session.v1";
     public static final String POLICY_ID = "interactive-runtime.v1";
@@ -42,14 +42,13 @@ public final class InteractiveSessionContract {
             String sessionId, String requestId, String pipelineRunId, String runtimeId,
             String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit,
             File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment) {
-        Properties launch = readLaunchContract(runtimeReadyEvidence);
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
-        this.pipelineRunId = requireToken(launch.getProperty("pipeline_run_id", pipelineRunId), "pipelineRunId");
-        String attestedRuntimeId = requireToken(launch.getProperty("runtime_id"), "attestedRuntimeId");
-        if (RuntimeRegistry.get(attestedRuntimeId) == null) throw new IllegalArgumentException("unsupported-attested-runtime-id");
         this.runtimeId = requireToken(runtimeId, "runtimeId");
         if (RuntimeRegistry.get(this.runtimeId) == null) throw new IllegalArgumentException("unsupported-runtime-id");
+        Properties launch = readLaunchContract(runtimeReadyEvidence, this.runtimeId);
+        this.pipelineRunId = requireToken(launch.getProperty("pipeline_run_id", pipelineRunId), "pipelineRunId");
+        String attestedRuntimeId = requireToken(launch.getProperty("runtime_id"), "attestedRuntimeId");
         if (!this.runtimeId.equals(attestedRuntimeId)) throw new IllegalArgumentException("attested-runtime-mismatch");
         this.sourceCommit = requireHex(launch.getProperty("source_commit", sourceCommit), 40, "sourceCommit");
         this.gate4ContractSha256 = requireHex(launch.getProperty("gate4_contract_sha256", gate4ContractSha256), 64, "gate4ContractSha256");
@@ -62,22 +61,20 @@ public final class InteractiveSessionContract {
         this.environment = withLoader(environment, this.prootExecutable);
     }
 
-    private static Properties readLaunchContract(File runtimeReadyEvidence) {
+    private static Properties readLaunchContract(File runtimeReadyEvidence, String runtimeId) {
         if (runtimeReadyEvidence == null || runtimeReadyEvidence.getParentFile() == null) throw new IllegalArgumentException("runtimeReadyEvidence is invalid");
         File runtimeVault = runtimeReadyEvidence.getParentFile().getParentFile().getParentFile();
         if (runtimeVault == null) throw new IllegalArgumentException("runtime vault is invalid");
         File launchFile = new File(runtimeVault, "gate7-launch.properties");
-        if (!launchFile.isFile()) throw new IllegalStateException("Gate 7 launch contract is missing");
+        if (!Gate6LaunchContract.verify(launchFile, runtimeId)) throw new IllegalStateException("Gate 7 launch contract is missing, stale, unauthorized, or runtime-bound to another profile");
         Properties p = new Properties();
         try (FileInputStream in = new FileInputStream(launchFile)) {
             p.load(in);
-            requireProperty(p, "pipeline_run_id"); requireProperty(p, "runtime_id"); requireProperty(p, "source_commit");
-            requireProperty(p, "gate4_contract_sha256"); requireProperty(p, "profile_sha256"); requireProperty(p, "implementation_commit");
             return p;
-        } catch (Exception error) { throw new IllegalStateException("Gate 7 launch contract is unreadable", error); }
+        } catch (Exception error) {
+            throw new IllegalStateException("Gate 7 launch contract is unreadable", error);
+        }
     }
-
-    private static void requireProperty(Properties p, String key) { if (p.getProperty(key) == null || p.getProperty(key).trim().isEmpty()) throw new IllegalStateException("Gate 7 launch contract missing " + key); }
 
     private static String[] withLoader(String[] supplied, File prootExecutable) {
         ArrayList<String> values = new ArrayList<>();
