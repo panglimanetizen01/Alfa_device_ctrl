@@ -37,7 +37,7 @@ public final class RuntimeProfileTest {
             int envIndex = find(args, "/usr/bin/env");
             assertEquals("/usr/bin/env", args[envIndex]);
             assertEquals("-i", args[envIndex + 1]);
-            assertEquals("{PROMPT}", args[args.length - 3]);
+            assertEquals("PS1={PROMPT}", args[args.length - 3]);
             assertEquals("{SHELL}", args[args.length - 2]);
             assertEquals("-i", args[args.length - 1]);
         }
