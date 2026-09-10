@@ -96,7 +96,7 @@ public final class Gate6ImportActivity extends Activity {
 
     private boolean isAuthorizedReadUri(Uri uri) {
         if (uri == null || !"content".equalsIgnoreCase(uri.getScheme()) || uri.getAuthority() == null) return false;
-        return getContentResolver().checkUriPermission(
+        return checkUriPermission(
                 uri, android.os.Process.myPid(), android.os.Process.myUid(),
                 Intent.FLAG_GRANT_READ_URI_PERMISSION) == PackageManager.PERMISSION_GRANTED;
     }
