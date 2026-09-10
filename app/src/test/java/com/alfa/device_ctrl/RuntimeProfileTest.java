@@ -26,4 +26,16 @@ public final class RuntimeProfileTest {
         assertFalse(profile.rootfsGzip());
         assertTrue(profile.rootfsUrl().endsWith(".tar.xz"));
     }
+
+    @Test public void everyBuiltInProfileProvidesProfileDrivenProotArguments() {
+        for (RuntimeProfile profile : RuntimeRegistry.all()) {
+            String[] args = profile.prootArguments();
+            assertTrue(args.length > 0);
+            assertEquals("-0", args[0]);
+            assertEquals("-r", args[1]);
+            assertEquals("{RUNTIME_ROOT}", args[2]);
+            assertEquals("{SHELL}", args[args.length - 2]);
+            assertEquals("-i", args[args.length - 3]);
+        }
+    }
 }
