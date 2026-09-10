@@ -138,7 +138,7 @@ public final class RuntimeInstaller {
         if (!loader.canExecute()) throw new IOException("runtime-loader-not-executable");
         if (!isArm64Elf(loader)) throw new IOException("runtime-loader-not-arm64-elf");
         String actual = sha256(loader);
-        if (!TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(actual)) throw new IOException("runtime-loader-checksum-mismatch expected=" + TRUSTED_PROOT_LOADER_ARM64_SHA256 + " actual=" + actual);
+        if (!RuntimeEvidence.isTrustedProotLoaderSha256(actual)) throw new IOException("runtime-loader-checksum-mismatch actual=" + actual);
         report("PACKAGED_LOADER_VERIFIED");
     }
 
@@ -267,7 +267,7 @@ public final class RuntimeInstaller {
             if (!loader.isFile()) return "runtime-smoke-loader-missing";
             if (!loader.canExecute()) return "runtime-smoke-loader-not-executable";
             if (!isArm64Elf(loader)) return "runtime-smoke-loader-not-arm64-elf";
-            if (!TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader))) return "runtime-smoke-loader-checksum-mismatch";
+            if (!RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader))) return "runtime-smoke-loader-checksum-mismatch";
 
             ProcessBuilder builder = new ProcessBuilder(engine.getAbsolutePath(), "-0", "-r", root.getAbsolutePath(), "-b", "/dev", "-b", "/proc", "-b", "/sys", "-w", "/root", "/usr/bin/env", "-i", "HOME=/root", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "TERM=xterm-256color", "PROOT_TMP_DIR=" + canonicalProotTmp.getAbsolutePath(), "/bin/sh", "-c", "printf ALFA_RUNTIME_SMOKE_OK; id -u; pwd");
             builder.environment().put("PROOT_TMP_DIR", canonicalProotTmp.getAbsolutePath());
