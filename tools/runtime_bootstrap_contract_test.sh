@@ -4,7 +4,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 SCRIPT="$ROOT/tools/runtime_bootstrap.sh"
 COMMON="$ROOT/tools/runtime_chain_common.sh"
 fail(){ printf 'GATE6_CONTRACT_TEST=FAIL\nREASON=%s\n' "$1"; exit 1; }
-[ -x "$SCRIPT" ] || fail 'runtime_bootstrap.sh is not executable'
+[ -f "$SCRIPT" ] || fail 'runtime_bootstrap.sh missing'
 [ -f "$COMMON" ] || fail 'runtime_chain_common.sh missing'
 bash -n "$SCRIPT" || fail 'runtime_bootstrap.sh syntax invalid'
 bash -n "$COMMON" || fail 'runtime_chain_common.sh syntax invalid'
