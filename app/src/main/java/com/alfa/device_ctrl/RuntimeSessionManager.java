@@ -1,5 +1,8 @@
 package com.alfa.device_ctrl;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -11,13 +14,13 @@ import com.termux.terminal.TerminalSession;
 import com.termux.terminal.TerminalSessionClient;
 import com.termux.view.TerminalView;
 
-/** Owns one foreground-scoped terminal session and emits evidence for the exact G7 contract. */
+/** Owns one runtime session; the foreground service owns its process lifetime when the Activity stops. */
 public final class RuntimeSessionManager implements TerminalSessionClient {
     public interface Listener { void onState(String state); void onTextChanged(); void onSessionFinished(int exitStatus); }
     private static final long COMMAND_TIMEOUT_MS = 30000L;
     private static final int MAX_COMMAND_OUTPUT_CHARS = 12000;
     private final InteractiveSessionContract contract;
-    private final Listener listener;
+    private volatile Listener listener;
     private TerminalSession session;
     private boolean promptReady;
 
@@ -29,11 +32,35 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         promptReady = false;
         session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
         session.mSessionName = contract.sessionId(); session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
+        try {
+            RuntimeKeepAliveService.start(contract.applicationContext(), this);
+        } catch (RuntimeException error) {
+            session.finishIfRunning();
+            session = null;
+            promptReady = false;
+            if (listener != null) listener.onState("BLOCKED_FGS_START");
+            return false;
+        }
         OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid()); if (listener != null) listener.onState("PTY_CREATED"); return true;
     }
 
     public synchronized void attachTo(TerminalView view) { if (view == null) throw new IllegalArgumentException("view is required"); if (session == null) throw new IllegalStateException("session is not started"); view.attachSession(session); }
-    public synchronized void stop() { if (session != null) { OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid()); session.finishIfRunning(); } if (listener != null) listener.onState("STOPPING"); }
+
+    public void stop() {
+        synchronized (this) { if (session == null || !session.isRunning()) return; }
+        if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { if (listener != null) listener.onState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
+    }
+
+    private void finishNow() {
+        synchronized (this) { if (session != null) { OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid()); session.finishIfRunning(); } if (listener != null) listener.onState("STOPPING"); }
+        RuntimeKeepAliveService.stop(contract.applicationContext(), this);
+    }
+
+    void finishForKeepAliveStop() {
+        synchronized (this) { if (session != null && session.isRunning()) { OperationEvidence.write(contract, "STOPPING", "FOREGROUND_SERVICE_STOP", session.getPid()); session.finishIfRunning(); } }
+    }
+
     public synchronized boolean isRunning() { return session != null && session.isRunning(); }
     public synchronized TerminalSession currentSession() { return session; }
 
@@ -48,7 +75,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         if (listener != null) listener.onTextChanged();
     }
 
-    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; } if (listener != null) listener.onSessionFinished(status); }
+    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(contract.applicationContext(), this); } if (listener != null) listener.onSessionFinished(status); }
     @Override public void onTitleChanged(TerminalSession changedSession) { }
     @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
     @Override public void onPasteTextFromClipboard(TerminalSession session) { }
