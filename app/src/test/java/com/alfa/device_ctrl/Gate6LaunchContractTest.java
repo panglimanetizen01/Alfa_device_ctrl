@@ -25,6 +25,7 @@ public final class Gate6LaunchContractTest {
             assertFalse(Gate6LaunchContract.verify(launch, "ubuntu"));
             String text = new String(Files.readAllBytes(launch.toPath()), StandardCharsets.UTF_8);
             assertTrue(text.contains("runtime_id=alpine"));
+            assertTrue(text.contains("runtime_registry_sha256="));
         } finally {
             delete(dir);
         }
@@ -69,6 +70,7 @@ public final class Gate6LaunchContractTest {
                 + "gate_status=PASS\n"
                 + "pipeline_run_id=" + run + "\n"
                 + "runtime_id=" + runtimeId + "\n"
+                + "runtime_registry_sha256=" + hash + "\n"
                 + "source_commit=" + source + "\n"
                 + "implementation_commit=" + source + "\n"
                 + "gate4_contract_sha256=" + hash + "\n"
