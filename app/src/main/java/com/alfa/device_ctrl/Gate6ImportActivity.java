@@ -12,6 +12,8 @@ import android.widget.TextView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 
 /** Imports one current Gate 6 bootstrap through Android's Storage Access Framework. */
 public final class Gate6ImportActivity extends Activity {
@@ -96,6 +98,15 @@ public final class Gate6ImportActivity extends Activity {
 
     private boolean isAuthorizedReadUri(Uri uri) {
         if (uri == null || !"content".equalsIgnoreCase(uri.getScheme()) || uri.getAuthority() == null) return false;
+        String rawPath = uri.getPath();
+        if (rawPath == null) return false;
+        Path normalizedPath;
+        try {
+            normalizedPath = FileSystems.getDefault().getPath(rawPath).normalize();
+        } catch (RuntimeException invalidPath) {
+            return false;
+        }
+        if (normalizedPath.startsWith("/data")) return false;
         return checkUriPermission(
                 uri, android.os.Process.myPid(), android.os.Process.myUid(),
                 Intent.FLAG_GRANT_READ_URI_PERMISSION) == PackageManager.PERMISSION_GRANTED;
