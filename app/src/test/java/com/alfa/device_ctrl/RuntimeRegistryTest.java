@@ -34,7 +34,7 @@ public final class RuntimeRegistryTest {
 
     @Test public void requiredArtifactIdentitiesArePinned() {
         assertEquals(
-                "c6cbf97176c58c741329cd787e932a1e47931b35f5dc0f23db3e6e82924fef0f",
+                "6b89e501e8efce0d3d87e3f6b0f85c417e799a3b36b8f44419609ba7fecf9563",
                 RuntimeRegistry.get("debian").rootfsSha256());
         assertEquals(
                 "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",
@@ -45,6 +45,11 @@ public final class RuntimeRegistryTest {
         assertEquals(
                 "d6403a5da175df325611d23af4b92330856059c45454eced7f4cdf3ca6df2e4e",
                 RuntimeRegistry.get("kali").rootfsSha256());
+    }
+
+    @Test public void DebianTracksCurrentStableRelease() {
+        assertEquals("trixie", RuntimeRegistry.get("debian").version());
+        assertTrue(RuntimeRegistry.get("debian").rootfsUrl().contains("trixie/oci/blobs/rootfs.tar.gz"));
     }
 
     @Test public void unknownRuntimeIsRejected() {
