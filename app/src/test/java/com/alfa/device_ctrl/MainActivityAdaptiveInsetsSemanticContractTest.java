@@ -10,33 +10,39 @@ import java.nio.file.Files;
 import org.junit.Test;
 
 public final class MainActivityAdaptiveInsetsSemanticContractTest {
-    private static String source() throws Exception {
-        File file = new File("src/main/java/com/alfa/device_ctrl/MainActivity.java");
-        if (!file.isFile()) file = new File("app/src/main/java/com/alfa/device_ctrl/MainActivity.java");
+    private static String source(String path) throws Exception {
+        File file = new File(path);
+        if (!file.isFile()) file = new File("app/" + path);
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
-    @Test public void lifecycleRebindsForegroundOwnedSession() throws Exception {
-        String text = source();
-        assertTrue(text.contains("RuntimeKeepAliveService.owner()"));
-        assertTrue(text.contains("rebindListener(this)"));
-        assertFalse(text.contains("sessionManager.stop();\n        super.onStop();"));
-        assertFalse(text.contains("sessionManager.stop();\n        super.onDestroy();"));
+    @Test public void lifecycleRebindsForegroundOwnedSessionWithoutStoppingIt() throws Exception {
+        String app = source("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
+        String manager = source("src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java");
+        assertTrue(app.contains("RuntimeKeepAliveService.owner()"));
+        assertTrue(app.contains("owner.rebindListener"));
+        assertTrue(app.contains("owner.attachTo"));
+        assertTrue(manager.contains("isActivityPauseInProgress()"));
+        assertFalse(manager.contains("if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }\n        new Handler"));
     }
 
-    @Test public void activityConsumesOnlySemanticSessionStates() throws Exception {
-        String text = source();
-        assertTrue(text.contains("SessionUiState.Status uiState = SessionUiState.resolve(state)"));
-        assertFalse(text.contains("\"READY\".equals(state)"));
-        assertFalse(text.contains("\"RUNNING\".equals(state)"));
+    @Test public void semanticStateProjectionRemainsSingleSource() throws Exception {
+        String manager = source("src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java");
+        String state = source("src/main/java/com/alfa/device_ctrl/SessionUiState.java");
+        assertTrue(manager.contains("SessionUiState.resolve(event).name()"));
+        assertTrue(state.contains("public enum Status { NOT_READY, STARTING, RUNNING, FAILED, FINISHED }"));
+        assertTrue(state.contains("case \"BACKGROUND_SESSION_PRESERVED\":"));
+        assertTrue(state.contains("return Status.RUNNING;"));
     }
 
     @Test public void layoutUsesCurrentWindowMetricsAndInsets() throws Exception {
-        String text = source();
-        assertTrue(text.contains("getCurrentWindowMetrics()"));
-        assertTrue(text.contains("WindowCompat.enableEdgeToEdge"));
-        assertTrue(text.contains("setOnApplyWindowInsetsListener"));
-        assertFalse(text.contains("new LinearLayout.LayoutParams(-1, dp(248))"));
-        assertFalse(text.contains("new LinearLayout.LayoutParams(-1, dp(158))"));
+        String theme = source("src/main/java/com/alfa/device_ctrl/AlfaUiTheme.java");
+        String app = source("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
+        String policy = source("src/main/java/com/alfa/device_ctrl/AdaptiveRuntimeLayoutPolicy.java");
+        assertTrue(theme.contains("getCurrentWindowMetrics()"));
+        assertTrue(theme.contains("AdaptiveRuntimeLayoutPolicy.resolve"));
+        assertTrue(app.contains("WindowCompat.enableEdgeToEdge"));
+        assertTrue(app.contains("setOnApplyWindowInsetsListener"));
+        assertTrue(policy.contains("terminalMinDp"));
     }
 }
