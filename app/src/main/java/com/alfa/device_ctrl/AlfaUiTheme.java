@@ -7,6 +7,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /** Presentation-only Terminal Obsidian styling. Never supplies runtime state or capability state. */
@@ -33,7 +34,9 @@ public final class AlfaUiTheme {
         View root = activity.findViewById(android.R.id.content);
         if (root == null) return;
         root.setBackgroundColor(CANVAS);
-        applyTree(root, 0, activity.getResources().getDisplayMetrics().density);
+        float density = activity.getResources().getDisplayMetrics().density;
+        applyTree(root, 0, density);
+        root.post(() -> adaptRuntimeDashboard(root, density));
     }
 
     private static void applyTree(View view, int depth, float density) {
@@ -73,6 +76,59 @@ public final class AlfaUiTheme {
                 applyTree(child, depth + 1, density);
             }
         }
+    }
+
+    /**
+     * Keeps the canonical runtime cards reachable inside the existing fixed management window.
+     * The calculation is based on measured window space rather than device dimensions.
+     */
+    private static void adaptRuntimeDashboard(View root, float density) {
+        LinearLayout dashboard = findRuntimeDashboard(root);
+        if (dashboard == null || dashboard.getHeight() <= 0) return;
+        int runtimeCount = RuntimeRegistry.all().size();
+        if (runtimeCount <= 0) return;
+
+        int separators = Math.max(0, runtimeCount - 1);
+        int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
+        int available = dashboard.getHeight() - padding - separators * Math.round(2 * density);
+        int cardHeight = Math.max(Math.round(48 * density), available / runtimeCount);
+        for (int i = 0, card = 0; i < dashboard.getChildCount(); i++) {
+            View child = dashboard.getChildAt(i);
+            if (child instanceof LinearLayout) {
+                ViewGroup.LayoutParams lp = child.getLayoutParams();
+                if (lp instanceof LinearLayout.LayoutParams) {
+                    lp.height = cardHeight;
+                    child.setLayoutParams(lp);
+                    card++;
+                }
+            } else {
+                ViewGroup.LayoutParams lp = child.getLayoutParams();
+                if (lp instanceof LinearLayout.LayoutParams) {
+                    lp.height = Math.round(2 * density);
+                    child.setLayoutParams(lp);
+                }
+            }
+            if (card >= runtimeCount) break;
+        }
+        dashboard.requestLayout();
+    }
+
+    private static LinearLayout findRuntimeDashboard(View root) {
+        if (!(root instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) root;
+        int expected = RuntimeRegistry.all().size();
+        if (expected > 0 && group.getChildCount() >= expected * 2 - 1) {
+            int cards = 0;
+            for (int i = 0; i < group.getChildCount(); i += 2) {
+                if (group.getChildAt(i) instanceof LinearLayout) cards++;
+            }
+            if (cards == expected) return (LinearLayout) group;
+        }
+        for (int i = 0; i < group.getChildCount(); i++) {
+            LinearLayout found = findRuntimeDashboard(group.getChildAt(i));
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private static GradientDrawable controlBackground(int accent, float density) {
