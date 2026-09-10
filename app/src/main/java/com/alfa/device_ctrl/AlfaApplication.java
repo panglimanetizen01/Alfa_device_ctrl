@@ -22,10 +22,8 @@ public final class AlfaApplication extends Application {
         if (!vault.exists() && !vault.mkdirs()) return;
         File destination = new File(vault, ASSET);
         File temporary = new File(vault, ASSET + ".part");
-        try (InputStream input = getAssets().open(ASSET);
-             FileOutputStream output = new FileOutputStream(temporary)) {
-            byte[] buffer = new byte[4096];
-            int count;
+        try (InputStream input = getAssets().open(ASSET); FileOutputStream output = new FileOutputStream(temporary)) {
+            byte[] buffer = new byte[4096]; int count;
             while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
             output.getFD().sync();
             if (!temporary.renameTo(destination)) {
@@ -33,21 +31,15 @@ public final class AlfaApplication extends Application {
                 if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed");
             }
             validate(destination);
-        } catch (Exception ignored) {
-            temporary.delete();
-        }
+        } catch (Exception ignored) { temporary.delete(); }
     }
 
     private static void validate(File file) throws Exception {
         Properties p = new Properties();
         try (FileInputStream input = new FileInputStream(file)) { p.load(input); }
-        require(p, "pipeline_run_id");
-        require(p, "runtime_id");
-        require(p, "source_commit");
-        require(p, "gate4_contract_sha256");
-        require(p, "profile_sha256");
-        require(p, "implementation_commit");
-        if (!RuntimeProfile.ID.equals(p.getProperty("runtime_id"))) throw new IllegalStateException("unsupported-runtime-id");
+        require(p, "pipeline_run_id"); require(p, "runtime_id"); require(p, "source_commit");
+        require(p, "gate4_contract_sha256"); require(p, "profile_sha256"); require(p, "implementation_commit");
+        if (RuntimeRegistry.get(p.getProperty("runtime_id")) == null) throw new IllegalStateException("unsupported-runtime-id");
         if (!p.getProperty("source_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-source-commit");
         if (!p.getProperty("implementation_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-implementation-commit");
         if (!p.getProperty("gate4_contract_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-gate4-hash");
