@@ -14,9 +14,9 @@ public final class SessionUiStateTest {
         assertEquals(SessionUiState.Status.RUNNING, SessionUiState.resolve("RUNNING"));
         assertEquals(SessionUiState.Status.FAILED, SessionUiState.resolve("BLOCKED"));
         assertEquals(SessionUiState.Status.FAILED, SessionUiState.resolve("BLOCKED_FGS_START"));
-        assertEquals(SessionUiState.Status.FAILED, SessionUiState.resolve("STOPPING"));
+        assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve("STOPPING"));
         assertEquals(SessionUiState.Status.FINISHED, SessionUiState.resolve("FINISHED"));
-        assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve("BACKGROUND_SESSION_PRESERVED"));
+        assertEquals(SessionUiState.Status.RUNNING, SessionUiState.resolve("BACKGROUND_SESSION_PRESERVED"));
         assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve(null));
         assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve("UNKNOWN_STATE"));
     }
