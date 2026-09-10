@@ -30,9 +30,11 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
     private static final int MUTED = Color.rgb(193, 198, 213);
     private static final int ERROR = Color.rgb(255, 180, 171);
     private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
+    private static final String RUNTIME_PREF = "runtime_id";
 
     private TerminalView terminalView;
     private RuntimeSessionManager sessionManager;
+    private RuntimeProfile selectedRuntime;
     private TextView status;
     private TextView terminalTitle;
     private TextView activeTab;
@@ -44,6 +46,8 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        String requested = getPreferences(MODE_PRIVATE).getString(RUNTIME_PREF, RuntimeSelection.DEFAULT_RUNTIME_ID);
+        selectedRuntime = RuntimeSelection.profile(requested);
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(Color.rgb(14, 14, 16));
         setContentView(buildShellUi());
@@ -151,7 +155,7 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         window.addView(header);
         LinearLayout body = column(Color.BLACK);
         body.setPadding(dp(14), dp(12), dp(14), dp(12));
-        monitorText = label("Runtime telemetry menunggu sesi " + RuntimeProfile.DISPLAY_NAME + " terverifikasi.\nCPU: UNKNOWN    MEM: UNKNOWN    SWAP: UNKNOWN\nTidak ada angka mockup yang ditampilkan.", MUTED, 12, false);
+        monitorText = label("Runtime telemetry menunggu sesi " + selectedRuntime.displayName() + " terverifikasi.\nCPU: UNKNOWN    MEM: UNKNOWN    SWAP: UNKNOWN\nTidak ada angka mockup yang ditampilkan.", MUTED, 12, false);
         monitorText.setTypeface(Typeface.MONOSPACE);
         monitorText.setLineSpacing(0, 1.15f);
         body.addView(monitorText, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -171,7 +175,7 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         LinearLayout header = row(PANEL_HIGH);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setPadding(dp(14), 0, dp(10), 0);
-        terminalTitle = label("runtime: UNKNOWN", PRIMARY, 13, true);
+        terminalTitle = label("runtime: " + selectedRuntime.displayName(), PRIMARY, 13, true);
         terminalTitle.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         header.addView(terminalTitle, new LinearLayout.LayoutParams(0, dp(40), 1));
         Button close = actionButton("×", ERROR, v -> stopSession());
@@ -190,7 +194,7 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         window.addView(terminalFrame, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout actions = row(Color.BLACK);
         actions.setPadding(dp(6), dp(5), dp(6), dp(5));
-        Button install = actionButton("INSTALL " + RuntimeProfile.DISPLAY_NAME.toUpperCase(), PRIMARY, v -> installRuntime());
+        Button install = actionButton("INSTALL " + selectedRuntime.displayName().toUpperCase(), PRIMARY, v -> installRuntime());
         Button start = actionButton(getString(R.string.start_verified_session), PRIMARY, v -> startSession());
         LinearLayout.LayoutParams installParams = new LinearLayout.LayoutParams(0, dp(48), 1);
         installParams.setMargins(0, 0, dp(4), 0);
@@ -234,8 +238,8 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
 
     private void showHtop() {
         activeTab.setText("htop");
-        if (!sessionReady()) { showStatus("TAB=htop\nSTATUS=WAITING\nSesi " + RuntimeProfile.DISPLAY_NAME + " terverifikasi diperlukan untuk telemetry live"); return; }
-        monitorText.setText("htop\nMengambil CPU, MEM, SWAP, dan proses dari runtime " + RuntimeProfile.DISPLAY_NAME + "...");
+        if (!sessionReady()) { showStatus("TAB=htop\nSTATUS=WAITING\nSesi " + selectedRuntime.displayName() + " terverifikasi diperlukan untuk telemetry live"); return; }
+        monitorText.setText("htop\nMengambil CPU, MEM, SWAP, dan proses dari runtime " + selectedRuntime.displayName() + "...");
         String command = "cpu_line=$(head -n 1 /proc/stat); set -- $cpu_line; u1=$2; n1=$3; s1=$4; i1=$5; w1=$6; q1=$7; sq1=$8; st1=$9; t1=$((u1+n1+s1+i1+w1+q1+sq1+st1)); id1=$((i1+w1)); sleep 1; cpu_line=$(head -n 1 /proc/stat); set -- $cpu_line; u2=$2; n2=$3; s2=$4; i2=$5; w2=$6; q2=$7; sq2=$8; st2=$9; t2=$((u2+n2+s2+i2+w2+q2+sq2+st2)); id2=$((i2+w2)); dt=$((t2-t1)); di=$((id2-id1)); used=$((dt-di)); if [ $dt -gt 0 ]; then cpu=$((used*100/dt)); else cpu=0; fi; mt=$(awk '/MemTotal:/{print $2}' /proc/meminfo); ma=$(awk '/MemAvailable:/{print $2}' /proc/meminfo); st=$(awk '/SwapTotal:/{print $2}' /proc/meminfo); sf=$(awk '/SwapFree:/{print $2}' /proc/meminfo); mt=${mt:-0}; ma=${ma:-0}; st=${st:-0}; sf=${sf:-0}; mu=$((mt-ma)); su=$((st-sf)); if [ $mt -gt 0 ]; then mp=$((mu*100/mt)); else mp=0; fi; if [ $st -gt 0 ]; then sp=$((su*100/st)); else sp=0; fi; printf 'TELEMETRY_EVIDENCE=PASS\\nCPU=%s%%\\nMEM=%s/%s kB (%s%%)\\nSWAP=%s/%s kB (%s%%)\\n' $cpu $mu $mt $mp $su $st $sp; printf 'PROCESS_EVIDENCE=PASS\\n'; ps -eo pid=,user=,stat=,pcpu=,pmem=,comm= --sort=-pcpu | head -n 12";
         sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> {
             processEvidence = code == 0 && output.contains("PROCESS_EVIDENCE=PASS");
@@ -246,8 +250,8 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
 
     private void showNetwork() {
         activeTab.setText("jaringan");
-        if (!sessionReady()) { showStatus("TAB=jaringan\nSTATUS=WAITING\nSesi " + RuntimeProfile.DISPLAY_NAME + " terverifikasi diperlukan untuk network evidence"); return; }
-        monitorText.setText("jaringan\nMengambil interface dan route dari runtime " + RuntimeProfile.DISPLAY_NAME + "...");
+        if (!sessionReady()) { showStatus("TAB=jaringan\nSTATUS=WAITING\nSesi " + selectedRuntime.displayName() + " terverifikasi diperlukan untuk network evidence"); return; }
+        monitorText.setText("jaringan\nMengambil interface dan route dari runtime " + selectedRuntime.displayName() + "...");
         String command = "iface_count=$(awk 'NR>2 && $1 !~ /^lo:/ {c++} END{print c+0}' /proc/net/dev); route_count=$(awk 'NR>1 && $2==\"00000000\" && $1!=\"lo\" {c++} END{print c+0}' /proc/net/route); if [ \"$iface_count\" -gt 0 ]; then printf 'NETWORK_EVIDENCE=PASS\\nINTERFACES\\n'; awk 'NR>2 {print}' /proc/net/dev; printf '\\nROUTES\\n'; cat /proc/net/route; printf '\\nDEFAULT_ROUTE_COUNT=%s\\n' $route_count; else printf 'NETWORK_EVIDENCE=BLOCKED\\nREASON=no-nonloopback-interface-in-runtime\\n'; fi";
         sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> monitorText.setText(code == 0 && output.contains("NETWORK_EVIDENCE=PASS") ? output : "jaringan\nSTATUS=BLOCKED\n" + output)));
     }
@@ -260,7 +264,7 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
             ArrayList<String> labels = new ArrayList<>();
             for (String line : output.split("\\n")) { String trimmed = line.trim(); if (trimmed.isEmpty()) continue; String[] parts = trimmed.split("\\s+", 2); if (parts.length == 0 || !parts[0].matches("[0-9]+")) continue; pids.add(parts[0]); labels.add(trimmed); }
             if (pids.isEmpty()) { blocked("hentikan proses", "process evidence tidak berisi PID valid"); return; }
-            new AlertDialog.Builder(this).setTitle("Pilih proses dalam runtime " + RuntimeProfile.DISPLAY_NAME).setItems(labels.toArray(new String[0]), (dialog, which) -> killSelectedProcess(pids.get(which))).setNegativeButton("Batal", null).show();
+            new AlertDialog.Builder(this).setTitle("Pilih proses dalam runtime " + selectedRuntime.displayName()).setItems(labels.toArray(new String[0]), (dialog, which) -> killSelectedProcess(pids.get(which))).setNegativeButton("Batal", null).show();
         }));
     }
 
@@ -270,8 +274,46 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> { processEvidence = false; disableKillButton(); showStatus("PROCESS_OPERATION_EXIT=" + code + "\n" + output); }));
     }
 
-    private void showRuntimeTools() { if (!sessionReady()) { showStatus("TOOLS_STATUS=WAITING\nAktif setelah prompt runtime terverifikasi"); return; } sessionManager.runRuntimeCommand("printf 'runtime-tools\\n'; command -v sh; command -v ps; command -v ip 2>/dev/null || true", (output, code) -> postUi(() -> showStatus("TOOLS_STATUS=" + code + "\n" + output))); }
-    private void showTerminalState() { activeTab.setText("bash"); showStatus(sessionReady() ? "TERMINAL_STATUS=READY\nPTY prompt terverifikasi; input dikirim ke runtime " + RuntimeProfile.DISPLAY_NAME : "TERMINAL_STATUS=WAITING\nTekan Mulai sesi runtime terverifikasi setelah runtime READY"); }
+    private void showRuntimeTools() {
+        if (!sessionReady()) {
+            showRuntimeSelector();
+            return;
+        }
+        sessionManager.runRuntimeCommand("printf 'runtime-tools\\n'; command -v sh; command -v ps; command -v ip 2>/dev/null || true", (output, code) -> postUi(() -> showStatus("TOOLS_STATUS=" + code + "\n" + output)));
+    }
+
+    private void showRuntimeSelector() {
+        if (sessionManager != null && sessionManager.isRunning()) { blocked("runtime selection", "hentikan session aktif terlebih dahulu"); return; }
+        java.util.List<RuntimeProfile> profiles = RuntimeRegistry.all();
+        String[] labels = new String[profiles.size()];
+        int checked = 0;
+        for (int i = 0; i < profiles.size(); i++) {
+            RuntimeProfile profile = profiles.get(i);
+            labels[i] = profile.displayName();
+            if (profile.id().equals(selectedRuntime.id())) checked = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Pilih runtime Linux")
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    selectRuntime(profiles.get(which).id());
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void selectRuntime(String runtimeId) {
+        RuntimeProfile profile = RuntimeSelection.profile(runtimeId);
+        if (profile == null) { blocked("runtime selection", "runtime tidak didukung"); return; }
+        if (sessionManager != null && sessionManager.isRunning()) { blocked("runtime selection", "hentikan session aktif terlebih dahulu"); return; }
+        selectedRuntime = profile;
+        getPreferences(MODE_PRIVATE).edit().putString(RUNTIME_PREF, profile.id()).apply();
+        if (terminalTitle != null) terminalTitle.setText("runtime: " + profile.displayName());
+        if (monitorText != null) monitorText.setText("Runtime telemetry menunggu sesi " + profile.displayName() + " terverifikasi.\nCPU: UNKNOWN    MEM: UNKNOWN    SWAP: UNKNOWN\nTidak ada angka mockup yang ditampilkan.");
+        showStatus("RUNTIME_SELECTED=" + profile.id() + "\n" + profile.displayName() + " akan dipakai untuk install dan session berikutnya");
+    }
+
+    private void showTerminalState() { activeTab.setText("bash"); showStatus(sessionReady() ? "TERMINAL_STATUS=READY\nPTY prompt terverifikasi; input dikirim ke runtime " + selectedRuntime.displayName() : "TERMINAL_STATUS=WAITING\nTekan Mulai sesi runtime terverifikasi setelah runtime READY"); }
     private void showRuntimeFiles() { if (!sessionReady()) { showStatus("FILES_STATUS=WAITING\nFile view hanya membaca root runtime terpilih setelah sesi READY"); return; } sessionManager.runRuntimeCommand("pwd; ls -la", (output, code) -> postUi(() -> showStatus("FILES_STATUS=" + code + "\n" + output))); }
     private void showPolicy() { showStatus("POLICY=interactive-runtime.v1\nSCOPE=full-user-access-inside-selected-rootless-runtime\nANDROID_ROOT=NOT_GRANTED\nOTHER_APP_DATA=NOT_GRANTED"); }
     private void showStatus(String text) { if (!uiActive || status == null) return; status.setVisibility(View.VISIBLE); status.setText(text); }
@@ -279,8 +321,9 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
     private void installRuntime() {
         if (!uiActive) return;
         if (sessionManager != null && sessionManager.isRunning()) { blocked("installer", "hentikan session aktif terlebih dahulu"); return; }
+        final RuntimeProfile profile = selectedRuntime;
         status.setVisibility(View.VISIBLE);
-        status.setText("INSTALL_STATUS=STARTING\nchecksum dan extraction berjalan di staging atomic");
+        status.setText("INSTALL_STATUS=STARTING\nchecksum dan extraction berjalan di staging atomic\nRUNTIME=" + profile.id());
         new Thread(() -> {
             RuntimeInstaller.Result result;
             try {
@@ -288,30 +331,31 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
                 File nativeLibraryDir = new File(getApplicationInfo().nativeLibraryDir);
                 File packagedEngine = new File(nativeLibraryDir, "libproot.so");
                 RuntimeInstaller installer = new RuntimeInstaller(vault, message -> postUi(() -> status.setText("INSTALL_STATUS=" + message)), packagedEngine, nativeLibraryDir);
-                result = installer.install(RuntimeProfile.ID, null, PROOT_SHA256, new URL(RuntimeProfile.ROOTFS_URL), RuntimeProfile.ROOTFS_SHA256, RuntimeProfile.ROOTFS_GZIP);
-            } catch (Exception error) { result = RuntimeInstaller.Result.fail(RuntimeProfile.ID, error.getClass().getSimpleName() + ":" + error.getMessage(), null); }
+                result = installer.install(profile.id(), null, PROOT_SHA256, new URL(profile.rootfsUrl()), profile.rootfsSha256(), profile.rootfsGzip());
+            } catch (Exception error) { result = RuntimeInstaller.Result.fail(profile.id(), error.getClass().getSimpleName() + ":" + error.getMessage(), null); }
             RuntimeInstaller.Result finalResult = result;
-            postUi(() -> { status.setVisibility(View.VISIBLE); status.setText(finalResult.success ? "INSTALL_STATUS=READY\nRUNTIME=" + RuntimeProfile.ID + "\nEvidence runtime-ready.v1 verified" : "INSTALL_STATUS=FAILED\n" + finalResult.message); });
+            postUi(() -> { status.setVisibility(View.VISIBLE); status.setText(finalResult.success ? "INSTALL_STATUS=READY\nRUNTIME=" + finalResult.runtimeId + "\nEvidence runtime-ready.v1 verified" : "INSTALL_STATUS=FAILED\n" + finalResult.message); });
         }, "alfa-ui-installer").start();
     }
 
     private void startSession() {
         if (!uiActive) return;
         if (sessionManager != null && sessionManager.isRunning()) { sessionManager.attachTo(terminalView); return; }
+        final RuntimeProfile profile = selectedRuntime;
         File files = getFilesDir();
-        File runtime = new File(new File(files, "runtime-vault"), "runtimes/" + RuntimeProfile.ID);
+        File runtime = new File(new File(files, "runtime-vault"), "runtimes/" + profile.id());
         File sessionCwd = new File(files, "session-cwd");
         if (!sessionCwd.exists() && !sessionCwd.mkdirs()) { blocked("sesi terminal", "session cwd tidak dapat dibuat"); return; }
         InteractiveSessionContract contract = new InteractiveSessionContract(
-                "session-" + shortId(), "request-" + shortId(), "run-" + shortId(), RuntimeProfile.ID,
+                "session-" + shortId(), "request-" + shortId(), "run-" + shortId(), profile.id(),
                 new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"),
                 new File(runtime, "rootfs"), sessionCwd,
-                new String[] { "HOME=/root", "TERM=xterm-256color", "PS1=alfa:" + RuntimeProfile.ID + ":\\w\\$ ", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath() });
+                new String[] { "HOME=/root", "TERM=xterm-256color", "PS1=alfa:" + profile.id() + ":\\w\\$ ", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath() });
         sessionManager = new RuntimeSessionManager(contract, this);
         if (sessionManager.start(80, 24, 8, 16)) {
             sessionManager.attachTo(terminalView);
             if (sessionManager.currentSession() != null) terminalTitle.setText("session: " + sessionManager.currentSession().mSessionName);
-        } else blocked("sesi terminal", "runtime evidence belum lengkap");
+        } else blocked("sesi terminal", "runtime evidence belum lengkap untuk " + profile.displayName());
     }
 
     private void stopSession() { if (sessionManager != null && sessionManager.isRunning()) sessionManager.stop(); else blocked("terminal", "tidak ada session aktif"); }
