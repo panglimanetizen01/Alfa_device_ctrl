@@ -7,6 +7,8 @@ on:
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeProfile.java'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
+      - 'app/src/main/java/com/alfa/device_ctrl/RuntimeRegistry.java'
+      - 'runtime/runtimes.v1.json'
       - 'app/src/test/java/com/alfa/device_ctrl/DebianRuntimeInstallerTest.java'
       - 'tools/build_proot_loader.sh'
       - '.github/workflows/debian-runtime-installer.yml'
@@ -16,6 +18,8 @@ on:
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeProfile.java'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java'
       - 'app/src/main/java/com/alfa/device_ctrl/RuntimeEvidence.java'
+      - 'app/src/main/java/com/alfa/device_ctrl/RuntimeRegistry.java'
+      - 'runtime/runtimes.v1.json'
       - 'app/src/test/java/com/alfa/device_ctrl/DebianRuntimeInstallerTest.java'
       - 'tools/build_proot_loader.sh'
       - '.github/workflows/debian-runtime-installer.yml'
@@ -48,15 +52,6 @@ jobs:
           test -x "$SDKMANAGER"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/35.0.0:$PATH"
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;28.0.13004108"
-      - name: Download pinned Debian rootfs
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p artifacts/test-fixtures
-          URL="https://github.com/debuerreotype/docker-debian-artifacts/raw/14d91d295c23da6cc04d4bfe8b3d74a8a6c54e5c/bookworm/oci/blobs/rootfs.tar.gz"
-          SHA="c6cbf97176c58c741329cd787e932a1e47931b35f5dc0f23db3e6e82924fef0f"
-          curl -fL --retry 3 --retry-delay 1 "$URL" -o artifacts/test-fixtures/debian-bookworm-arm64.tar.gz
-          printf '%s  %s\n' "$SHA" artifacts/test-fixtures/debian-bookworm-arm64.tar.gz | sha256sum -c -
       - name: Run Debian installer acceptance test
         shell: bash
         run: ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace --tests com.alfa.device_ctrl.DebianRuntimeInstallerTest
