@@ -30,7 +30,7 @@ public final class RuntimeKeepAliveService extends Service {
     public static void stop(Context context, RuntimeSessionManager manager) {
         if (context == null) return;
         if (manager == null || owner == manager) owner = null;
-        context.startService(new Intent(context, RuntimeKeepAliveService.class).setAction(ACTION_STOP));
+        context.stopService(new Intent(context, RuntimeKeepAliveService.class));
     }
 
     public static boolean isActive() { return active; }
@@ -49,9 +49,9 @@ public final class RuntimeKeepAliveService extends Service {
             RuntimeSessionManager current=owner;
             owner=null;
             active=false;
+            if(current!=null) current.finishForKeepAliveStop();
             stopForegroundCompat();
             stopSelf();
-            if(current!=null) current.finishForKeepAliveStop();
             return START_NOT_STICKY;
         }
         active=true;
@@ -73,6 +73,6 @@ public final class RuntimeKeepAliveService extends Service {
     }
 
     private void stopForegroundCompat(){ if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N)stopForeground(STOP_FOREGROUND_REMOVE); else stopForeground(true); }
-    @Override public void onDestroy(){ active=false; super.onDestroy(); }
+    @Override public void onDestroy(){ active=false; owner=null; super.onDestroy(); }
     @Override public IBinder onBind(Intent intent){return null;}
 }
