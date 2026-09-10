@@ -61,6 +61,10 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public void stop() {
         synchronized (this) { if (session == null || !session.isRunning()) return; }
+        if (AlfaApplication.isActivityPauseInProgress()) {
+            notifyState("BACKGROUND_SESSION_PRESERVED");
+            return;
+        }
         if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
         new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { notifyState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
     }
