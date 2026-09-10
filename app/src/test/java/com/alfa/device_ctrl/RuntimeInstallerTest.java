@@ -115,7 +115,7 @@ public final class RuntimeInstallerTest {
         Files.copy(loaderSource.toPath(), loader.toPath());
         assertTrue("loader fixture must be executable", loader.setExecutable(true, false));
         assertTrue("loader fixture must be executable", loader.canExecute());
-        assertTrue("loader fixture hash must be trusted", RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader)));
+        assertTrue("loader fixture hash must be trusted", RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader)));
         return engine;
     }
 
