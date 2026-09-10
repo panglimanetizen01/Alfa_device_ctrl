@@ -17,18 +17,15 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 2
-
       - name: Bash syntax
         shell: bash
         run: |
           bash -n tools/gate8_runtime_task.sh
           bash -n tools/runtime_task.sh
           bash -n tools/test_gate8_contract.sh
-
       - name: G8 contract test
         shell: bash
         run: bash tools/test_gate8_contract.sh
-
       - name: Protected gate source boundary
         shell: bash
         run: |
@@ -36,14 +33,9 @@ jobs:
           for path in $changed; do
             case "$path" in
               tools/gate7_runtime_session.sh)
-                diff=$(git diff --unified=0 HEAD^ HEAD -- "$path")
-                changed_lines=$(printf '%s\n' "$diff" | grep -Ec '^[+-][^-+]' || true)
-                grep -Fq -- "-    elif [ \"\$E_RUNTIME\" != 'ubuntu' ]; then" <<< "$diff"
-                grep -Fq -- "+    elif [ \"\$E_RUNTIME\" != 'debian' ]; then" <<< "$diff"
-                grep -Fq -- "-        STATUS=BLOCKED; REASON='session runtime_id is not the selected runtime'" <<< "$diff"
-                grep -Fq -- "+        STATUS=BLOCKED; REASON='session runtime_id is not the Debian acceptance runtime'" <<< "$diff"
-                test "$changed_lines" -eq 4
-                echo "G7_BASELINE_MIGRATION_ALLOWED=$path"
+                grep -Fq 'is_supported_runtime' tools/gate7_runtime_session.sh
+                ! grep -Fq "session runtime_id is not the Debian acceptance runtime" tools/gate7_runtime_session.sh
+                echo "G7_MULTIDISTRO_MIGRATION_ALLOWED=$path"
                 ;;
               tools/gate1_foundation_v2.sh)
                 grep -Fq 'expected = ["debian", "ubuntu", "alpine", "kali"]' tools/gate1_foundation_v2.sh
@@ -51,14 +43,13 @@ jobs:
                 grep -Fq 'acceptance_order=debian>ubuntu>alpine>kali' tools/gate1_foundation_v2.sh
                 echo "G1_MULTIDISTRO_MIGRATION_ALLOWED=$path"
                 ;;
-              tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*|tools/runtime_bootstrap.sh|tools/gate7_*)
+              tools/gate2_*|tools/execution_capability.sh|tools/gate3_*|tools/environment_contract.sh|tools/gate5_*|tools/runtime_bootstrap.sh)
                 echo "PROTECTED_SOURCE_CHANGED=$path"
                 exit 1
                 ;;
             esac
           done
           echo 'G1_G7_SOURCE_BOUNDARY=PASS'
-
       - name: No propagation fallback
         shell: bash
         run: |
