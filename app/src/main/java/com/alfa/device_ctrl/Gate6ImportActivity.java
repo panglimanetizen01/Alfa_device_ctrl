@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
@@ -65,10 +66,12 @@ public final class Gate6ImportActivity extends Activity {
         File incoming = new File(vault, ".gate6-bootstrap.incoming");
         File launch = new File(vault, "gate7-launch.properties");
         try {
-            int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            if (!isAuthorizedReadUri(uri)) throw new SecurityException("gate6-uri-read-permission-required");
+            int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
             if (flags != 0) {
                 try { getContentResolver().takePersistableUriPermission(uri, flags); } catch (SecurityException ignored) { }
             }
+            if (!isAuthorizedReadUri(uri)) throw new SecurityException("gate6-uri-read-permission-required");
             if (!vault.exists() && !vault.mkdirs()) throw new IllegalStateException("runtime-vault cannot be created");
             try (InputStream input = getContentResolver().openInputStream(uri);
                  FileOutputStream output = new FileOutputStream(incoming)) {
@@ -89,5 +92,12 @@ public final class Gate6ImportActivity extends Activity {
             evidence.setText("GATE6_IMPORT=BLOCKED\nREASON=" + error.getClass().getSimpleName()
                     + "\nDETAIL=" + String.valueOf(error.getMessage()));
         }
+    }
+
+    private boolean isAuthorizedReadUri(Uri uri) {
+        if (uri == null || !"content".equalsIgnoreCase(uri.getScheme()) || uri.getAuthority() == null) return false;
+        return getContentResolver().checkUriPermission(
+                uri, android.os.Process.myPid(), android.os.Process.myUid(),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION) == PackageManager.PERMISSION_GRANTED;
     }
 }
