@@ -71,10 +71,11 @@ public final class AlfaApplication extends Application {
         final int baseTop = content.getPaddingTop();
         final int baseRight = content.getPaddingRight();
         final int baseBottom = content.getPaddingBottom();
+        final int handledTypes = WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout();
         ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets bars = insets.getInsets(handledTypes);
             view.setPadding(baseLeft + bars.left, baseTop + bars.top, baseRight + bars.right, baseBottom + bars.bottom);
-            return insets;
+            return new WindowInsetsCompat.Builder(insets).setInsets(handledTypes, Insets.NONE).build();
         });
         ViewCompat.requestApplyInsets(content);
     }
