@@ -53,9 +53,12 @@ tasks.register('prepareGate7LaunchContract') {
         if (selectedRuntime == null || selectedRuntime.trim().isEmpty()) {
             throw new GradleException('ALFA_GATE7_RUNTIME_ID is required when Gate 7 asset is supplied')
         }
-        def registry = new groovy.json.JsonSlurper().parse(file("${rootProject.projectDir}/runtime/runtimes.v1.json"))
+        def registryFile = file("${rootProject.projectDir}/runtime/runtimes.v1.json")
+        def registry = new groovy.json.JsonSlurper().parse(registryFile)
         def runtime = registry.runtimes.find { it.runtime_id == selectedRuntime.trim() }
         if (runtime == null) throw new GradleException("Gate 7 runtime is not in canonical registry: ${selectedRuntime}")
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        def registryHash = digest.digest(registryFile.bytes).collect { String.format('%02x', it) }.join()
         def source = file(sourcePath)
         if (!source.isFile()) throw new GradleException("ALFA_GATE7_ASSET is not a regular file: ${source}")
         def text = source.getText('UTF-8')
@@ -69,8 +72,8 @@ tasks.register('prepareGate7LaunchContract') {
         if (value('runtime_id') != selectedRuntime.trim()) {
             throw new GradleException("Gate 7 runtime provenance mismatch: asset=${value('runtime_id')} selected=${selectedRuntime}")
         }
-        if (!value('runtime_registry_sha256').matches('[0-9a-fA-F]{64}')) {
-            throw new GradleException('Gate 7 runtime_registry_sha256 is invalid')
+        if (value('runtime_registry_sha256') != registryHash) {
+            throw new GradleException("Gate 7 runtime registry provenance is stale: asset=${value('runtime_registry_sha256')} canonical=${registryHash}")
         }
         source.withInputStream { input -> output.withOutputStream { out -> out << input } }
     }
