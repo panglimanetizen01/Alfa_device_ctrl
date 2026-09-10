@@ -4,13 +4,18 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 import android.view.View;
-import android.view.WindowInsets;
 import android.widget.FrameLayout;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,16 +24,31 @@ public final class AlfaApplication extends Application {
     private static final String ASSET = "gate7-launch.properties";
     private static AlfaApplication instance;
     private final AtomicInteger startedActivities = new AtomicInteger();
+    private volatile boolean activityPauseInProgress;
 
     @Override public void onCreate() {
         super.onCreate();
         instance = this;
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
-            @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
-            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowInsetsPolicy(activity); AlfaUiTheme.apply(activity); }
-            @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); }
-            @Override public void onActivityPaused(Activity activity) { }
+            @Override public void onActivityStopped(Activity activity) {
+                startedActivities.updateAndGet(value -> Math.max(0, value - 1));
+                if (activity instanceof MainActivity) activityPauseInProgress = false;
+            }
+            @Override public void onActivityCreated(Activity activity, Bundle state) {
+                installWindowInsetsPolicy(activity);
+                AlfaUiTheme.apply(activity);
+            }
+            @Override public void onActivityResumed(Activity activity) {
+                activityPauseInProgress = false;
+                AlfaUiTheme.apply(activity);
+                rebindForegroundSession(activity);
+            }
+            @Override public void onActivityPaused(Activity activity) {
+                if (activity instanceof MainActivity && RuntimeKeepAliveService.owner() != null) {
+                    activityPauseInProgress = true;
+                }
+            }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
             @Override public void onActivityDestroyed(Activity activity) { }
         });
@@ -37,27 +57,47 @@ public final class AlfaApplication extends Application {
 
     public static AlfaApplication getInstance() { return instance; }
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
+    public static boolean isActivityPauseInProgress() { return instance != null && instance.activityPauseInProgress; }
 
     /**
-     * Android 15+ lays out target-SDK-35 apps edge-to-edge. Keep the existing native Views
-     * hierarchy intact, but reserve system-bar insets for interactive/content roots so top and
-     * bottom controls cannot be obscured. The listener preserves the activity's original
-     * content padding rather than accumulating padding across repeated inset dispatches.
+     * API 35+ enforces edge-to-edge and API 36 removes the opt-out. The policy is centralized
+     * here so the native Views hierarchy receives one idempotent inset pass.
      */
     private static void installWindowInsetsPolicy(Activity activity) {
+        WindowCompat.enableEdgeToEdge(activity.getWindow());
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout)) return;
         final int baseLeft = content.getPaddingLeft();
         final int baseTop = content.getPaddingTop();
         final int baseRight = content.getPaddingRight();
         final int baseBottom = content.getPaddingBottom();
-        activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> {
-            final int top = insets.getSystemWindowInsetTop();
-            final int bottom = insets.getSystemWindowInsetBottom();
-            content.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom);
+        ViewCompat.setOnApplyWindowInsetsListener(content, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(baseLeft + bars.left, baseTop + bars.top, baseRight + bars.right, baseBottom + bars.bottom);
             return insets;
         });
-        activity.getWindow().getDecorView().requestApplyInsets();
+        ViewCompat.requestApplyInsets(content);
+    }
+
+    /** Rebinds only the UI listener/view to the already-owned foreground runtime session. */
+    private static void rebindForegroundSession(Activity activity) {
+        if (!(activity instanceof MainActivity)) return;
+        RuntimeSessionManager owner = RuntimeKeepAliveService.owner();
+        if (owner == null || !owner.isRunning()) return;
+        try {
+            Field managerField = MainActivity.class.getDeclaredField("sessionManager");
+            Field terminalField = MainActivity.class.getDeclaredField("terminalView");
+            managerField.setAccessible(true);
+            terminalField.setAccessible(true);
+            managerField.set(activity, owner);
+            owner.rebindListener((RuntimeSessionManager.Listener) activity);
+            Object terminal = terminalField.get(activity);
+            if (terminal instanceof com.termux.view.TerminalView) {
+                owner.attachTo((com.termux.view.TerminalView) terminal);
+            }
+        } catch (ReflectiveOperationException error) {
+            throw new IllegalStateException("runtime-session-ui-rebind-failed", error);
+        }
     }
 
     private void installLaunchContract() {
