@@ -51,15 +51,26 @@ jobs:
           import json, re, subprocess
           files=subprocess.check_output(['git','ls-files'],text=True).splitlines()
           bad=[]
+          intentionally_audited=[]
           patterns=[r'/storage/emulated/0/Alfa_device_ctrl(?:/|$)',r'/storage/emulated/0/UserLAnd',r'UserLAnd_home_migration',r'/storage/emulated/0/android-sdk',r'fix/post-g19-android-launch-contract-final']
+          intentional={'.github/workflows/alfa-ci.yml'}
           for path in files:
               if path == '.github/workflows/canonical-hardening.yml': continue
               try: text=open(path,encoding='utf-8',errors='ignore').read()
               except (OSError,IsADirectoryError): continue
               for pattern in patterns:
-                  if re.search(pattern,text): bad.append({'path':path,'pattern':pattern})
-          report={'status':'PASS' if not bad else 'FAIL','stale_references':bad}
+                  if re.search(pattern,text):
+                      item={'path':path,'pattern':pattern}
+                      if path in intentional:
+                          intentionally_audited.append(item)
+                      else:
+                          bad.append(item)
+          report={'status':'PASS' if not bad else 'FAIL','stale_references':bad,'intentional_audit_patterns':intentionally_audited}
           json.dump(report,open('stale-audit.json','w'),indent=2)
+          if intentionally_audited:
+              print('INTENTIONAL_AUDIT_PATTERNS_BEGIN')
+              for item in intentionally_audited: print(f"{item['path']} :: {item['pattern']}")
+              print('INTENTIONAL_AUDIT_PATTERNS_END')
           if bad:
               print('STALE_REFERENCE_MATCHES_BEGIN')
               for item in bad: print(f"{item['path']} :: {item['pattern']}")
