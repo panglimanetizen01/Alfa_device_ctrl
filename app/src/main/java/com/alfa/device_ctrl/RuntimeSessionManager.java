@@ -26,9 +26,14 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) { if (contract == null) throw new IllegalArgumentException("contract is required"); this.contract = contract; this.listener = listener; }
 
+    private void notifyState(String event) {
+        Listener current = listener;
+        if (current != null) current.onState(SessionUiState.resolve(event).name());
+    }
+
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
-        if (session != null && session.isRunning()) { if (listener != null) listener.onState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
-        if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { if (listener != null) listener.onState("BLOCKED"); return false; }
+        if (session != null && session.isRunning()) { notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
+        if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { notifyState("BLOCKED"); return false; }
         promptReady = false;
         session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
         session.mSessionName = contract.sessionId(); session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
@@ -38,10 +43,10 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             session.finishIfRunning();
             session = null;
             promptReady = false;
-            if (listener != null) listener.onState("BLOCKED_FGS_START");
+            notifyState("BLOCKED_FGS_START");
             return false;
         }
-        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid()); if (listener != null) listener.onState("PTY_CREATED"); return true;
+        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid()); notifyState("PTY_CREATED"); return true;
     }
 
     public synchronized void attachTo(TerminalView view) { if (view == null) throw new IllegalArgumentException("view is required"); if (session == null) throw new IllegalStateException("session is not started"); view.attachSession(session); }
@@ -49,11 +54,11 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     public void stop() {
         synchronized (this) { if (session == null || !session.isRunning()) return; }
         if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { if (listener != null) listener.onState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { notifyState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
     }
 
     private void finishNow() {
-        synchronized (this) { if (session != null) { OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid()); session.finishIfRunning(); } if (listener != null) listener.onState("STOPPING"); }
+        synchronized (this) { if (session != null) { OperationEvidence.write(contract, "STOPPING", "REQUESTED", session.getPid()); session.finishIfRunning(); } notifyState("STOPPING"); }
         RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this);
     }
 
@@ -69,7 +74,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             if (!promptReady && changedSession == session && changedSession.getEmulator() != null && changedSession.getEmulator().getScreen() != null) {
                 String transcript = changedSession.getEmulator().getScreen().getTranscriptText();
                 String runtimePrompt = "alfa:" + contract.runtimeId() + ":";
-                if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); if (listener != null) listener.onState("READY"); }
+                if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); notifyState("READY"); }
             }
         }
         if (listener != null) listener.onTextChanged();
