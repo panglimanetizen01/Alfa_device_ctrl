@@ -1,21 +1,39 @@
 package com.alfa.device_ctrl;
 
+import android.app.Activity;
 import android.app.Application;
+import android.os.Bundle;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Copies the explicit build-time Gate 7 launch attestation into the private runtime vault. */
 public final class AlfaApplication extends Application {
     private static final String ASSET = "gate7-launch.properties";
+    private static AlfaApplication instance;
+    private final AtomicInteger startedActivities = new AtomicInteger();
 
     @Override public void onCreate() {
         super.onCreate();
+        instance = this;
+        registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
+            @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
+            @Override public void onActivityCreated(Activity activity, Bundle state) { }
+            @Override public void onActivityResumed(Activity activity) { }
+            @Override public void onActivityPaused(Activity activity) { }
+            @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
+            @Override public void onActivityDestroyed(Activity activity) { }
+        });
         installLaunchContract();
     }
+
+    public static AlfaApplication getInstance() { return instance; }
+    public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
 
     private void installLaunchContract() {
         File vault = new File(getFilesDir(), "runtime-vault");
@@ -39,11 +57,13 @@ public final class AlfaApplication extends Application {
         try (FileInputStream input = new FileInputStream(file)) { p.load(input); }
         require(p, "pipeline_run_id"); require(p, "runtime_id"); require(p, "source_commit");
         require(p, "gate4_contract_sha256"); require(p, "profile_sha256"); require(p, "implementation_commit");
+        require(p, "runtime_registry_sha256");
         if (RuntimeRegistry.get(p.getProperty("runtime_id")) == null) throw new IllegalStateException("unsupported-runtime-id");
         if (!p.getProperty("source_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-source-commit");
         if (!p.getProperty("implementation_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-implementation-commit");
         if (!p.getProperty("gate4_contract_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-gate4-hash");
         if (!p.getProperty("profile_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-profile-hash");
+        if (!p.getProperty("runtime_registry_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-runtime-registry-hash");
     }
 
     private static void require(Properties p, String key) {
