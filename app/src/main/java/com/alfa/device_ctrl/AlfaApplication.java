@@ -3,6 +3,9 @@ package com.alfa.device_ctrl;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
+import android.view.View;
+import android.view.WindowInsets;
+import android.widget.FrameLayout;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +26,7 @@ public final class AlfaApplication extends Application {
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
             @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
-            @Override public void onActivityCreated(Activity activity, Bundle state) { }
+            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowInsetsPolicy(activity); }
             @Override public void onActivityResumed(Activity activity) { }
             @Override public void onActivityPaused(Activity activity) { }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
@@ -34,6 +37,29 @@ public final class AlfaApplication extends Application {
 
     public static AlfaApplication getInstance() { return instance; }
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
+
+    /**
+     * Android 15+ lays out target-SDK-35 apps edge-to-edge. Keep the existing native Views
+     * hierarchy intact, but reserve system-bar insets for interactive/content roots so top and
+     * bottom controls cannot be obscured. The listener preserves each activity's pre-existing
+     * content padding and only adds the current system-bar insets.
+     */
+    private static void installWindowInsetsPolicy(Activity activity) {
+        activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> {
+            View content = activity.findViewById(android.R.id.content);
+            if (content instanceof FrameLayout) {
+                final int baseLeft = content.getPaddingLeft();
+                final int baseTop = content.getPaddingTop();
+                final int baseRight = content.getPaddingRight();
+                final int baseBottom = content.getPaddingBottom();
+                final int top = insets.getSystemWindowInsetTop();
+                final int bottom = insets.getSystemWindowInsetBottom();
+                content.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom);
+            }
+            return insets;
+        });
+        activity.getWindow().getDecorView().requestApplyInsets();
+    }
 
     private void installLaunchContract() {
         File vault = new File(getFilesDir(), "runtime-vault");
