@@ -34,8 +34,10 @@ public final class RuntimeProfileTest {
             assertEquals("-0", args[0]);
             assertEquals("-r", args[1]);
             assertEquals("{RUNTIME_ROOT}", args[2]);
-            assertEquals("{SHELL}", args[args.length - 2]);
-            assertEquals("-i", args[args.length - 3]);
+            assertEquals("/usr/bin/env", args[11]);
+            assertEquals("-i", args[12]);
+            assertEquals(profile.shell(), args[args.length - 2]);
+            assertEquals("-i", args[args.length - 1]);
         }
     }
 }
