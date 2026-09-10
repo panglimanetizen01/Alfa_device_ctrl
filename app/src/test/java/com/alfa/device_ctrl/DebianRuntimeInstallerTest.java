@@ -12,10 +12,10 @@ import java.util.Properties;
 import org.junit.Test;
 
 public final class DebianRuntimeInstallerTest {
-    private static final String DEBIAN_URL = RuntimeProfile.ROOTFS_URL;
-    private static final String DEBIAN_SHA256 = RuntimeProfile.ROOTFS_SHA256;
+    private static final RuntimeProfile DEBIAN = RuntimeRegistry.get("debian");
 
     @Test public void canonicalDebianArtifactInstallsAndProducesVerifiedReadyEvidence() throws Exception {
+        assertTrue("Debian profile missing from canonical registry", DEBIAN != null);
         File archive = fixture("artifacts/test-fixtures/debian-bookworm-arm64.tar.gz");
         if (!archive.isFile()) archive = downloadPinnedDebianArtifact();
         assertTrue("Debian acceptance fixture missing: " + archive, archive.isFile());
@@ -34,13 +34,13 @@ public final class DebianRuntimeInstallerTest {
         assertTrue("loader fixture hash must be trusted", RuntimeEvidence.isTrustedProotLoaderSha256(sha256(loader)));
 
         RuntimeInstaller installer = new RuntimeInstaller(temp, null, engine, nativeDir, (ignored, root) -> null);
-        RuntimeInstaller.Result result = installer.install(RuntimeProfile.ID, null, sha256(engine), archive.toURI().toURL(), sha256(archive), true);
+        RuntimeInstaller.Result result = installer.install(DEBIAN, null, sha256(engine), archive.toURI().toURL(), sha256(archive), DEBIAN.rootfsGzip());
         assertTrue(result.message, result.success);
 
-        File runtime = new File(temp, "runtimes/" + RuntimeProfile.ID);
+        File runtime = new File(temp, "runtimes/" + DEBIAN.id());
         File evidence = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
-        assertTrue(RuntimeEvidence.verify(evidence, RuntimeProfile.ID, engine, rootfs));
+        assertTrue(RuntimeEvidence.verify(evidence, DEBIAN.id(), engine, rootfs));
         Properties p = new Properties();
         try (FileInputStream input = new FileInputStream(new File(rootfs, "etc/os-release"))) { p.load(input); }
         assertEquals("debian", p.getProperty("ID"));
@@ -59,9 +59,9 @@ public final class DebianRuntimeInstallerTest {
         archive.deleteOnExit();
         Process process = new ProcessBuilder(
                 "curl", "-fL", "--retry", "3", "--retry-delay", "1",
-                DEBIAN_URL, "-o", archive.getAbsolutePath()).inheritIO().start();
+                DEBIAN.rootfsUrl(), "-o", archive.getAbsolutePath()).inheritIO().start();
         assertEquals("Debian rootfs download failed", 0, process.waitFor());
-        assertEquals("Debian rootfs digest mismatch", DEBIAN_SHA256, sha256(archive));
+        assertEquals("Debian rootfs digest mismatch", DEBIAN.rootfsSha256(), sha256(archive));
         return archive;
     }
 
