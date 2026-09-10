@@ -58,8 +58,8 @@ public final class AlfaUiTheme {
             TextView text = (TextView) view;
             if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
             Typeface current = text.getTypeface();
-            if (current != null && current.isMonospace()) {
-                text.setTypeface(Typeface.create("monospace", current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
+            if (current != null) {
+                text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
             }
         }
 
