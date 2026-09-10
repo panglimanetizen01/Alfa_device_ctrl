@@ -13,12 +13,15 @@ mkdir -p "$TMP"
 SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)
 GATE4_SHA=$(printf '%s' 'gate4-test-contract' | sha256sum | awk '{print $1}')
 PROFILE_SHA=$(printf '%s' 'profile-test' | sha256sum | awk '{print $1}')
+RUNTIME_REGISTRY_SHA=$(sha256sum "$ROOT/runtime/runtimes.v1.json" | awk '{print $1}')
 IMPLEMENTATION_COMMIT="$SOURCE_COMMIT"
 cat > "$BOOTSTRAP" <<EOF
 schema_version=gate6-bootstrap.v1
 gate=gate6
 gate_status=PASS
 pipeline_run_id=$RUN_ID
+runtime_id=debian
+runtime_registry_sha256=$RUNTIME_REGISTRY_SHA
 source_commit=$SOURCE_COMMIT
 implementation_commit=$IMPLEMENTATION_COMMIT
 gate4_contract_sha256=$GATE4_SHA
