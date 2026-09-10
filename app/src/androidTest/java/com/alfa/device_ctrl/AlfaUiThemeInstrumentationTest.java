@@ -3,8 +3,8 @@ package com.alfa.device_ctrl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Activity;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -37,7 +37,8 @@ public final class AlfaUiThemeInstrumentationTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
                 View root = activity.findViewById(android.R.id.content);
-                assertEquals("root background must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, root.getBackground() == null ? Color.TRANSPARENT : root.getBackground().getConstantState().newDrawable().getConstantState().hashCode() == 0 ? AlfaUiTheme.CANVAS : root.getBackground() instanceof android.graphics.drawable.ColorDrawable ? ((android.graphics.drawable.ColorDrawable) root.getBackground()).getColor() : AlfaUiTheme.CANVAS);
+                assertTrue("root background must be a ColorDrawable", root.getBackground() instanceof ColorDrawable);
+                assertEquals("root background must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, ((ColorDrawable) root.getBackground()).getColor());
                 assertNoLegacyTextColors(root);
             });
         }
