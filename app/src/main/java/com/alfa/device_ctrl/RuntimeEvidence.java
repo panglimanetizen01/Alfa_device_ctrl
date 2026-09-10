@@ -9,8 +9,14 @@ import java.util.Properties;
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
     public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
+    public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33";
 
     private RuntimeEvidence() { }
+
+    public static boolean isTrustedProotLoaderSha256(String sha256) {
+        return TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256)
+                || TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.equalsIgnoreCase(sha256);
+    }
 
     public static boolean verify(File evidence, String runtimeId, File engine, File rootfs) {
         if (evidence == null || runtimeId == null || engine == null || rootfs == null || !evidence.isFile()) return false;
@@ -28,7 +34,7 @@ public final class RuntimeEvidence {
             if (!engine.isFile() || !engine.canExecute() || !rootfs.isDirectory()) return false;
             File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();
             if (!loader.isFile() || !loader.canExecute() || !isArm64Elf(loader)) return false;
-            if (!TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256(loader))) return false;
+            if (!isTrustedProotLoaderSha256(sha256(loader))) return false;
             String expected = p.getProperty("engine_sha256", "");
             return expected.length() == 64 && expected.equalsIgnoreCase(sha256(engine));
         } catch (Exception ignored) {
