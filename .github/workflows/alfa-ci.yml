@@ -70,7 +70,7 @@ jobs:
           test -x "$LOADER"
           file "$LOADER"
           readelf -h "$LOADER" | grep -E 'Class:|Machine:'
-          readelf -l "$LOADER" | grep 'LOAD' | awk '{print $NF}'
+          llvm-readelf -lW "$LOADER" | awk '$1 == "LOAD" {print "ELF_LOAD_ALIGN=" $NF; if ($NF != "0x4000") bad=1} END {if (bad || NR == 0) exit 1}'
           LOADER_SHA256="$(sha256sum "$LOADER" | awk '{print $1}')"
           python3 - "$LOADER_SHA256" "$NDK_VERSION" <<'PY'
           import json, os, sys
@@ -81,6 +81,7 @@ jobs:
               "proot_commit": "7266fb3e8516535682f5a9c8f3a7e70f6506eddb",
               "ndk_version": sys.argv[2],
               "loader_sha256": sys.argv[1],
+              "elf_load_alignment": "0x4000",
               "exists": True,
               "executable": os.access("app/build/generated/jniLibs/arm64-v8a/libproot-loader.so", os.X_OK),
           }, open("ci-evidence/loader-provenance.json", "w"), indent=2)
@@ -164,6 +165,47 @@ jobs:
           }, open("ci-evidence/build-result.json", "w"), indent=2)
           PY
           exit 0
+
+      - name: Gate C2 - 16 KB native and APK alignment
+        if: always()
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          REPORT="ci-evidence/native-16kb-verification.json"
+          if [ ! -f "$APK" ]; then
+            python3 - <<'PY'
+            import json
+            json.dump({"gate":"C2","status":"FAIL","reason":"debug APK missing"}, open("ci-evidence/native-16kb-verification.json","w"), indent=2)
+            PY
+            exit 0
+          fi
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          python3 - "$TMP" "$REPORT" <<'PY'
+          import json, os, subprocess, sys
+          root, report = sys.argv[1:]
+          libs=[]
+          for base, _, names in os.walk(root):
+              for name in names:
+                  if name.endswith('.so'):
+                      path=os.path.join(base,name)
+                      lines=subprocess.check_output(['llvm-readelf','-lW',path],text=True).splitlines()
+                      aligns=[line.split()[-1] for line in lines if line.split() and line.split()[0]=='LOAD']
+                      libs.append({'path':os.path.relpath(path,root),'load_alignments':aligns,'pass':bool(aligns) and all(x=='0x4000' for x in aligns)})
+          json.dump({'gate':'C2','status':'PASS' if libs and all(x['pass'] for x in libs) else 'FAIL','elf_load_alignment_required':'0x4000','libraries':libs},open(report,'w'),indent=2)
+          raise SystemExit(0)
+          PY
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -v -c -P 16 4 "$APK" > ci-evidence/zipalign-16kb.txt 2>&1
+          printf '%s\n' 'zipalign_status=PASS' >> ci-evidence/zipalign-16kb.txt
+          python3 - <<'PY'
+          import json
+          path='ci-evidence/native-16kb-verification.json'
+          data=json.load(open(path,encoding='utf-8'))
+          data['zipalign_status']='PASS'
+          data['status']='PASS' if data.get('status')=='PASS' else 'FAIL'
+          json.dump(data,open(path,'w'),indent=2)
+          PY
 
       - name: Gate D - Unit tests
         run: |
@@ -252,6 +294,7 @@ jobs:
               "build-result.json",
               "test-result.json",
               "fixture-provenance.json",
+              "native-16kb-verification.json",
           ]
           missing = [x for x in required if not os.path.isfile("ci-evidence/" + x)]
           if missing:
@@ -293,6 +336,7 @@ jobs:
               "build-result.json",
               "test-result.json",
               "fixture-provenance.json",
+              "native-16kb-verification.json",
           ]
           missing = [f for f in files if not os.path.isfile("ci-evidence/" + f)]
           if missing:
