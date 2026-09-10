@@ -16,16 +16,13 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-
       - name: Bash syntax
         run: |
           bash -n tools/gate10_runtime_workflow.sh
           bash -n tools/runtime_workflow.sh
           bash -n tools/test_gate10_contract.sh
-
       - name: G10 contract and protection test
         run: bash tools/test_gate10_contract.sh
-
       - name: G1-G9 source protection
         run: |
           git diff --name-only HEAD^ HEAD > /tmp/g10-changed.txt
@@ -40,6 +37,10 @@ jobs:
                 grep -Fq 'acceptance_status") != "SUPPORTED"' tools/gate1_foundation_v2.sh
                 grep -Fq 'acceptance_order=debian>ubuntu>alpine>kali' tools/gate1_foundation_v2.sh
                 ;;
+              .github/workflows/g8-runtime-task-contract.yml|.github/workflows/g9-runtime-action-contract.yml)
+                grep -Fq 'G7_MULTIDISTRO_MIGRATION_ALLOWED' .github/workflows/g8-runtime-task-contract.yml .github/workflows/g9-runtime-action-contract.yml
+                grep -Fq 'G1_MULTIDISTRO_MIGRATION_ALLOWED' .github/workflows/g8-runtime-task-contract.yml .github/workflows/g9-runtime-action-contract.yml
+                ;;
               tools/gate2_canonical_source_build_boundary.sh|tools/execution_capability.sh|tools/gate3_execution_capability.sh|tools/environment_contract.sh|tools/gate5_common.sh|tools/runtime_bootstrap.sh|tools/gate8_runtime_task.sh|tools/gate9_runtime_action.sh)
                 echo "PROTECTED_SOURCE_CHANGED=$path"
                 exit 1
@@ -47,6 +48,5 @@ jobs:
             esac
           done < /tmp/g10-changed.txt
           echo 'G1_G9_SOURCE_PROTECTION=PASS'
-
       - name: Post Checkout exact source
         run: test "$(git rev-parse HEAD)" = "${{ github.sha }}"
