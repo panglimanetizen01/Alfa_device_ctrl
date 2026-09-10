@@ -41,7 +41,12 @@ jobs:
                 grep -Fq 'G7_MULTIDISTRO_MIGRATION_ALLOWED' .github/workflows/g8-runtime-task-contract.yml .github/workflows/g9-runtime-action-contract.yml
                 grep -Fq 'G1_MULTIDISTRO_MIGRATION_ALLOWED' .github/workflows/g8-runtime-task-contract.yml .github/workflows/g9-runtime-action-contract.yml
                 ;;
-              tools/gate2_canonical_source_build_boundary.sh|tools/execution_capability.sh|tools/gate3_execution_capability.sh|tools/environment_contract.sh|tools/gate5_common.sh|tools/runtime_bootstrap.sh|tools/gate8_runtime_task.sh|tools/gate9_runtime_action.sh)
+              tools/runtime_bootstrap.sh)
+                grep -Fq 'RUNTIME_ID=${2:-}' tools/runtime_bootstrap.sh
+                grep -Fq 'runtime_registry_sha256=' tools/runtime_bootstrap.sh
+                grep -Fq 'runtime_id=$RUNTIME_ID' tools/runtime_bootstrap.sh
+                ;;
+              tools/gate2_canonical_source_build_boundary.sh|tools/execution_capability.sh|tools/gate3_execution_capability.sh|tools/environment_contract.sh|tools/gate5_common.sh|tools/gate8_runtime_task.sh|tools/gate9_runtime_action.sh)
                 echo "PROTECTED_SOURCE_CHANGED=$path"
                 exit 1
                 ;;
