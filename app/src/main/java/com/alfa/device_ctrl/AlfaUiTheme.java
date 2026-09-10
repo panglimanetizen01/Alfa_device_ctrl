@@ -6,7 +6,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -40,7 +39,7 @@ public final class AlfaUiTheme {
         root.setBackgroundColor(CANVAS);
         float density = activity.getResources().getDisplayMetrics().density;
         applyTree(root, 0, density);
-        root.post(() -> adaptRuntimeDashboard(activity, root, density));
+        root.post(() -> adaptRuntimeDashboard(root, density));
     }
 
     private static void applyTree(View view, int depth, float density) {
@@ -82,13 +81,13 @@ public final class AlfaUiTheme {
         return color;
     }
 
-    /** Uses the current Activity window bounds and keeps terminal space available in compact windows. */
-    private static void adaptRuntimeDashboard(Activity activity, View root, float density) {
+    /** Uses the measured space actually allocated to the content column after system insets. */
+    private static void adaptRuntimeDashboard(View root, float density) {
         LinearLayout content = findContentColumn(root);
         if (content == null || content.getHeight() <= 0) return;
         int runtimeCount = Math.max(1, RuntimeRegistry.all().size());
-        int windowHeightDp = currentWindowHeightDp(activity, density, content.getHeight());
-        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(windowHeightDp, runtimeCount);
+        int availableHeightDp = Math.max(1, Math.round(content.getHeight() / density));
+        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(availableHeightDp, runtimeCount);
 
         View runtimeWindow = content.getChildAt(0);
         View monitorWindow = content.getChildAt(2);
@@ -103,17 +102,6 @@ public final class AlfaUiTheme {
             terminalWindow.setMinimumHeight(dp(layout.terminalMinDp, density));
         }
         content.requestLayout();
-    }
-
-    private static int currentWindowHeightDp(Activity activity, float density, int fallbackPx) {
-        try {
-            WindowManager windowManager = (WindowManager) activity.getSystemService(Activity.WINDOW_SERVICE);
-            if (windowManager != null && android.os.Build.VERSION.SDK_INT >= 30) {
-                android.view.WindowMetrics metrics = windowManager.getCurrentWindowMetrics();
-                return Math.max(1, Math.round(metrics.getBounds().height() / metrics.getDensity()));
-            }
-        } catch (RuntimeException ignored) { }
-        return Math.max(1, Math.round(fallbackPx / density));
     }
 
     private static LinearLayout findContentColumn(View root) {
