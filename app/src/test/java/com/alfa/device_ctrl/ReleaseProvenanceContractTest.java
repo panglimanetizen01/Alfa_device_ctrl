@@ -23,8 +23,8 @@ public final class ReleaseProvenanceContractTest {
         File source = new File("../tools/build_proot_loader.sh");
         assertTrue(source.isFile());
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
-        assertTrue(text.contains("TRUSTED_LOADER_SHA256_ARM64=" + RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256));
-        assertTrue(text.contains("TRUSTED_LOADER_SHA256_X86_64=" + RuntimeEvidence.TRUSTED_PROOT_LOADER_CI_X86_64_SHA256));
+        assertTrue(text.contains("TRUSTED_LOADER_SHA256_ARM64=\"" + RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256 + "\""));
+        assertTrue(text.contains("TRUSTED_LOADER_SHA256_X86_64=\"" + RuntimeEvidence.TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 + "\""));
         assertTrue(text.contains("TRUSTED_SHA256_MISMATCH"));
         assertTrue(text.contains("exit 21"));
     }
@@ -33,7 +33,9 @@ public final class ReleaseProvenanceContractTest {
         File source = new File("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
         assertTrue(source.isFile());
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
-        assertTrue(text.contains("if (destination.exists()) destination.delete();"));
-        assertTrue(text.contains("validate(temporary);"));
+        assertTrue(text.contains("destination.exists()"));
+        assertTrue(text.contains("destination.delete()"));
+        assertTrue(text.contains("validate(temporary)"));
+        assertTrue(text.contains("temporary.renameTo(destination)"));
     }
 }
