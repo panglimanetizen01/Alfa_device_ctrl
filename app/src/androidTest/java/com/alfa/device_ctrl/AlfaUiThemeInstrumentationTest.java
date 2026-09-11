@@ -64,6 +64,26 @@ public final class AlfaUiThemeInstrumentationTest {
         }
     }
 
+    @Test
+    public void finalShellContainsCanonicalExecutionLanePresentation() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> {
+                try {
+                    Field field = MainActivity.class.getDeclaredField("executionLanes");
+                    field.setAccessible(true);
+                    LinearLayout lanes = (LinearLayout) field.get(activity);
+                    assertEquals("four canonical execution lanes must be represented", ExecutionLane.values().length, lanes.getChildCount());
+                    assertTrue("runtime lane must be represented", textContains(lanes, "RUNTIME"));
+                    assertTrue("Termux lane must be represented", textContains(lanes, "TERMUX"));
+                    assertTrue("Termux API lane must be represented", textContains(lanes, "TERMUX API"));
+                    assertTrue("Shizuku/Rish lane must be represented", textContains(lanes, "SHIZUKU / RISH"));
+                } catch (ReflectiveOperationException error) {
+                    throw new AssertionError(error);
+                }
+            });
+        }
+    }
+
     private static int assertInteractiveTargets(View view, int min) {
         int checked = 0;
         if (view instanceof Button || view.isClickable()) {
@@ -75,6 +95,15 @@ public final class AlfaUiThemeInstrumentationTest {
             for (int i = 0; i < group.getChildCount(); i++) checked += assertInteractiveTargets(group.getChildAt(i), min);
         }
         return checked;
+    }
+
+    private static boolean textContains(View view, String expected) {
+        if (view instanceof TextView && String.valueOf(((TextView) view).getText()).contains(expected)) return true;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (textContains(group.getChildAt(i), expected)) return true;
+        }
+        return false;
     }
 
     private static void assertNoLegacyTextColors(View view) {
