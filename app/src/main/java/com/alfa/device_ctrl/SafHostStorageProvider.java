@@ -21,7 +21,7 @@ import java.util.List;
  * Canonical host-project access through SAF. It deliberately exposes content URIs only and never
  * treats a guessed /sdcard path as proof of host visibility.
  */
-public final class SafHostStorageProvider implements HostStorageProvider {
+public final class SafHostStorageProvider {
     private static final String PREFS = "alfa_host_storage";
     private static final String TREE_URI = "tree_uri";
     private static final int MAX_TEXT_BYTES = 1_048_576;
