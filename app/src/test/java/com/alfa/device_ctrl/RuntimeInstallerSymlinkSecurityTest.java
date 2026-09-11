@@ -33,6 +33,7 @@ public final class RuntimeInstallerSymlinkSecurityTest {
         Path linkTarget = Files.readSymbolicLink(link);
         assertFalse("published symlink target must not be absolute", linkTarget.isAbsolute());
         Path resolved = link.getParent().resolve(linkTarget).normalize();
+        // The guest absolute link must remain semantically equivalent without escaping the host rootfs.
         assertTrue("resolved symlink target must remain inside rootfs", resolved.startsWith(root.toPath().toAbsolutePath().normalize()));
     }
 
