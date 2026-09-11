@@ -168,11 +168,30 @@ public final class InteractiveSessionContract {
     public String[] prootArguments() {
         RuntimeProfile profile = RuntimeRegistry.get(runtimeId);
         if (profile == null) throw new IllegalStateException("unsupported-runtime-id");
-        String prompt = profile.promptContract() + "\\w\\$ "; String[] template = profile.prootArguments();
+        return resolveProotArguments(profile, runtimeRoot, directoryOverrideBinds);
+    }
+
+    static String[] resolveProotArguments(RuntimeProfile profile, File runtimeRoot, String[] directoryOverrideBinds) {
+        if (profile == null || runtimeRoot == null) throw new IllegalArgumentException("proot-arguments-invalid");
+        String prompt = profile.promptContract() + "\\w\\$ ";
+        String[] template = profile.prootArguments();
         ArrayList<String> resolved = new ArrayList<>();
-        for (String value : template) resolved.add(value.replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell()).replace("{PROMPT}", prompt));
-        for (String bind : directoryOverrideBinds) { resolved.add("-b"); resolved.add(bind); }
+        int commandStart = template.length;
+        for (int i = 0; i < template.length; i++) {
+            String value = template[i];
+            if (isCommandToken(value, profile)) { commandStart = i; break; }
+            resolved.add(value.replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell()).replace("{PROMPT}", prompt));
+        }
+        if (directoryOverrideBinds != null) for (String bind : directoryOverrideBinds) { resolved.add("-b"); resolved.add(bind); }
+        for (int i = commandStart; i < template.length; i++) {
+            String value = template[i];
+            resolved.add(value.replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell()).replace("{PROMPT}", prompt));
+        }
         return resolved.toArray(new String[0]);
+    }
+
+    private static boolean isCommandToken(String value, RuntimeProfile profile) {
+        return profile.shell().equals(value) || "/usr/bin/env".equals(value);
     }
 
     private static String requireToken(String value, String name) { if (value == null || value.trim().isEmpty() || value.indexOf('\0') >= 0) throw new IllegalArgumentException(name + " is invalid"); return value; }
