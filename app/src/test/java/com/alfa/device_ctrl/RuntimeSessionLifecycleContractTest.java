@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public final class RuntimeSessionLifecycleContractTest {
     @Test public void foregroundServiceOwnsPausePreservationAndReattachment() throws Exception {
-        File service = new File("app/src/main/java/com/alfa/device_ctrl/RuntimeKeepAliveService.java");
+        File service = new File("src/main/java/com/alfa/device_ctrl/RuntimeKeepAliveService.java");
         String serviceText = new String(Files.readAllBytes(service.toPath()), StandardCharsets.UTF_8);
         assertTrue(serviceText.contains("isActivityPauseInProgress"));
         assertTrue(serviceText.contains("RuntimeSessionReattachment.attach"));
@@ -18,14 +18,14 @@ public final class RuntimeSessionLifecycleContractTest {
     }
 
     @Test public void sessionManagerExposesListenerRebindAndPauseGuard() throws Exception {
-        File manager = new File("app/src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java");
+        File manager = new File("src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java");
         String managerText = new String(Files.readAllBytes(manager.toPath()), StandardCharsets.UTF_8);
         assertTrue(managerText.contains("rebindListener"));
         assertTrue(managerText.contains("RuntimeKeepAliveService.isActivityPauseInProgress()"));
     }
 
     @Test public void reattachmentBridgeFindsTerminalAndRestoresManager() throws Exception {
-        File bridge = new File("app/src/main/java/com/alfa/device_ctrl/RuntimeSessionReattachment.java");
+        File bridge = new File("src/main/java/com/alfa/device_ctrl/RuntimeSessionReattachment.java");
         assertTrue(bridge.isFile());
         String text = new String(Files.readAllBytes(bridge.toPath()), StandardCharsets.UTF_8);
         assertTrue(text.contains("findTerminalView"));
