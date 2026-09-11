@@ -6,6 +6,8 @@ import java.util.List;
 
 /** Canonical immutable registry of supported initial Linux runtimes. */
 public final class RuntimeRegistry {
+    public static final String CANONICAL_REGISTRY_SHA256 = "2e5622860db9973f9349999306604d5b01bd6d7915d4a69ff4bf89127a1ca405";
+
     private static final List<RuntimeProfile> PROFILES = Collections.unmodifiableList(Arrays.asList(
             new RuntimeProfile("debian","Debian","trixie","aarch64","https://github.com/debuerreotype/docker-debian-artifacts/raw/fb7215b47dab72bdbdd59204a7b7914311431d90/trixie/oci/blobs/rootfs.tar.gz","6b89e501e8efce0d3d87e3f6b0f85c417e799a3b36b8f44419609ba7fecf9563",true,"tar.gz","/bin/sh","apt","alfa:debian:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"}),
             new RuntimeProfile("ubuntu","Ubuntu","24.04.4","aarch64","https://cdimages.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz","04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",true,"tar.gz","/bin/sh","apt","alfa:ubuntu:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"}),

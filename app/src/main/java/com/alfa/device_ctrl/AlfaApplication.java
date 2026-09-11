@@ -65,25 +65,34 @@ public final class AlfaApplication extends Application {
         if (!vault.exists() && !vault.mkdirs()) return;
         File destination = new File(vault, ASSET);
         File temporary = new File(vault, ASSET + ".part");
+        if (destination.exists() && !destination.delete()) return;
         try (InputStream input = getAssets().open(ASSET); FileOutputStream output = new FileOutputStream(temporary)) {
             byte[] buffer = new byte[4096]; int count;
             while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
             output.getFD().sync();
-            if (!temporary.renameTo(destination)) {
-                if (destination.exists()) destination.delete();
-                if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed");
-            }
-            validate(destination);
-        } catch (Exception ignored) { temporary.delete(); }
+            validate(temporary);
+            if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed");
+        } catch (Exception ignored) {
+            temporary.delete();
+            destination.delete();
+        }
     }
 
     private static void validate(File file) throws Exception {
         Properties p = new Properties();
         try (FileInputStream input = new FileInputStream(file)) { p.load(input); }
+        require(p, "schema_version"); require(p, "gate"); require(p, "gate_status");
+        require(p, "launch_status"); require(p, "launch_source"); require(p, "authorization_status");
         require(p, "pipeline_run_id"); require(p, "runtime_id"); require(p, "source_commit");
         require(p, "gate4_contract_sha256"); require(p, "profile_sha256"); require(p, "implementation_commit");
         require(p, "runtime_registry_sha256");
+        if (!Gate6LaunchContract.OUTPUT_SCHEMA.equals(p.getProperty("schema_version"))) throw new IllegalStateException("invalid-schema-version");
+        if (!"gate7".equals(p.getProperty("gate"))) throw new IllegalStateException("invalid-gate");
+        if (!"READY".equals(p.getProperty("gate_status"))) throw new IllegalStateException("invalid-gate-status");
+        if (!"AUTHORIZED".equals(p.getProperty("launch_status")) || !"AUTHORIZED".equals(p.getProperty("authorization_status"))) throw new IllegalStateException("invalid-authorization-status");
+        if (!"gate6-bootstrap".equals(p.getProperty("launch_source"))) throw new IllegalStateException("invalid-launch-source");
         if (RuntimeRegistry.get(p.getProperty("runtime_id")) == null) throw new IllegalStateException("unsupported-runtime-id");
+        if (!RuntimeRegistry.CANONICAL_REGISTRY_SHA256.equalsIgnoreCase(p.getProperty("runtime_registry_sha256"))) throw new IllegalStateException("stale-runtime-registry");
         if (!p.getProperty("source_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-source-commit");
         if (!p.getProperty("implementation_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-implementation-commit");
         if (!p.getProperty("gate4_contract_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-gate4-hash");

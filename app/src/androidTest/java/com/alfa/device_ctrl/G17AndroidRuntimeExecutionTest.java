@@ -41,7 +41,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("SELinux context missing", !selinux.isEmpty());
         assertTrue("shell SELinux context must never be accepted", !"u:r:shell:s0".equals(selinux));
 
-        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + RuntimeProfile.ID);
+        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + RuntimeSelection.DEFAULT_RUNTIME_ID);
         File ready = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
         assertTrue("runtime READY evidence missing", ready.isFile());
@@ -49,7 +49,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("rootfs /proc missing", new File(rootfs, "proc").isDirectory());
         assertTrue("rootfs /dev missing", new File(rootfs, "dev").isDirectory());
         assertTrue("rootfs /sys missing", new File(rootfs, "sys").isDirectory());
-        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, RuntimeProfile.ID, engine, rootfs));
+        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, RuntimeSelection.DEFAULT_RUNTIME_ID, engine, rootfs));
 
         String source = arg("source_commit");
         File g16 = new File(arg("gate16_path"));
@@ -102,7 +102,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("cannot create G17 evidence directory", out.getParentFile().exists() || out.getParentFile().mkdirs());
         try (Writer w = new OutputStreamWriter(new FileOutputStream(out), StandardCharsets.UTF_8)) {
             w.write("schema_version=gate17-runtime-execution.v1\n");
-            w.write("gate=gate17\n gate_status=PASS\n".replace(" ", ""));
+            w.write("gate=gate17\ngate_status=PASS\n");
             w.write("execution_status=EXECUTED\nresult_status=PASS\ncommand=pwd\ncommand_semantics=POSIX_PWD\ncommand_result=/root\ncommand_returncode=0\n");
             w.write("guest_pid="+pid+"\nguest_proc_exe="+exe+"\nguest_proc_cwd="+cwd+"\nguest_proc_root="+root+"\n");
             w.write("android_package="+PACKAGE+"\nandroid_uid="+uid+"\nandroid_selinux_context="+selinux+"\n");

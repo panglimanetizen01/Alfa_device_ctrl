@@ -29,9 +29,9 @@ The Android shared-storage workspace is user-facing project storage. It is not a
 
 The current `master` baseline is:
 
-`0b2d4f79cc01b2fdb9051fffc539ab9ab42ae187`
+`67045a531f56165b0ab33b6be98149c1ec518823`
 
-This baseline includes the merged G17 Android instrumentation execution proof, the canonical Alfa MCP server, the launcher manifest correction, and cleanup of tracked generated Gradle/build state. G18/G19 artifacts and branches may exist in repository history, but they MUST NOT be described as part of `master` until their commits are actually merged into `master` and verified there.
+This baseline is the post-PR45 canonical state. It includes the merged lifecycle/provenance fixes for APK readiness, including foreground-service ownership and Activity session reattachment, release Gate 7 provenance enforcement, and trusted PRoot loader identity enforcement. G18/G19 and later contract artifacts remain authoritative only when their exact source commit and execution evidence are verified.
 
 ## Evidence Rules
 
