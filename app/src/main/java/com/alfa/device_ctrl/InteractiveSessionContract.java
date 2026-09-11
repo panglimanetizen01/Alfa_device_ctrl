@@ -2,6 +2,8 @@ package com.alfa.device_ctrl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Properties;
 
@@ -143,17 +145,13 @@ public final class InteractiveSessionContract {
         String value = null; for (String entry : environment) if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) { value = entry.substring("PROOT_TMP_DIR=".length()); break; }
         if (value == null || value.isEmpty()) return false;
         try {
-            File runtime = runtimeRoot.getCanonicalFile();
-            File vault = runtime.getParentFile().getParentFile().getCanonicalFile();
-            String vaultPath = vault.getAbsolutePath();
-            String candidate = value.trim();
-            if (candidate.indexOf('\0') >= 0 || candidate.contains("/../") || candidate.endsWith("/..") || !candidate.startsWith(vaultPath + File.separator)) return false;
-            String relative = candidate.substring((vaultPath + File.separator).length());
-            if (relative.isEmpty() || relative.contains("..")) return false;
-            File tmp = new File(vault, relative).getCanonicalFile();
+            Path vaultPath = runtimeRoot.getCanonicalFile().getParentFile().getParentFile().getCanonicalFile().toPath().normalize();
+            Path candidatePath = Paths.get(value.trim()).toAbsolutePath().normalize();
+            if (!candidatePath.startsWith(vaultPath)) return false;
+            File tmp = candidatePath.toFile().getCanonicalFile();
             return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
-                    && tmp.toPath().startsWith(vault.toPath())
-                    && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs"));
+                    && tmp.toPath().normalize().startsWith(vaultPath)
+                    && !tmp.toPath().normalize().startsWith(runtimeRoot.getCanonicalFile().toPath().normalize().resolve("rootfs"));
         } catch (Exception error) { return false; }
     }
 
