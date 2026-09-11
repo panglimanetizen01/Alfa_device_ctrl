@@ -73,10 +73,14 @@ public final class Ui13DutVisualInteractionTest {
         assertTrue("button interaction was not accepted", button.performClick());
     }
 
-    private static View fieldView(MainActivity activity, String name) throws Exception {
-        Field field = MainActivity.class.getDeclaredField(name);
-        field.setAccessible(true);
-        return (View) field.get(activity);
+    private static View fieldView(MainActivity activity, String name) {
+        try {
+            Field field = MainActivity.class.getDeclaredField(name);
+            field.setAccessible(true);
+            return (View) field.get(activity);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("missing MainActivity view field: " + name, e);
+        }
     }
 
     private static Button findButton(View root, String text) {
