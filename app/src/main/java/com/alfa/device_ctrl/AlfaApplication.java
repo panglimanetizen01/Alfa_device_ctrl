@@ -5,7 +5,6 @@ import android.app.Application;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -40,14 +39,6 @@ public final class AlfaApplication extends Application {
                 AlfaUiTheme.apply(a);
                 ExecutionLanePanel.install(a);
                 AlfaUiCapabilityRouter.install(a);
-                if (a instanceof MainActivity) {
-                    View content = a.findViewById(android.R.id.content);
-                    if (content != null) content.post(() -> {
-                        AlfaUiShell.install((MainActivity) a);
-                        shieldLegacyRuntimeDashboard((MainActivity) a);
-                        StorageUiBridge.bind(a);
-                    });
-                }
             }
             @Override public void onActivityResumed(Activity a) {
                 activityPauseInProgress = false;
@@ -55,14 +46,13 @@ public final class AlfaApplication extends Application {
                 ExecutionLanePanel.install(a);
                 RuntimeSessionReattachment.tryReattach(a);
                 AlfaUiCapabilityRouter.install(a);
-                if (a instanceof MainActivity) StorageUiBridge.refresh(a);
             }
             @Override public void onActivityPaused(Activity a) {
                 if (a instanceof MainActivity && RuntimeKeepAliveService.owner() != null) activityPauseInProgress = true;
                 AlfaUiCapabilityRouter.persist(a);
             }
             @Override public void onActivitySaveInstanceState(Activity a, Bundle state) { }
-            @Override public void onActivityDestroyed(Activity a) { AlfaUiShell.onActivityDestroyed(a); }
+            @Override public void onActivityDestroyed(Activity a) { }
         });
         installLaunchContract();
     }
@@ -70,14 +60,6 @@ public final class AlfaApplication extends Application {
     public static AlfaApplication getInstance() { return instance; }
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
     public static boolean isActivityPauseInProgress() { return instance != null && instance.activityPauseInProgress; }
-
-    private static void shieldLegacyRuntimeDashboard(MainActivity a) {
-        try {
-            java.lang.reflect.Field f = MainActivity.class.getDeclaredField("runtimeDashboard");
-            f.setAccessible(true);
-            f.set(a, new LinearLayout(a));
-        } catch (Exception ignored) { }
-    }
 
     private static void installWindowInsetsPolicy(Activity a) {
         WindowCompat.enableEdgeToEdge(a.getWindow());
@@ -91,23 +73,6 @@ public final class AlfaApplication extends Application {
             return new WindowInsetsCompat.Builder(in).setInsets(types, Insets.NONE).build();
         });
         ViewCompat.requestApplyInsets(content);
-    }
-
-    private static void rebindForegroundSession(Activity a) {
-        if (!(a instanceof MainActivity)) return;
-        RuntimeSessionManager owner = RuntimeKeepAliveService.owner();
-        if (owner == null || !owner.isRunning()) return;
-        try {
-            java.lang.reflect.Field mf = MainActivity.class.getDeclaredField("sessionManager");
-            java.lang.reflect.Field tf = MainActivity.class.getDeclaredField("terminalView");
-            mf.setAccessible(true); tf.setAccessible(true);
-            mf.set(a, owner);
-            owner.rebindListener((RuntimeSessionManager.Listener) a);
-            Object v = tf.get(a);
-            if (v instanceof com.termux.view.TerminalView) owner.attachTo((com.termux.view.TerminalView) v);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("runtime-session-ui-rebind-failed", e);
-        }
     }
 
     private void installLaunchContract() {
