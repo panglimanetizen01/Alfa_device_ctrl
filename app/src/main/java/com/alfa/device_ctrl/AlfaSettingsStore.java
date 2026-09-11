@@ -19,6 +19,9 @@ public final class AlfaSettingsStore {
     private static final Preferences.Key<String> TERMINAL_FONT = PreferencesKeys.stringKey("terminal_font");
     private static final Preferences.Key<Integer> TERMINAL_FONT_SIZE = PreferencesKeys.intKey("terminal_font_size");
     private static final Preferences.Key<Boolean> OVERLAY_ENABLED = PreferencesKeys.booleanKey("overlay_enabled");
+    private static final Preferences.Key<Integer> OVERLAY_OPACITY_PERCENT = PreferencesKeys.intKey("overlay_opacity_percent");
+    private static final Preferences.Key<Integer> OVERLAY_WIDTH_DP = PreferencesKeys.intKey("overlay_width_dp");
+    private static final Preferences.Key<Integer> OVERLAY_HEIGHT_DP = PreferencesKeys.intKey("overlay_height_dp");
     private static volatile AlfaSettingsStore instance;
     private final GuavaDataStore<Preferences> store;
     private final Executor io = Executors.newSingleThreadExecutor(r -> { Thread t = new Thread(r, "alfa-settings-io"); t.setDaemon(true); return t; });
@@ -30,6 +33,9 @@ public final class AlfaSettingsStore {
     public String getTerminalFont(String fallback){return getString(TERMINAL_FONT,fallback);} public void setTerminalFont(String value){setString(TERMINAL_FONT,value);}
     public int getTerminalFontSize(int fallback){return getInt(TERMINAL_FONT_SIZE,fallback);} public void setTerminalFontSize(int value){setInt(TERMINAL_FONT_SIZE,value);}
     public boolean getOverlayEnabled(boolean fallback){return getBoolean(OVERLAY_ENABLED,fallback);} public void setOverlayEnabled(boolean value){setBoolean(OVERLAY_ENABLED,value);}
+    public int getOverlayOpacityPercent(int fallback){return getInt(OVERLAY_OPACITY_PERCENT,fallback);} public void setOverlayOpacityPercent(int value){setInt(OVERLAY_OPACITY_PERCENT,Math.max(10,Math.min(100,value)));}
+    public int getOverlayWidthDp(int fallback){return getInt(OVERLAY_WIDTH_DP,fallback);} public void setOverlayWidthDp(int value){setInt(OVERLAY_WIDTH_DP,Math.max(280,Math.min(1200,value)));}
+    public int getOverlayHeightDp(int fallback){return getInt(OVERLAY_HEIGHT_DP,fallback);} public void setOverlayHeightDp(int value){setInt(OVERLAY_HEIGHT_DP,Math.max(180,Math.min(900,value)));}
     private <T>T read(Preferences.Key<T> key,T fallback){try{T value=store.getDataAsync().get().get(key);return value==null?fallback:value;}catch(InterruptedException e){Thread.currentThread().interrupt();return fallback;}catch(ExecutionException e){return fallback;}}
     private String getString(Preferences.Key<String> key,String fallback){return read(key,fallback);} private int getInt(Preferences.Key<Integer> key,int fallback){return read(key,fallback);} private boolean getBoolean(Preferences.Key<Boolean> key,boolean fallback){return read(key,fallback);}
     private <T>void update(Preferences.Key<T> key,T value){store.updateDataAsync(current->{MutablePreferences mutable=current.toMutablePreferences();mutable.set(key,value);return mutable.toPreferences();});}
