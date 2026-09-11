@@ -29,19 +29,21 @@ public final class AdaptivePanelLayoutController {
     static void apply(LinearLayout content, View[] panels, ActualWindowMetrics metrics) {
         float runtimeWeight = AdaptivePanelPolicy.runtimeWeight(metrics.widthClass(), metrics.heightClass());
         float monitorWeight = AdaptivePanelPolicy.monitorWeight(metrics.widthClass(), metrics.heightClass());
-        setWeightedHeight(panels[0], runtimeWeight);
-        setWeightedHeight(panels[1], monitorWeight);
-        setWeightedHeight(panels[2], 1f);
-        content.requestLayout();
+        boolean changed = setWeightedHeight(panels[0], runtimeWeight);
+        changed |= setWeightedHeight(panels[1], monitorWeight);
+        changed |= setWeightedHeight(panels[2], 1f);
+        if (changed) content.requestLayout();
     }
 
-    private static void setWeightedHeight(View view, float weight) {
+    private static boolean setWeightedHeight(View view, float weight) {
         ViewGroup.LayoutParams raw = view.getLayoutParams();
-        if (!(raw instanceof LinearLayout.LayoutParams)) return;
+        if (!(raw instanceof LinearLayout.LayoutParams)) return false;
         LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) raw;
+        if (params.height == 0 && Math.abs(params.weight - weight) < 0.0001f) return false;
         params.height = 0;
         params.weight = weight;
         view.setLayoutParams(params);
+        return true;
     }
 
     private static LinearLayout findAdaptiveContent(ViewGroup root) {
@@ -72,9 +74,7 @@ public final class AdaptivePanelLayoutController {
                 if (terminal == null) terminal = child;
                 continue;
             }
-            if (params.height > 100) {
-                if (found < fixed.length) fixed[found++] = child;
-            }
+            if (params.height > 100 && found < fixed.length) fixed[found++] = child;
         }
         if (found != 2 || terminal == null) return null;
         return new View[]{fixed[0], fixed[1], terminal};
