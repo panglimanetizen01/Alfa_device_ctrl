@@ -26,6 +26,12 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) { if (contract == null) throw new IllegalArgumentException("contract is required"); this.contract = contract; this.listener = listener; }
 
+    /** Rebinds UI observation to a recreated Activity without replacing the live PTY/session. */
+    public synchronized void rebindListener(Listener newListener) {
+        if (newListener == null) throw new IllegalArgumentException("listener is required");
+        listener = newListener;
+    }
+
     private void notifyState(String event) {
         Listener current = listener;
         if (current != null) current.onState(SessionUiState.resolve(event).name());
