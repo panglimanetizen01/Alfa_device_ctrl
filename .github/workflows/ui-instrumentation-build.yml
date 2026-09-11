@@ -83,8 +83,7 @@ jobs:
             adb wait-for-device
             test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "34"
             adb shell getprop ro.product.cpu.abi | grep -Eq 'x86_64|x86'
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest
             test -d app/build/outputs/androidTest-results/connected || test -d app/build/test-results
             echo "ALFA_GATE_1_5_INSTRUMENTATION=PASS"
 
