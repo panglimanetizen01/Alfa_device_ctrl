@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import android.app.Activity;
 import android.app.Application;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowInsets;
@@ -26,7 +27,7 @@ public final class AlfaApplication extends Application {
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
             @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
-            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowInsetsPolicy(activity); AlfaUiTheme.apply(activity); }
+            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowMetricsAndInsetsPolicy(activity); AlfaUiTheme.apply(activity); }
             @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); }
             @Override public void onActivityPaused(Activity activity) { }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
@@ -38,23 +39,51 @@ public final class AlfaApplication extends Application {
     public static AlfaApplication getInstance() { return instance; }
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
 
-    /**
-     * Android 15+ lays out target-SDK-35 apps edge-to-edge. Keep the existing native Views
-     * hierarchy intact, but reserve system-bar insets for interactive/content roots so top and
-     * bottom controls cannot be obscured. The listener preserves the activity's original
-     * content padding rather than accumulating padding across repeated inset dispatches.
-     */
-    private static void installWindowInsetsPolicy(Activity activity) {
+    /** Establishes the actual Activity-window boundary and applies modern edge-to-edge insets. */
+    private static void installWindowMetricsAndInsetsPolicy(Activity activity) {
+        if (!(activity instanceof MainActivity)) return;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout)) return;
+
+        ActualWindowMetrics metrics = ActualWindowMetrics.from(activity);
+        content.setTag(metrics);
+        AdaptivePanelLayoutController.install(content, metrics);
+        content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right != oldRight || bottom != oldBottom) {
+                ActualWindowMetrics current = ActualWindowMetrics.from(activity);
+                content.setTag(current);
+                AdaptivePanelLayoutController.install(content, current);
+            }
+        });
+
         final int baseLeft = content.getPaddingLeft();
         final int baseTop = content.getPaddingTop();
         final int baseRight = content.getPaddingRight();
         final int baseBottom = content.getPaddingBottom();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.getWindow().setDecorFitsSystemWindows(false);
+        }
         activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> {
-            final int top = insets.getSystemWindowInsetTop();
-            final int bottom = insets.getSystemWindowInsetBottom();
-            content.setPadding(baseLeft, baseTop + top, baseRight, baseBottom + bottom);
+            final int left;
+            final int top;
+            final int right;
+            final int bottom;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets system = insets.getInsets(
+                        WindowInsets.Type.systemBars()
+                                | WindowInsets.Type.displayCutout()
+                                | WindowInsets.Type.mandatorySystemGestures());
+                left = system.left;
+                top = system.top;
+                right = system.right;
+                bottom = system.bottom;
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            content.setPadding(baseLeft + left, baseTop + top, baseRight + right, baseBottom + bottom);
             return insets;
         });
         activity.getWindow().getDecorView().requestApplyInsets();
