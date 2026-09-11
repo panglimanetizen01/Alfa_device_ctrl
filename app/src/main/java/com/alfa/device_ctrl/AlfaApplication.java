@@ -29,13 +29,15 @@ public final class AlfaApplication extends Application {
                 installWindowInsetsPolicy(activity);
                 AlfaUiTheme.apply(activity);
                 ExecutionLanePanel.install(activity);
+                AlfaUiCapabilityRouter.install(activity);
             }
             @Override public void onActivityResumed(Activity activity) {
                 AlfaUiTheme.apply(activity);
                 ExecutionLanePanel.install(activity);
                 RuntimeSessionReattachment.tryReattach(activity);
+                AlfaUiCapabilityRouter.install(activity);
             }
-            @Override public void onActivityPaused(Activity activity) { }
+            @Override public void onActivityPaused(Activity activity) { AlfaUiCapabilityRouter.persist(activity); }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
             @Override public void onActivityDestroyed(Activity activity) { }
         });
