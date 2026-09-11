@@ -26,17 +26,15 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) { if (contract == null) throw new IllegalArgumentException("contract is required"); this.contract = contract; this.listener = listener; }
 
+    /** Rebinds UI observation to a recreated Activity without replacing the live PTY/session. */
+    public synchronized void rebindListener(Listener newListener) {
+        if (newListener == null) throw new IllegalArgumentException("listener is required");
+        listener = newListener;
+    }
+
     private void notifyState(String event) {
         Listener current = listener;
         if (current != null) current.onState(SessionUiState.resolve(event).name());
-    }
-
-    /** Rebinds the presentation listener without replacing the live runtime session. */
-    public synchronized boolean rebindListener(Listener newListener) {
-        listener = newListener;
-        if (session == null || !session.isRunning()) return false;
-        notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT");
-        return true;
     }
 
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
@@ -61,10 +59,6 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public void stop() {
         synchronized (this) { if (session == null || !session.isRunning()) return; }
-        if (AlfaApplication.isActivityPauseInProgress()) {
-            notifyState("BACKGROUND_SESSION_PRESERVED");
-            return;
-        }
         if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
         new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { notifyState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
     }
@@ -89,11 +83,10 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); notifyState("READY"); }
             }
         }
-        Listener current = listener;
-        if (current != null) current.onTextChanged();
+        if (listener != null) listener.onTextChanged();
     }
 
-    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } Listener current = listener; if (current != null) current.onSessionFinished(status); }
+    @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } if (listener != null) listener.onSessionFinished(status); }
     @Override public void onTitleChanged(TerminalSession changedSession) { }
     @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
     @Override public void onPasteTextFromClipboard(TerminalSession session) { }

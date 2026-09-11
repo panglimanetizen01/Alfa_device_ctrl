@@ -1,6 +1,7 @@
 package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Color;
@@ -39,6 +40,8 @@ public final class AlfaUiThemeInstrumentationTest {
                 View root = activity.findViewById(android.R.id.content);
                 assertTrue("root background must be a ColorDrawable", root.getBackground() instanceof ColorDrawable);
                 assertEquals("root background must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, ((ColorDrawable) root.getBackground()).getColor());
+                assertEquals("status bar must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, activity.getWindow().getStatusBarColor());
+                assertEquals("navigation bar must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, activity.getWindow().getNavigationBarColor());
                 assertNoLegacyTextColors(root);
             });
         }
@@ -64,6 +67,23 @@ public final class AlfaUiThemeInstrumentationTest {
         }
     }
 
+    @Test
+    public void finalShellContainsCanonicalExecutionLanePresentation() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> {
+                View lanesView = activity.findViewById(android.R.id.content).findViewWithTag("alfa.execution.lanes");
+                assertNotNull("final shell must expose the execution-lane panel", lanesView);
+                assertTrue(lanesView instanceof LinearLayout);
+                LinearLayout lanes = (LinearLayout) lanesView;
+                assertEquals("four canonical execution lanes must be represented", ExecutionLane.values().length, lanes.getChildCount());
+                assertTrue("runtime lane must be represented", textContains(lanes, "RUNTIME"));
+                assertTrue("Termux lane must be represented", textContains(lanes, "TERMUX"));
+                assertTrue("Termux API lane must be represented", textContains(lanes, "TERMUX API"));
+                assertTrue("Shizuku/Rish lane must be represented", textContains(lanes, "SHIZUKU / RISH"));
+            });
+        }
+    }
+
     private static int assertInteractiveTargets(View view, int min) {
         int checked = 0;
         if (view instanceof Button || view.isClickable()) {
@@ -75,6 +95,15 @@ public final class AlfaUiThemeInstrumentationTest {
             for (int i = 0; i < group.getChildCount(); i++) checked += assertInteractiveTargets(group.getChildAt(i), min);
         }
         return checked;
+    }
+
+    private static boolean textContains(View view, String expected) {
+        if (view instanceof TextView && String.valueOf(((TextView) view).getText()).contains(expected)) return true;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) if (textContains(group.getChildAt(i), expected)) return true;
+        }
+        return false;
     }
 
     private static void assertNoLegacyTextColors(View view) {

@@ -3,6 +3,8 @@ package com.alfa.device_ctrl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
@@ -39,7 +41,9 @@ public final class OperationEvidence {
             p.setProperty("state", state);
             p.setProperty("result", result);
             p.setProperty("process_pid", Integer.toString(processPid));
-            p.setProperty("pty_status", "PASS");
+            PttyProof proof = probePty(processPid);
+            p.setProperty("pty_status", proof.status);
+            p.setProperty("pty_status_basis", proof.basis);
             p.setProperty("prompt_observed", "READY".equals(state) ? "PASS" : "PENDING");
             p.setProperty("environment_profile", String.join(";", contract.environment()));
             p.setProperty("runtime_evidence", contract.runtimeReadyEvidence().getCanonicalPath());
@@ -52,6 +56,43 @@ public final class OperationEvidence {
             return finalFile;
         } catch (Exception ignored) {
             return null;
+        }
+    }
+
+    private static PttyProof probePty(int pid) {
+        if (pid <= 0) return new PttyProof("NOT_MEASURED", "NO_VALID_PROCESS_PID");
+        String stdin = readFdTarget(pid, 0);
+        String stdout = readFdTarget(pid, 1);
+        String stderr = readFdTarget(pid, 2);
+        if (isPts(stdin) && isPts(stdout) && isPts(stderr)) {
+            return new PttyProof("PASS", "PROC_FD_0_1_2_POINT_TO_DEV_PTS");
+        }
+        if (stdin == null && stdout == null && stderr == null) {
+            return new PttyProof("UNKNOWN", "PROC_FD_PROBE_UNAVAILABLE");
+        }
+        return new PttyProof("FAIL", "PROC_FD_0_1_2_NOT_ALL_DEV_PTS");
+    }
+
+    private static String readFdTarget(int pid, int fd) {
+        try {
+            Path path = Paths.get("/proc", Integer.toString(pid), "fd", Integer.toString(fd));
+            return Files.readSymbolicLink(path).toString();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static boolean isPts(String target) {
+        return target != null && target.startsWith("/dev/pts/");
+    }
+
+    private static final class PttyProof {
+        final String status;
+        final String basis;
+
+        PttyProof(String status, String basis) {
+            this.status = status;
+            this.basis = basis;
         }
     }
 }

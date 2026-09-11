@@ -31,7 +31,7 @@ The current `master` baseline is:
 
 `66def003ad521e6f844b40fffa73bcf94f0dd178`
 
-This baseline is the current master commit used as the base of active PR #43. Earlier historical baselines, including `0b2d4f79cc01b2fdb9051fffc539ab9ab42ae187`, remain historical evidence and MUST NOT be described as the current `master` baseline.
+This baseline aligns the canonical Android build lane with Android 16/API 36, including the corresponding compile/target SDK, AGP, Gradle, CI SDK, and build-contract updates. Later branch commits are not part of `master` until they are actually merged into `master` and verified there.
 
 ## Evidence Rules
 

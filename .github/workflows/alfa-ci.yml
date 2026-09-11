@@ -1,6 +1,5 @@
 name: Alfa CI
 
-# Retrigger canonical full CI after Android 36 dependency and UI compile fixes.
 on:
   push:
     branches:

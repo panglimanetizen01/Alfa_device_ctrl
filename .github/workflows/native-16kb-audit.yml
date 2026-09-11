@@ -1,5 +1,3 @@
-# Canonical Android 36 / AGP 8.10 native alignment audit.
-# Retriggered after verified Java compile fixes.
 name: Native 16 KB Audit
 
 on:
@@ -41,38 +39,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
         with:
-          gradle-version: '8.11.1'
+          gradle-version: '9.2.1'
       - name: Prepare Android SDK
         shell: bash
         run: |
           set -euo pipefail
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           test -x "$SDKMANAGER"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/36.0.0:$PATH"
-          "$SDKMANAGER" "ndk;28.0.13004108" "build-tools;36.0.0"
-          test -x "$ANDROID_HOME/build-tools/36.0.0/zipalign"
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/35.0.0:$PATH"
+          "$SDKMANAGER" "ndk;28.0.13004108" "build-tools;35.0.0"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/zipalign"
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
-      - name: Capture native audit build failure
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace --info > native-audit-build.log 2>&1
-          code=$?
-          printf '\nNATIVE_AUDIT_RETRY_EXIT=%s\n' "$code" >> native-audit-build.log
-          exit 0
-      - name: Upload native audit build failure evidence
-        if: failure()
-        uses: actions/upload-artifact@615b319bd27bb32c3d64dca6b6ed6974d5fbe653 # v6.0.0
-        with:
-          name: native-16kb-build-failure-${{ github.run_id }}
-          path: native-audit-build.log
-          if-no-files-found: error
-          retention-days: 3
       - name: Verify 16 KB native alignment
         shell: bash
         run: |
-          export PATH="$ANDROID_HOME/build-tools/36.0.0:$PATH"
+          export PATH="$ANDROID_HOME/build-tools/35.0.0:$PATH"
           bash tools/test_16kb_native_alignment.sh

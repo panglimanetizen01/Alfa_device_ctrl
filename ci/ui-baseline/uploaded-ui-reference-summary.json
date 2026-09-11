@@ -1,0 +1,29 @@
+{
+  "schema": "alfa-uploaded-ui-reference-summary.v1",
+  "archive": "UI_alfa_device_control_final(1).zip",
+  "archive_sha256": "281a987c91915d3652b437602ba00e9dd8fd9577ae5536e900da80fee8f9086d",
+  "screens": 118,
+  "assets": 119,
+  "html_metrics": {
+    "tailwind_cdn_screens": 116,
+    "google_fonts_refs": 403,
+    "inner_html_or_adjacent": 162,
+    "math_random": 8,
+    "set_timeout": 133,
+    "href_hash": 495,
+    "buttons": 2331,
+    "onclick": 307,
+    "old_package_refs": 33,
+    "old_storage_refs": 5,
+    "simulation_marked_screens": 62,
+    "screens_without_title": 87,
+    "screens_without_lang": 2,
+    "duplicate_id_screens": 2
+  },
+  "reference_only_mismatches": [
+    "ZIP package references use moe.alfa.device.ctrl; canonical Alfa package is com.alfa.device_ctrl.",
+    "ZIP runtime architecture documentation uses Android/data/moe.alfa.device.ctrl/files/workspace; canonical Alfa host storage is the SAF-first Alfa_device_ctrl_HOST contract.",
+    "Simulation/mock/demo/fake/placeholder screens are visual/state references only; production runtime state must be evidence-backed.",
+    "HTML snapshots are not production runtime code; native stateful components remain the implementation target."
+  ]
+}

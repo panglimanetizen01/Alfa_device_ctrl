@@ -5,7 +5,7 @@ package com.alfa.device_ctrl;
  * Unknown events are fail-closed and never become RUNNING.
  */
 public final class SessionUiState {
-    public enum Status { NOT_READY, STARTING, RUNNING, FAILED, FINISHED }
+    public enum Status { NOT_READY, STARTING, RUNNING, STOPPING, FAILED, FINISHED }
 
     private SessionUiState() { }
 
@@ -19,12 +19,13 @@ public final class SessionUiState {
             case "RUNNING":
             case "BACKGROUND_SESSION_PRESERVED":
                 return Status.RUNNING;
+            case "STOPPING":
+                return Status.STOPPING;
             case "FINISHED":
                 return Status.FINISHED;
             case "BLOCKED":
             case "BLOCKED_FGS_START":
                 return Status.FAILED;
-            case "STOPPING":
             default:
                 return Status.NOT_READY;
         }
@@ -34,6 +35,7 @@ public final class SessionUiState {
         switch (status) {
             case STARTING: return "STARTING";
             case RUNNING: return "RUNNING";
+            case STOPPING: return "STOPPING";
             case FAILED: return "FAILED";
             case FINISHED: return "FINISHED";
             default: return "NOT READY";
