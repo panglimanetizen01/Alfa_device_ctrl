@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "reference_archive": "UI_alfa_device_control_final.zip",
+  "screen_count": 118,
+  "source_rule": "The archive is a visual/state reference. Production UI state must be projected from Alfa runtime/evidence contracts; reference-only simulations must never become runtime truth.",
+  "entries": []
+}
