@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".AlfaApplication"
@@ -28,6 +29,11 @@
             android:name=".Gate6ImportActivity"
             android:exported="false"
             android:label="Alfa Runtime Provisioning" />
+
+        <activity
+            android:name=".ProjectExplorerActivity"
+            android:exported="false"
+            android:label="Alfa Project Explorer" />
 
         <service
             android:name=".RuntimeKeepAliveService"
