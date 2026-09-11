@@ -66,7 +66,7 @@ public final class UiFoundationContractInstrumentationTest {
         View found = findDescription(root, description);
         assertNotNull("missing UI capability: " + description, found);
         assertTrue("UI capability is disabled: " + description, found.isEnabled());
-        assertNotNull("UI capability has no click action: " + description, found.getOnClickListenerForTesting());
+        assertTrue("UI capability has no click listener: " + description, found.hasOnClickListeners());
     }
 
     private static void assertActivity(PackageManager pm, Class<?> activityClass) {
