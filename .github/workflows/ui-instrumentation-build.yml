@@ -79,9 +79,9 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 300
           script: |
-            set -euo pipefail
+            set -eu
             adb wait-for-device
-            adb shell getprop ro.build.version.sdk | grep -qx '34'
+            test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "34"
             adb shell getprop ro.product.cpu.abi | grep -Eq 'x86_64|x86'
             ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace \
               -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest
