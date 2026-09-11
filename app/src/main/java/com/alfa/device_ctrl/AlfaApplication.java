@@ -47,6 +47,14 @@ public final class AlfaApplication extends Application {
 
         ActualWindowMetrics metrics = ActualWindowMetrics.from(activity);
         content.setTag(metrics);
+        AdaptivePanelLayoutController.install(content, metrics);
+        content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right != oldRight || bottom != oldBottom) {
+                ActualWindowMetrics current = ActualWindowMetrics.from(activity);
+                content.setTag(current);
+                AdaptivePanelLayoutController.install(content, current);
+            }
+        });
 
         final int baseLeft = content.getPaddingLeft();
         final int baseTop = content.getPaddingTop();
