@@ -91,6 +91,8 @@ tasks.withType(Test).configureEach {
 dependencies {
     implementation project(":terminal-view")
     implementation 'org.tukaani:xz:1.12'
+    implementation 'androidx.datastore:datastore-preferences:1.2.1'
+    implementation 'androidx.datastore:datastore-guava:1.2.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:core:1.7.0'
