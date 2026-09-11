@@ -1,6 +1,7 @@
 package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.graphics.Color;
@@ -65,21 +66,18 @@ public final class AlfaUiThemeInstrumentationTest {
     }
 
     @Test
-    public void finalShellContainsCanonicalExecutionLanePresentation() throws Exception {
+    public void finalShellContainsCanonicalExecutionLanePresentation() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
-                try {
-                    Field field = MainActivity.class.getDeclaredField("executionLanes");
-                    field.setAccessible(true);
-                    LinearLayout lanes = (LinearLayout) field.get(activity);
-                    assertEquals("four canonical execution lanes must be represented", ExecutionLane.values().length, lanes.getChildCount());
-                    assertTrue("runtime lane must be represented", textContains(lanes, "RUNTIME"));
-                    assertTrue("Termux lane must be represented", textContains(lanes, "TERMUX"));
-                    assertTrue("Termux API lane must be represented", textContains(lanes, "TERMUX API"));
-                    assertTrue("Shizuku/Rish lane must be represented", textContains(lanes, "SHIZUKU / RISH"));
-                } catch (ReflectiveOperationException error) {
-                    throw new AssertionError(error);
-                }
+                View lanesView = activity.findViewById(android.R.id.content).findViewWithTag("alfa.execution.lanes");
+                assertNotNull("final shell must expose the execution-lane panel", lanesView);
+                assertTrue(lanesView instanceof LinearLayout);
+                LinearLayout lanes = (LinearLayout) lanesView;
+                assertEquals("four canonical execution lanes must be represented", ExecutionLane.values().length, lanes.getChildCount());
+                assertTrue("runtime lane must be represented", textContains(lanes, "RUNTIME"));
+                assertTrue("Termux lane must be represented", textContains(lanes, "TERMUX"));
+                assertTrue("Termux API lane must be represented", textContains(lanes, "TERMUX API"));
+                assertTrue("Shizuku/Rish lane must be represented", textContains(lanes, "SHIZUKU / RISH"));
             });
         }
     }
