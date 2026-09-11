@@ -7,15 +7,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public final class MainActivitySessionUiStateContractTest {
     @Test public void mainActivityConsumesSemanticSessionStateNotRawRuntimeEvents() throws Exception {
         Path source = locateMainActivity();
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
 
-        assertTrue("MainActivity must expose the semantic state to its status view", text.contains("SESSION_STATUS=" + "\" + state"));
+        assertTrue("MainActivity must expose the semantic state to its status view", text.contains("SESSION_STATUS=\" + state"));
         assertTrue("RUNNING semantic state must hide transient status", text.contains("\"RUNNING\".equals(state)"));
         assertTrue("READY semantic state must hide transient status", text.contains("\"READY\".equals(state)"));
         assertFalse("MainActivity must not parse raw PTY lifecycle events", text.contains("PTY_CREATED"));
