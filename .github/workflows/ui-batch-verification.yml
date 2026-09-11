@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - master
+  push:
+    branches:
+      - "test/ui-session-ownership-red2"
   workflow_dispatch:
 
 permissions:
