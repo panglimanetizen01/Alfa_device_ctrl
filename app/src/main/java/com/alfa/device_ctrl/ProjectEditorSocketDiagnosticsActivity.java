@@ -18,7 +18,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 /** SAF-backed text editor plus an actual Android UNIX-domain socket diagnostic. */
-public final class ProjectEditorSocketDiagnosticsActivity {
+public final class ProjectEditorSocketDiagnosticsActivity extends Activity {
     private static final int OPEN_FILE = 5201;
     private TextView state; private EditText editor; private Uri fileUri; private SafHostStorageProvider provider;
     @Override protected void onCreate(Bundle saved){super.onCreate(saved);provider=new SafHostStorageProvider(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(10),dp(10),dp(10),dp(10));TextView title=text("PROJECT EDITOR / SOCKET DIAGNOSTICS",16,true);root.addView(title,new LinearLayout.LayoutParams(-1,dp(52)));state=text("EDITOR_BACKEND=SAF\nSOCKET_BACKEND=LOCAL_SOCKET\nSOCKET_STATE=NOT_MEASURED",10,false);state.setTypeface(android.graphics.Typeface.MONOSPACE);root.addView(state,new LinearLayout.LayoutParams(-1,dp(70)));LinearLayout actions=new LinearLayout(this);Button choose=button("OPEN",v->chooseFile());Button save=button("SAVE",v->saveFile());Button socket=button("SOCKET SELF-TEST",v->socketSelfTest());actions.addView(choose,weight());actions.addView(save,weight());actions.addView(socket,weight());root.addView(actions,new LinearLayout.LayoutParams(-1,dp(52)));editor=new EditText(this);editor.setGravity(Gravity.TOP|Gravity.START);editor.setTextSize(11);editor.setTypeface(android.graphics.Typeface.MONOSPACE);root.addView(editor,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);}
