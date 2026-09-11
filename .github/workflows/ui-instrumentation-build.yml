@@ -16,7 +16,7 @@ concurrency:
 jobs:
   android-test-compile:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -54,3 +54,31 @@ jobs:
           set -euo pipefail
           test -f app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           echo "ALFA_UI_INSTRUMENTATION_COMPILE=PASS"
+
+      - name: Execute Gate 1-5 instrumentation contracts on Android emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.UiFoundationContractInstrumentationTest
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace \
+              -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest
+            echo "ALFA_GATE_1_5_INSTRUMENTATION=PASS"
+
+      - name: Gate 1-5 evidence marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ALFA_GATE_1_5=PASS"
