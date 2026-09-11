@@ -47,13 +47,17 @@ public final class Milestone6To10ContractInstrumentationTest {
     }
 
     @Test(timeout = 30000)
-    public void vfsPolicySurfaceExposesRuntimeBoundPolicy() {
+    public void vfsPolicySurfaceExposesRealDirectoryOverrideBackend() {
         try (ActivityScenario<RuntimeVfsPolicyActivity> scenario = ActivityScenario.launch(RuntimeVfsPolicyActivity.class)) {
             scenario.onActivity(activity -> {
-                assertTrue(countText(activity.getWindow().getDecorView(), "RUNTIME_ID=") == 1);
-                assertTrue(countText(activity.getWindow().getDecorView(), "POLICY_ID=") == 1);
-                assertTrue(countText(activity.getWindow().getDecorView(), "RUNTIME_ROOT=") == 1);
-                assertTrue(countText(activity.getWindow().getDecorView(), "HOST_CWD=") == 1);
+                View root = activity.getWindow().getDecorView();
+                assertTrue(countText(root, "RUNTIME_ID=") == 1);
+                assertTrue(countText(root, "POLICY_ID=") == 1);
+                assertTrue(countText(root, "RUNTIME_ROOT=") == 1);
+                assertTrue(countText(root, "HOST_CWD=") == 1);
+                assertTrue("VFS UI must expose the real PRoot bind backend", countText(root, "DIRECTORY_OVERRIDE_BACKEND=PROOT_BIND") == 1);
+                assertTrue("VFS UI must expose the new-session application boundary", countText(root, "OVERRIDE_APPLY_POINT=NEW_SESSION") == 1);
+                assertTrue("VFS UI must expose the real add control", countText(root, "ADD RW BIND") == 1);
             });
         }
     }
