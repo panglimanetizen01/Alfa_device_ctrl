@@ -15,49 +15,23 @@
         android:enableOnBackInvokedCallback="true"
         android:supportsRtl="true">
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:enableOnBackInvokedCallback="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity android:name=".MainActivity" android:exported="true" android:enableOnBackInvokedCallback="true">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
+        <activity android:name=".Gate6ImportActivity" android:exported="false" android:label="Alfa Runtime Provisioning" />
+        <activity android:name=".ProjectExplorerActivity" android:exported="false" android:label="Alfa Project Explorer" />
+        <activity android:name=".PolicyEvidenceActivity" android:exported="false" android:label="Alfa Security Policy" />
+        <activity android:name=".RuntimeToolsActivity" android:exported="false" android:label="Alfa Runtime Tools" />
+        <activity android:name=".NotificationStateActivity" android:exported="false" android:label="Alfa Notifications" />
+        <activity android:name=".SplitTerminalActivity" android:exported="false" android:label="Alfa Split Terminal" />
+        <activity android:name=".FloatingTerminalActivity" android:exported="false" android:label="Alfa Floating Terminal" />
 
-        <activity
-            android:name=".Gate6ImportActivity"
-            android:exported="false"
-            android:label="Alfa Runtime Provisioning" />
-
-        <activity
-            android:name=".ProjectExplorerActivity"
-            android:exported="false"
-            android:label="Alfa Project Explorer" />
-
-        <activity
-            android:name=".PolicyEvidenceActivity"
-            android:exported="false"
-            android:label="Alfa Security Policy" />
-
-        <service
-            android:name=".RuntimeKeepAliveService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="keep an explicitly user-started Alfa interactive Linux runtime PTY alive while the user backgrounds the app" />
+        <service android:name=".RuntimeKeepAliveService" android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="keep explicitly user-started Alfa interactive Linux runtime PTY sessions and their optional floating terminal UI alive while the user backgrounds the app" />
         </service>
 
-        <activity
-            android:name="com.alfa.device_ctrl.HostStorageDeviceProofActivity"
-            android:exported="true"
-            android:label="Alfa SAF Device Proof">
-            <intent-filter>
-                <action android:name="com.alfa.device_ctrl.action.HOST_STORAGE_PROOF" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+        <activity android:name="com.alfa.device_ctrl.HostStorageDeviceProofActivity" android:exported="true" android:label="Alfa SAF Device Proof">
+            <intent-filter><action android:name="com.alfa.device_ctrl.action.HOST_STORAGE_PROOF" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
         </activity>
     </application>
-
 </manifest>
