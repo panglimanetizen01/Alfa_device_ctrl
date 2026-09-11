@@ -29,9 +29,9 @@ The Android shared-storage workspace is user-facing project storage. It is not a
 
 The current `master` baseline is:
 
-`2a3128face07b9fa1a75e7d9250b9eee7b6935af`
+`18585528b195f7e06578402735633066dffb5d1e`
 
-This baseline is the post-PR46 canonical state. It includes the merged lifecycle/provenance fixes for APK readiness, including foreground-service ownership and Activity session reattachment, release Gate 7 provenance enforcement, trusted PRoot loader identity enforcement, G17 runtime-selection correction, and canonical hardening workflow alignment. G18/G19 and later contract artifacts remain authoritative only when their exact source commit and execution evidence are verified.
+This baseline is the current forensic APK-readiness baseline. It includes the merged lifecycle/provenance and build-path hardening from PR46, plus the rootfs archive symlink confinement fix and its regression test. G18/G19 and later contract artifacts remain authoritative only when their exact source commit and execution evidence are verified.
 
 ## Evidence Rules
 
