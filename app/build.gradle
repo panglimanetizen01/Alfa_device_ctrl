@@ -65,16 +65,14 @@ tasks.register('prepareGate7LaunchContract') {
 tasks.named('preBuild').configure { dependsOn tasks.named('prepareProotLoader'); dependsOn tasks.named('prepareGate7LaunchContract') }
 tasks.withType(Test).configureEach { dependsOn tasks.named('prepareProotLoader') }
 
-configurations.configureEach {
-    exclude group: 'com.google.guava', module: 'listenablefuture'
-}
-
 dependencies {
     implementation project(":terminal-view")
     implementation 'com.github.termux.termux-app:termux-shared:0.118.3'
     implementation 'org.tukaani:xz:1.12'
     implementation 'androidx.datastore:datastore-preferences:1.2.1'
     implementation 'androidx.datastore:datastore-guava:1.2.1'
+    implementation 'com.google.guava:guava:33.5.0-android'
+    implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
     implementation 'androidx.core:core:1.17.0'
     implementation 'dev.rikka.shizuku:api:12.2.0'
     implementation 'dev.rikka.shizuku:provider:12.2.0'
