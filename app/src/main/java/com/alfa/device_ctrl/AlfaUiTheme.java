@@ -37,6 +37,8 @@ public final class AlfaUiTheme {
         View root = activity.findViewById(android.R.id.content);
         if (root == null) return;
         root.setBackgroundColor(CANVAS);
+        activity.getWindow().setStatusBarColor(CANVAS);
+        activity.getWindow().setNavigationBarColor(CANVAS);
         float density = activity.getResources().getDisplayMetrics().density;
         applyTree(root, 0, density);
         root.post(() -> adaptRuntimeDashboard(root, density));
