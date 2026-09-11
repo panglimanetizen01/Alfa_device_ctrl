@@ -1,10 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" /><uses-permission android:name="android.permission.FOREGROUND_SERVICE" /><uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" /><uses-permission android:name="android.permission.POST_NOTIFICATIONS" /><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <queries><package android:name="moe.shizuku.privileged.api" /></queries>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="com.termux" />
+        <package android:name="com.termux.api" />
+    </queries>
     <application android:name=".AlfaApplication" android:label="@string/app_name" android:theme="@style/Theme.AlfaDeviceCtrl" android:allowBackup="false" android:resizeableActivity="true" android:enableOnBackInvokedCallback="true" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true" android:enableOnBackInvokedCallback="true"><intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter></activity>
-        <activity android:name=".Gate6ImportActivity" android:exported="false" android:label="Alfa Runtime Provisioning" /><activity android:name=".ProjectExplorerActivity" android:exported="false" android:label="Alfa Project Explorer" /><activity android:name=".PolicyEvidenceActivity" android:exported="false" android:label="Alfa Security Policy" /><activity android:name=".RuntimeToolsActivity" android:exported="false" android:label="Alfa Runtime Tools" /><activity android:name=".SecurityDiagnosticActivity" android:exported="false" android:label="Alfa Security Diagnostic" /><activity android:name=".AppearanceLanguageSettingsActivity" android:exported="false" android:label="Alfa Appearance and Language" /><activity android:name=".NotificationStateActivity" android:exported="false" android:label="Alfa Notifications" /><activity android:name=".SplitTerminalActivity" android:exported="false" android:label="Alfa Split Terminal" /><activity android:name=".FloatingTerminalActivity" android:exported="false" android:label="Alfa Floating Terminal" /><activity android:name=".RuntimeVfsPolicyActivity" android:exported="false" android:label="Alfa VFS Runtime Policy" /><activity android:name=".EvidenceShareActivity" android:exported="false" android:label="Alfa Evidence Sharing" />
+        <activity android:name=".Gate6ImportActivity" android:exported="false" android:label="Alfa Runtime Provisioning" />
+        <activity android:name=".ProjectExplorerActivity" android:exported="false" android:label="Alfa Project Explorer" />
+        <activity android:name=".ProjectEditorSocketDiagnosticsActivity" android:exported="false" android:label="Alfa Project Editor and Socket Diagnostics" />
+        <activity android:name=".TermuxExecutionActivity" android:exported="false" android:label="Alfa Termux Execution" />
+        <activity android:name=".PolicyEvidenceActivity" android:exported="false" android:label="Alfa Security Policy" />
+        <activity android:name=".RuntimeToolsActivity" android:exported="false" android:label="Alfa Runtime Tools" />
+        <activity android:name=".SecurityDiagnosticActivity" android:exported="false" android:label="Alfa Security Diagnostic" />
+        <activity android:name=".AppearanceLanguageSettingsActivity" android:exported="false" android:label="Alfa Appearance and Language" />
+        <activity android:name=".NotificationStateActivity" android:exported="false" android:label="Alfa Notifications" />
+        <activity android:name=".SplitTerminalActivity" android:exported="false" android:label="Alfa Split Terminal" />
+        <activity android:name=".FloatingTerminalActivity" android:exported="false" android:label="Alfa Floating Terminal" />
+        <activity android:name=".RuntimeVfsPolicyActivity" android:exported="false" android:label="Alfa VFS Runtime Policy" />
+        <activity android:name=".EvidenceShareActivity" android:exported="false" android:label="Alfa Evidence Sharing" />
+        <receiver android:name=".TermuxExecutionResultReceiver" android:exported="false" />
         <provider android:name="rikka.shizuku.ShizukuProvider" android:authorities="com.alfa.device_ctrl.shizuku" android:multiprocess="false" android:enabled="true" android:exported="true" android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <service android:name=".RuntimeKeepAliveService" android:exported="false" android:foregroundServiceType="specialUse"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="keep explicitly user-started Alfa interactive Linux runtime PTY sessions and their optional floating terminal UI alive while the user backgrounds the app" /></service>
         <provider android:name="androidx.core.content.FileProvider" android:authorities="com.alfa.device_ctrl.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/alfa_file_paths" /></provider>
