@@ -18,7 +18,7 @@ import org.junit.runner.RunWith;
 /** Contract gate for UI foundation stages 1-5: shell, routing, explorer, evidence/policy and session UI. */
 @RunWith(AndroidJUnit4.class)
 public final class UiFoundationContractInstrumentationTest {
-    @Test
+    @Test(timeout = 30000)
     public void mainShellExposesAllStageOneToFiveCapabilityAnchors() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
@@ -33,7 +33,7 @@ public final class UiFoundationContractInstrumentationTest {
         }
     }
 
-    @Test
+    @Test(timeout = 30000)
     public void stageOneToFiveActivitiesAreInternalOnly() {
         PackageManager pm = InstrumentationRegistryHolder.getPackageManager();
         assertActivity(pm, ProjectExplorerActivity.class);
@@ -43,7 +43,7 @@ public final class UiFoundationContractInstrumentationTest {
         assertActivity(pm, MainActivity.class);
     }
 
-    @Test
+    @Test(timeout = 30000)
     public void sessionRegistryCapacityIsDerivedFromCanonicalRuntimeRegistry() {
         RuntimeSessionRegistry registry = RuntimeSessionRegistry.get(InstrumentationRegistryHolder.getContext());
         assertEquals("session capacity must be the canonical runtime count", RuntimeRegistry.all().size(), registry.capacity());
@@ -51,7 +51,7 @@ public final class UiFoundationContractInstrumentationTest {
         assertTrue("session registry cannot exceed canonical capacity", registry.size() <= registry.capacity());
     }
 
-    @Test
+    @Test(timeout = 30000)
     public void sessionStateMappingIsFailClosed() {
         assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve(null));
         assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve("UNRECOGNIZED_EVENT"));
