@@ -29,43 +29,19 @@ public final class InteractiveSessionContract {
     private final String[] environment;
     private final String[] directoryOverrideBinds;
 
-    public InteractiveSessionContract(
-            String sessionId, String requestId, String pipelineRunId, String runtimeId,
-            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd,
-            String[] environment) {
-        this(sessionId, requestId, pipelineRunId, runtimeId,
-                "0000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000",
-                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
+    public InteractiveSessionContract(String sessionId, String requestId, String pipelineRunId, String runtimeId, File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment) {
+        this(sessionId, requestId, pipelineRunId, runtimeId, "0000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000", runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
     }
 
-    public InteractiveSessionContract(
-            String sessionId, String requestId, String pipelineRunId, String runtimeId,
-            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd,
-            String[] environment, String[] directoryOverrideBinds) {
-        this(sessionId, requestId, pipelineRunId, runtimeId,
-                "0000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000000000000000000000000000",
-                "0000000000000000000000000000000000000000",
-                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, directoryOverrideBinds);
+    public InteractiveSessionContract(String sessionId, String requestId, String pipelineRunId, String runtimeId, File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment, String[] directoryOverrideBinds) {
+        this(sessionId, requestId, pipelineRunId, runtimeId, "0000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000", runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, directoryOverrideBinds);
     }
 
-    public InteractiveSessionContract(
-            String sessionId, String requestId, String pipelineRunId, String runtimeId,
-            String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit,
-            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment) {
-        this(sessionId, requestId, pipelineRunId, runtimeId, sourceCommit, gate4ContractSha256, profileSha256, implementationCommit,
-                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
+    public InteractiveSessionContract(String sessionId, String requestId, String pipelineRunId, String runtimeId, String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit, File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment) {
+        this(sessionId, requestId, pipelineRunId, runtimeId, sourceCommit, gate4ContractSha256, profileSha256, implementationCommit, runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
     }
 
-    public InteractiveSessionContract(
-            String sessionId, String requestId, String pipelineRunId, String runtimeId,
-            String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit,
-            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment,
-            String[] directoryOverrideBinds) {
+    public InteractiveSessionContract(String sessionId, String requestId, String pipelineRunId, String runtimeId, String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit, File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment, String[] directoryOverrideBinds) {
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
         this.runtimeId = requireToken(runtimeId, "runtimeId");
@@ -152,15 +128,17 @@ public final class InteractiveSessionContract {
 
     private boolean hasValidProotTmpDir() {
         String value = null; for (String entry : environment) if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) { value = entry.substring("PROOT_TMP_DIR=".length()); break; }
-        if (value == null || value.isEmpty()) return false;
+        if (value == null || value.trim().isEmpty()) return false;
         try {
-            Path vaultPath = runtimeRoot.getCanonicalFile().getParentFile().getParentFile().getCanonicalFile().toPath().normalize();
-            Path candidatePath = Paths.get(value.trim()).toAbsolutePath().normalize();
-            if (!candidatePath.startsWith(vaultPath)) return false;
-            File tmp = candidatePath.toFile().getCanonicalFile();
+            File vault = runtimeRoot.getCanonicalFile().getParentFile().getParentFile().getCanonicalFile();
+            File runtime = runtimeRoot.getCanonicalFile();
+            File tmp = new File(value.trim()).getCanonicalFile();
+            Path vaultPath = vault.toPath().normalize();
+            Path tmpPath = tmp.toPath().normalize();
+            Path runtimePath = runtime.toPath().normalize();
             return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
-                    && tmp.toPath().normalize().startsWith(vaultPath)
-                    && !tmp.toPath().normalize().startsWith(runtimeRoot.getCanonicalFile().toPath().normalize().resolve("rootfs"));
+                    && tmpPath.startsWith(vaultPath)
+                    && !tmpPath.startsWith(runtimePath.resolve("rootfs"));
         } catch (Exception error) { return false; }
     }
 
