@@ -28,4 +28,12 @@ public final class ReleaseProvenanceContractTest {
         assertTrue(text.contains("TRUSTED_SHA256_MISMATCH"));
         assertTrue(text.contains("exit 21"));
     }
+
+    @Test public void launchContractCannotSurviveAnUpgradeWithoutFreshPackagedProvenance() throws Exception {
+        File source = new File("app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
+        assertTrue(source.isFile());
+        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+        assertTrue(text.contains("if (destination.exists()) destination.delete();"));
+        assertTrue(text.contains("validate(temporary);"));
+    }
 }
