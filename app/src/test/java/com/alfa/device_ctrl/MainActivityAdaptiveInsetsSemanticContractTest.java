@@ -23,11 +23,10 @@ public final class MainActivityAdaptiveInsetsSemanticContractTest {
         assertTrue(app.contains("RuntimeKeepAliveService.owner()"));
         assertTrue(app.contains("owner.rebindListener"));
         assertTrue(app.contains("owner.attachTo"));
+        assertTrue(app.contains("activityPauseInProgress = true"));
         assertTrue(manager.contains("isActivityPauseInProgress()"));
+        assertTrue(activity.contains("if (sessionManager != null && sessionManager.isRunning()) sessionManager.stop();"));
         assertFalse(manager.contains("if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }\n        new Handler"));
-        assertTrue(activity.contains("private void stopUiOwnedSessionIfNecessary()"));
-        assertTrue(activity.contains("RuntimeKeepAliveService.owner() == null"));
-        assertTrue(activity.contains("stopUiOwnedSessionIfNecessary();"));
     }
 
     @Test public void semanticStateProjectionRemainsSingleSource() throws Exception {
