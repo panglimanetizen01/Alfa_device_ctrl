@@ -59,9 +59,29 @@ jobs:
           mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
           test "${#LIBS[@]}" -gt 0
           for so in "${LIBS[@]}"; do
-            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
-            "$READELF" -lW "$so" | awk '$1 == "LOAD" {if ($NF != "0x4000") bad=1} END {if (NR == 0 || bad) exit 1}'
-            "$READELF" -lW "$so" | grep -q 'GNU_RELRO'
+            echo "ELF_CHECK=$so"
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:'
+            TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
+            case "$TYPE" in
+              DYN)
+                "$READELF" -lW "$so" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
+                RELRO_VIRT=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $3; exit}')
+                RELRO_MEM=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $6; exit}')
+                test -n "$RELRO_VIRT"
+                test -n "$RELRO_MEM"
+                RELRO_VIRT=${RELRO_VIRT#0x}
+                RELRO_MEM=${RELRO_MEM#0x}
+                RELRO_END=$((16#$RELRO_VIRT + 16#$RELRO_MEM))
+                test $((RELRO_END % 16384)) -eq 0
+                ;;
+              EXEC)
+                echo "ELF_EXECUTABLE_NOT_LINKER_SHARED_OBJECT=$so"
+                ;;
+              *)
+                echo "UNEXPECTED_ELF_TYPE=$TYPE"
+                exit 1
+                ;;
+            esac
           done
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
 
