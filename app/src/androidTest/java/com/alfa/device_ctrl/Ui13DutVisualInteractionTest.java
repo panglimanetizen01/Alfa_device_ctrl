@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class Ui13DutVisualInteractionTest {
     private static final int MIN_TOUCH_DP = 48;
+    private static final int CANONICAL_EMERALD = Color.rgb(16, 185, 129);
 
     @Test
     public void renderedShellAndNavigationAreInteractiveOnAndroid() throws Exception {
@@ -33,15 +34,14 @@ public final class Ui13DutVisualInteractionTest {
 
             scenario.onActivity(activity -> {
                 View root = activity.getWindow().getDecorView();
-                assertNotNull("Alfa shell root must be rendered", findText(root, "ALFA DEVICE CTRL"));
+                TextView title = findText(root, "ALFA DEVICE CTRL");
+                assertNotNull("Alfa shell root must be rendered", title);
                 assertNotNull("Runtime navigation must be rendered", findText(root, "RUNTIME"));
                 assertNotNull("Terminal navigation must be rendered", findText(root, "TERMINAL"));
                 assertNotNull("Project navigation must be rendered", findText(root, "PROJECT"));
                 assertNotNull("Diagnostic navigation must be rendered", findText(root, "DIAGNOSTIC"));
                 assertNotNull("Network navigation must be rendered", findText(root, "NETWORK"));
-
-                TextView title = findText(root, "ALFA DEVICE CTRL");
-                assertEquals("canonical shell background must be rendered", Color.rgb(11, 15, 20), root.getRootView().getBackground() == null ? Color.TRANSPARENT : root.getRootView().getBackground().getConstantState() == null ? Color.TRANSPARENT : Color.rgb(11, 15, 20));
+                assertEquals("shell title must use canonical emerald", CANONICAL_EMERALD, title.getCurrentTextColor());
                 assertTrue("shell title must be visible", title.isShown());
 
                 for (String label : new String[]{"RUNTIME", "TERMINAL", "PROJECT", "DIAGNOSTIC", "NETWORK"}) {
