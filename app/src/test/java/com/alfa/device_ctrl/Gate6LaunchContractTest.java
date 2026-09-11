@@ -17,7 +17,7 @@ public final class Gate6LaunchContractTest {
         try {
             File bootstrap = new File(dir, "bootstrap.txt");
             File launch = new File(dir, "gate7.properties");
-            writeBootstrap(bootstrap, "alpine");
+            writeBootstrap(bootstrap, "alpine", RuntimeRegistry.CANONICAL_REGISTRY_SHA256);
 
             Gate6LaunchContract.importBootstrap(bootstrap, launch);
 
@@ -25,7 +25,7 @@ public final class Gate6LaunchContractTest {
             assertFalse(Gate6LaunchContract.verify(launch, "ubuntu"));
             String text = new String(Files.readAllBytes(launch.toPath()), StandardCharsets.UTF_8);
             assertTrue(text.contains("runtime_id=alpine"));
-            assertTrue(text.contains("runtime_registry_sha256="));
+            assertTrue(text.contains("runtime_registry_sha256=" + RuntimeRegistry.CANONICAL_REGISTRY_SHA256));
         } finally {
             delete(dir);
         }
@@ -36,7 +36,7 @@ public final class Gate6LaunchContractTest {
         try {
             File bootstrap = new File(dir, "bootstrap.txt");
             File launch = new File(dir, "gate7.properties");
-            writeBootstrap(bootstrap, "not-a-runtime");
+            writeBootstrap(bootstrap, "not-a-runtime", RuntimeRegistry.CANONICAL_REGISTRY_SHA256);
 
             try {
                 Gate6LaunchContract.importBootstrap(bootstrap, launch);
@@ -61,7 +61,7 @@ public final class Gate6LaunchContractTest {
         }
     }
 
-    private static void writeBootstrap(File file, String runtimeId) throws Exception {
+    private static void writeBootstrap(File file, String runtimeId, String registryHash) throws Exception {
         String run = "run-" + UUID.randomUUID();
         String source = "0123456789012345678901234567890123456789";
         String hash = "0123456789012345678901234567890123456789012345678901234567890123";
@@ -70,7 +70,7 @@ public final class Gate6LaunchContractTest {
                 + "gate_status=PASS\n"
                 + "pipeline_run_id=" + run + "\n"
                 + "runtime_id=" + runtimeId + "\n"
-                + "runtime_registry_sha256=" + hash + "\n"
+                + "runtime_registry_sha256=" + registryHash + "\n"
                 + "source_commit=" + source + "\n"
                 + "implementation_commit=" + source + "\n"
                 + "gate4_contract_sha256=" + hash + "\n"

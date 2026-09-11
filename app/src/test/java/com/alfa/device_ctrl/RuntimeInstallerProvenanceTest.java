@@ -25,6 +25,7 @@ public final class RuntimeInstallerProvenanceTest {
                 profile.rootfsSha256(),
                 profile.rootfsGzip());
 
+        // A runtime ID alone must never authorize an arbitrary rootfs source.
         assertFalse("unregistered archive URL must be rejected before download", result.success);
         assertTrue(result.message.contains("runtime-artifact-does-not-match-registry"));
     }

@@ -13,6 +13,12 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true

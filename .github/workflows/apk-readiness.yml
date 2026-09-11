@@ -42,6 +42,25 @@ jobs:
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
 
+      - name: Rebuild libtermux from canonical source
+        run: |
+          set -euo pipefail
+          NDK="$ANDROID_HOME/ndk/28.0.13004108"
+          "$NDK/ndk-build" \
+            -C terminal-emulator \
+            NDK_PROJECT_PATH="$GITHUB_WORKSPACE/terminal-emulator" \
+            APP_BUILD_SCRIPT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jni/Android.mk" \
+            APP_ABI=arm64-v8a \
+            NDK_OUT="$RUNNER_TEMP/termux-obj" \
+            NDK_LIBS_OUT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jniLibs" \
+            V=1
+          LIB="terminal-emulator/src/main/jniLibs/arm64-v8a/libtermux.so"
+          test -s "$LIB"
+          READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
+          "$READELF" -lW "$LIB" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
+          echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
+
       - name: Unit tests and APK build
         run: |
           set -euo pipefail
@@ -59,9 +78,29 @@ jobs:
           mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
           test "${#LIBS[@]}" -gt 0
           for so in "${LIBS[@]}"; do
-            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
-            "$READELF" -lW "$so" | awk '$1 == "LOAD" {if ($NF != "0x4000") bad=1} END {if (NR == 0 || bad) exit 1}'
-            "$READELF" -lW "$so" | grep -q 'GNU_RELRO'
+            echo "ELF_CHECK=$so"
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:'
+            TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
+            case "$TYPE" in
+              DYN)
+                "$READELF" -lW "$so" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
+                RELRO_VIRT=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $3; exit}')
+                RELRO_MEM=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $6; exit}')
+                test -n "$RELRO_VIRT"
+                test -n "$RELRO_MEM"
+                RELRO_VIRT=${RELRO_VIRT#0x}
+                RELRO_MEM=${RELRO_MEM#0x}
+                RELRO_END=$((16#$RELRO_VIRT + 16#$RELRO_MEM))
+                test $((RELRO_END % 16384)) -eq 0
+                ;;
+              EXEC)
+                echo "ELF_EXECUTABLE_NOT_LINKER_SHARED_OBJECT=$so"
+                ;;
+              *)
+                echo "UNEXPECTED_ELF_TYPE=$TYPE"
+                exit 1
+                ;;
+            esac
           done
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
 
