@@ -134,11 +134,20 @@ public final class InteractiveSessionContract {
 
     private boolean prootLoaderIsValid() {
         for (String entry : environment) if (entry != null && entry.startsWith("PROOT_LOADER=")) {
-            String value = entry.substring("PROOT_LOADER=".length()); File loader = new File(value);
-            try { return !value.isEmpty() && loader.isFile() && loader.canExecute() && loader.getCanonicalFile().getParentFile().equals(prootExecutable.getCanonicalFile().getParentFile()); }
-            catch (Exception error) { return false; }
+            String value = entry.substring("PROOT_LOADER=".length());
+            return isCanonicalProotLoaderValue(value, prootExecutable);
         }
         return false;
+    }
+
+    static boolean isCanonicalProotLoaderValue(String supplied, File prootExecutable) {
+        if (supplied == null || supplied.isEmpty() || prootExecutable == null) return false;
+        try {
+            File executableParent = prootExecutable.getCanonicalFile().getParentFile();
+            if (executableParent == null) return false;
+            File expectedLoader = new File(executableParent, "libproot-loader.so").getCanonicalFile();
+            return supplied.equals(expectedLoader.getAbsolutePath()) && expectedLoader.isFile() && expectedLoader.canExecute();
+        } catch (Exception error) { return false; }
     }
 
     private boolean hasValidProotTmpDir() {
