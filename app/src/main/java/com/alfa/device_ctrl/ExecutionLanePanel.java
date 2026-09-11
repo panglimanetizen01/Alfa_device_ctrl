@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import android.app.Activity;
 import android.graphics.Typeface;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -25,41 +26,60 @@ public final class ExecutionLanePanel {
 
         LinearLayout host = findMainContent((ViewGroup) content);
         if (host == null) return;
-        LinearLayout panel = new LinearLayout(activity);
-        panel.setTag(TAG);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(activity, 8), dp(activity, 6), dp(activity, 8), dp(activity, 6));
-        panel.setBackgroundColor(AlfaUiTheme.SURFACE_1);
+
+        LinearLayout section = new LinearLayout(activity);
+        section.setOrientation(LinearLayout.VERTICAL);
+        section.setPadding(dp(activity, 8), dp(activity, 6), dp(activity, 8), dp(activity, 6));
+        section.setBackgroundColor(AlfaUiTheme.SURFACE_1);
 
         TextView title = label(activity, "EXECUTION LANES", AlfaUiTheme.TEXT, 11, true);
-        panel.addView(title, new LinearLayout.LayoutParams(-1, dp(activity, 24)));
+        section.addView(title, new LinearLayout.LayoutParams(-1, dp(activity, 24)));
 
+        LinearLayout laneRows = new LinearLayout(activity);
+        laneRows.setTag(TAG);
+        laneRows.setOrientation(LinearLayout.VERTICAL);
+        laneRows.setBackgroundColor(AlfaUiTheme.SURFACE_1);
         for (ExecutionLane lane : ExecutionLane.values()) {
             LinearLayout row = new LinearLayout(activity);
-            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(dp(activity, 8), 0, dp(activity, 8), 0);
             row.setBackgroundColor(AlfaUiTheme.SURFACE_2);
             TextView name = label(activity, laneLabel(lane), AlfaUiTheme.TEXT, 10, true);
             row.addView(name, new LinearLayout.LayoutParams(0, dp(activity, 40), 1));
             TextView state = label(activity, laneState(lane), AlfaUiTheme.UNKNOWN, 9, true);
-            state.setGravity(android.view.Gravity.CENTER);
+            state.setGravity(Gravity.CENTER);
             row.addView(state, new LinearLayout.LayoutParams(dp(activity, 112), dp(activity, 40)));
-            panel.addView(row, new LinearLayout.LayoutParams(-1, dp(activity, 40)));
+            laneRows.addView(row, new LinearLayout.LayoutParams(-1, dp(activity, 40)));
         }
+        section.addView(laneRows, new LinearLayout.LayoutParams(-1, dp(activity, 160)));
 
-        LinearLayout.LayoutParams panelParams = new LinearLayout.LayoutParams(-1, dp(activity, 194));
-        panelParams.setMargins(0, dp(activity, 6), 0, dp(activity, 6));
+        LinearLayout.LayoutParams sectionParams = new LinearLayout.LayoutParams(-1, dp(activity, 194));
+        sectionParams.setMargins(0, dp(activity, 6), 0, dp(activity, 6));
         int insertAt = Math.min(1, host.getChildCount());
-        host.addView(panel, insertAt, panelParams);
+        host.addView(section, insertAt, sectionParams);
         AlfaUiTheme.apply(activity);
     }
 
     private static LinearLayout findMainContent(ViewGroup root) {
         for (int i = 0; i < root.getChildCount(); i++) {
             View child = root.getChildAt(i);
-            if (!(child instanceof LinearLayout)) continue;
-            LinearLayout candidate = (LinearLayout) child;
+            if (!(child instanceof ViewGroup)) continue;
+            LinearLayout found = findMainContentIn(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static LinearLayout findMainContentIn(View view) {
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        if (group instanceof LinearLayout) {
+            LinearLayout candidate = (LinearLayout) group;
             if (candidate.getOrientation() == LinearLayout.VERTICAL && candidate.getChildCount() == 3) return candidate;
+        }
+        for (int i = 0; i < group.getChildCount(); i++) {
+            LinearLayout found = findMainContentIn(group.getChildAt(i));
+            if (found != null) return found;
         }
         return null;
     }
