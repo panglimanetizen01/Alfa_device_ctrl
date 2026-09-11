@@ -21,15 +21,21 @@ public final class RuntimeDirectoryOverride {
 
     public String prootBindArgument() { return hostPath + ":" + guestPath; }
 
+    static boolean isLexicallySharedStoragePath(String value) {
+        if (value == null) return false;
+        String path = value.trim();
+        if (path.isEmpty() || path.indexOf('\0') >= 0 || path.contains("/../") || path.endsWith("/..")) return false;
+        return path.equals("/sdcard") || path.startsWith("/sdcard/")
+                || path.equals("/storage/emulated/0") || path.startsWith("/storage/emulated/0/");
+    }
+
     public static String canonicalDirectory(String value) {
-        if (value == null || value.trim().isEmpty()) throw new IllegalArgumentException("host-path-required");
+        if (!isLexicallySharedStoragePath(value)) throw new IllegalArgumentException("host-directory-outside-shared-storage");
         try {
-            File file = new File(value).getCanonicalFile();
+            File file = new File(value.trim()).getCanonicalFile();
             if (!file.isDirectory() || !file.canRead()) throw new IllegalArgumentException("host-directory-unavailable");
             String path = file.getAbsolutePath();
-            if (!(path.equals("/sdcard") || path.startsWith("/sdcard/") || path.equals("/storage/emulated/0") || path.startsWith("/storage/emulated/0/"))) {
-                throw new IllegalArgumentException("host-directory-outside-shared-storage");
-            }
+            if (!isLexicallySharedStoragePath(path)) throw new IllegalArgumentException("host-directory-outside-shared-storage");
             return path;
         } catch (Exception error) {
             if (error instanceof IllegalArgumentException) throw (IllegalArgumentException) error;
