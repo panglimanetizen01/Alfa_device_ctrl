@@ -52,6 +52,23 @@ jobs:
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Capture native audit build failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace --info > native-audit-build.log 2>&1
+          code=$?
+          printf '\nNATIVE_AUDIT_RETRY_EXIT=%s\n' "$code" >> native-audit-build.log
+          exit 0
+      - name: Upload native audit build failure evidence
+        if: failure()
+        uses: actions/upload-artifact@615b319bd27bb32c3d64dca6b6ed6974d5fbe653 # v6.0.0
+        with:
+          name: native-16kb-build-failure-${{ github.run_id }}
+          path: native-audit-build.log
+          if-no-files-found: error
+          retention-days: 3
       - name: Verify 16 KB native alignment
         shell: bash
         run: |
