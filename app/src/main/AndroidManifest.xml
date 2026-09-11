@@ -29,6 +29,11 @@
             android:exported="false"
             android:label="Alfa Runtime Provisioning" />
 
+        <activity
+            android:name=".StoragePickerActivity"
+            android:exported="false"
+            android:label="Alfa Storage Access" />
+
         <service
             android:name=".RuntimeKeepAliveService"
             android:exported="false"

@@ -41,7 +41,8 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("SELinux context missing", !selinux.isEmpty());
         assertTrue("shell SELinux context must never be accepted", !"u:r:shell:s0".equals(selinux));
 
-        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + RuntimeProfile.ID);
+        String runtimeId = RuntimeSelection.DEFAULT_RUNTIME_ID;
+        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + runtimeId);
         File ready = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
         assertTrue("runtime READY evidence missing", ready.isFile());
@@ -49,7 +50,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("rootfs /proc missing", new File(rootfs, "proc").isDirectory());
         assertTrue("rootfs /dev missing", new File(rootfs, "dev").isDirectory());
         assertTrue("rootfs /sys missing", new File(rootfs, "sys").isDirectory());
-        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, RuntimeProfile.ID, engine, rootfs));
+        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, runtimeId, engine, rootfs));
 
         String source = arg("source_commit");
         File g16 = new File(arg("gate16_path"));

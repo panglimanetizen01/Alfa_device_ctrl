@@ -1,0 +1,68 @@
+name: UI Milestones 15-20 Evidence
+
+on:
+  push:
+    branches:
+      - test/ui-session-ownership-red2
+  pull_request:
+    branches:
+      - master
+      - test/ui-session-ownership-red2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-milestones-15-20-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  instrumentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+      - name: Install required Android NDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "ndk;28.0.13004108"
+      - name: Assemble debug APKs
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+      - name: Run milestone 15-20 instrumentation on API 34
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: Pixel_2
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: ./gradlew :app:connectedDebugAndroidTest --stacktrace
+      - name: Collect instrumentation and UI evidence
+        if: always()
+        run: |
+          mkdir -p artifacts/ui-milestone-15-20
+          cp -R app/build/outputs/androidTest-results artifacts/ui-milestone-15-20/androidTest-results 2>/dev/null || true
+          cp -R app/build/reports/androidTests artifacts/ui-milestone-15-20/androidTests 2>/dev/null || true
+          cp -R app/build/outputs/apk artifacts/ui-milestone-15-20/apk 2>/dev/null || true
+          adb pull /sdcard/Android/data/com.alfa.device_ctrl/files/pictures/alfa-ui-milestone-15-20 artifacts/ui-milestone-15-20/screenshots 2>/dev/null || true
+      - name: Upload milestone evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ui-milestone-15-20-${{ github.sha }}
+          path: artifacts/ui-milestone-15-20
+          if-no-files-found: warn
