@@ -67,7 +67,7 @@ tasks.withType(Test).configureEach { dependsOn tasks.named('prepareProotLoader')
 
 dependencies {
     implementation project(":terminal-view")
-    implementation 'com.termux:termux-shared:0.118.3'
+    implementation 'com.github.termux.termux-app:termux-shared:0.118.3'
     implementation 'org.tukaani:xz:1.12'
     implementation 'androidx.datastore:datastore-preferences:1.2.1'
     implementation 'androidx.datastore:datastore-guava:1.2.1'
