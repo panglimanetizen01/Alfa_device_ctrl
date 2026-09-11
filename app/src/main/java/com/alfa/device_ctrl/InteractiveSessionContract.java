@@ -3,7 +3,6 @@ package com.alfa.device_ctrl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
 
 /** Android-side representation of interactive-session.v1 with runtime-bound Gate 7 provenance. */
@@ -111,9 +110,11 @@ public final class InteractiveSessionContract {
         String[] result = supplied.clone();
         for (String bind : result) {
             if (bind == null || bind.indexOf('\0') >= 0 || bind.indexOf('|') >= 0 || bind.indexOf(':') <= 0 || bind.indexOf(':') == bind.length() - 1) throw new IllegalArgumentException("directory-override-bind-invalid");
-            String host = bind.substring(0, bind.indexOf(':'));
-            String guest = bind.substring(bind.indexOf(':') + 1);
-            if (!new File(host).isDirectory() || !new File(host).canRead() || !(guest.startsWith("/mnt/") || guest.startsWith("/workspace/"))) throw new IllegalArgumentException("directory-override-bind-invalid");
+            int separator = bind.indexOf(':');
+            String host = bind.substring(0, separator);
+            String guest = bind.substring(separator + 1);
+            RuntimeDirectoryOverride.canonicalDirectory(host);
+            if (!(guest.startsWith("/mnt/") || guest.startsWith("/workspace/"))) throw new IllegalArgumentException("directory-override-bind-invalid");
         }
         return result;
     }
@@ -141,8 +142,19 @@ public final class InteractiveSessionContract {
     private boolean hasValidProotTmpDir() {
         String value = null; for (String entry : environment) if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) { value = entry.substring("PROOT_TMP_DIR=".length()); break; }
         if (value == null || value.isEmpty()) return false;
-        try { File tmp = new File(value).getCanonicalFile(), runtime = runtimeRoot.getCanonicalFile(), vault = runtime.getParentFile().getParentFile().getCanonicalFile(); return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland") && tmp.toPath().startsWith(vault.toPath()) && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs")); }
-        catch (Exception error) { return false; }
+        try {
+            File runtime = runtimeRoot.getCanonicalFile();
+            File vault = runtime.getParentFile().getParentFile().getCanonicalFile();
+            String vaultPath = vault.getAbsolutePath();
+            String candidate = value.trim();
+            if (candidate.indexOf('\0') >= 0 || candidate.contains("/../") || candidate.endsWith("/..") || !candidate.startsWith(vaultPath + File.separator)) return false;
+            String relative = candidate.substring((vaultPath + File.separator).length());
+            if (relative.isEmpty() || relative.contains("..")) return false;
+            File tmp = new File(vault, relative).getCanonicalFile();
+            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute()
+                    && tmp.toPath().startsWith(vault.toPath())
+                    && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs"));
+        } catch (Exception error) { return false; }
     }
 
     private boolean hasUnsafeEnvironmentPath() {
