@@ -12,7 +12,7 @@ import android.widget.TextView;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Centralized Terminal Obsidian visual tokens and runtime layout normalization. */
+/** Centralized native-Views visual tokens and adaptive runtime layout normalization. */
 public final class AlfaUiTheme {
     public static final int CANVAS = Color.rgb(11, 15, 20);
     public static final int SURFACE_1 = Color.rgb(18, 24, 32);
@@ -25,6 +25,10 @@ public final class AlfaUiTheme {
     public static final int CYAN = Color.rgb(6, 182, 212);
     public static final int SLATE = Color.rgb(100, 116, 139);
 
+    private static final int LEGACY_PRIMARY = Color.rgb(171, 199, 255);
+    private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
+    private static final int LEGACY_ERROR = Color.rgb(255, 180, 171);
+
     private AlfaUiTheme() {}
 
     public static void apply(Activity activity) {
@@ -36,42 +40,58 @@ public final class AlfaUiTheme {
     }
 
     private static void applyTree(View view, Set<Integer> visited) {
-        if (view == null || visited.contains(view.getId())) return;
-        if (view.getId() != View.NO_ID) visited.add(view.getId());
-        if (view instanceof TextView) {
-            TextView text = (TextView) view;
-            if (text.getTextSize() > 0f && text.getTextSize() < 14f) {
-                text.setTextColor(SLATE);
-            }
-        }
+        if (view == null) return;
+        int id = view.getId();
+        if (id != View.NO_ID && !visited.add(id)) return;
         if (view instanceof Button) {
             Button button = (Button) view;
+            int semanticColor = mapTextColor(button.getCurrentTextColor());
             GradientDrawable bg = new GradientDrawable();
             bg.setColor(SURFACE_2);
-            bg.setStroke(dp(1, view.getResources().getDisplayMetrics().density), BORDER);
+            bg.setStroke(dp(1, view.getResources().getDisplayMetrics().density), semanticColor == CRIMSON ? CRIMSON : BORDER);
             bg.setCornerRadius(dp(4, view.getResources().getDisplayMetrics().density));
             button.setBackground(bg);
-            button.setTextColor(EMERALD);
+            button.setTextColor(semanticColor);
             button.setMinHeight(dp(48, view.getResources().getDisplayMetrics().density));
             button.setMinWidth(dp(48, view.getResources().getDisplayMetrics().density));
         }
+        if (view instanceof TextView && !(view instanceof Button)) {
+            TextView text = (TextView) view;
+            int legacyColor = text.getCurrentTextColor();
+            if (legacyColor == LEGACY_PRIMARY) text.setTextColor(EMERALD);
+            else if (legacyColor == LEGACY_MUTED) text.setTextColor(SLATE);
+            else if (legacyColor == LEGACY_ERROR) text.setTextColor(CRIMSON);
+        }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                applyTree(group.getChildAt(i), visited);
-            }
+            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), visited);
         }
+    }
+
+    private static int mapTextColor(int color) {
+        if (color == LEGACY_PRIMARY) return EMERALD;
+        if (color == LEGACY_MUTED) return SLATE;
+        if (color == LEGACY_ERROR) return CRIMSON;
+        if (color == AMBER || color == CYAN || color == EMERALD || color == CRIMSON || color == SLATE) return color;
+        return SLATE;
     }
 
     private static void applyAdaptiveRuntimeLayout(View root) {
         LinearLayout content = findContentColumn(root);
         if (content == null || content.getChildCount() < 5) return;
+        float density = root.getResources().getDisplayMetrics().density;
+        int widthDp = Math.round(root.getWidth() / density);
+        int heightDp = Math.round(content.getHeight() / density);
+        if (widthDp <= 0) widthDp = Math.round(root.getResources().getDisplayMetrics().widthPixels / density);
+        if (heightDp <= 0) heightDp = Math.round(root.getResources().getDisplayMetrics().heightPixels / density);
+
         View runtimeWindow = content.getChildAt(1);
         View monitorWindow = content.getChildAt(2);
         View terminalWindow = content.getChildAt(4);
-        float density = root.getResources().getDisplayMetrics().density;
-        int heightDp = Math.round(content.getHeight() / density);
         AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(heightDp, 1);
+        if (AdaptiveWindowPolicy.widthClass(widthDp) == AdaptiveWindowPolicy.WidthClass.EXPANDED) {
+            layout = AdaptiveRuntimeLayoutPolicy.resolve(Math.max(400, heightDp), 1);
+        }
         setFixedHeight(runtimeWindow, dp(layout.runtimeDp, density));
         setFixedHeight(monitorWindow, dp(layout.monitorDp, density));
         if (terminalWindow.getLayoutParams() instanceof LinearLayout.LayoutParams) {
