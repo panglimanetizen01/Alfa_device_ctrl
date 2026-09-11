@@ -71,7 +71,7 @@ public final class AlfaUiTheme {
         View terminalWindow = content.getChildAt(4);
         float density = root.getResources().getDisplayMetrics().density;
         int heightDp = Math.round(content.getHeight() / density);
-        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(heightDp, density);
+        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(heightDp, 1);
         setFixedHeight(runtimeWindow, dp(layout.runtimeDp, density));
         setFixedHeight(monitorWindow, dp(layout.monitorDp, density));
         if (terminalWindow.getLayoutParams() instanceof LinearLayout.LayoutParams) {
@@ -105,8 +105,9 @@ public final class AlfaUiTheme {
     private static void setFixedHeight(View view, int heightPx) {
         ViewGroup.LayoutParams lp = view.getLayoutParams();
         if (lp instanceof LinearLayout.LayoutParams) {
-            lp.height = heightPx;
-            lp.weight = 0f;
+            LinearLayout.LayoutParams linear = (LinearLayout.LayoutParams) lp;
+            linear.height = heightPx;
+            linear.weight = 0f;
         } else {
             lp.height = heightPx;
         }
