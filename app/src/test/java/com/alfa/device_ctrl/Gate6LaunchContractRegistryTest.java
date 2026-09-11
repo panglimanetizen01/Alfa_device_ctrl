@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -32,8 +33,12 @@ public final class Gate6LaunchContractRegistryTest {
                 + "bootstrap_probe=PASS\n";
         Files.write(bootstrap.toPath(), text.getBytes(StandardCharsets.UTF_8));
 
-        Gate6LaunchContract.importBootstrap(bootstrap, launch);
-        assertFalse("stale registry provenance must be rejected", Gate6LaunchContract.verify(launch, "debian"));
+        try {
+            Gate6LaunchContract.importBootstrap(bootstrap, launch);
+            fail("stale registry provenance must be rejected during import");
+        } catch (IllegalStateException expected) {
+            assertFalse(launch.exists());
+        }
 
         String current = text.replace(
                 "runtime_registry_sha256=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
