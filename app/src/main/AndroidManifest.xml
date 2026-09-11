@@ -35,6 +35,11 @@
             android:exported="false"
             android:label="Alfa Project Explorer" />
 
+        <activity
+            android:name=".PolicyEvidenceActivity"
+            android:exported="false"
+            android:label="Alfa Security Policy" />
+
         <service
             android:name=".RuntimeKeepAliveService"
             android:exported="false"
