@@ -1,5 +1,6 @@
 package com.alfa.device_ctrl;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -40,6 +41,25 @@ public final class UiFoundationContractInstrumentationTest {
         assertActivity(pm, PolicyEvidenceActivity.class);
         assertActivity(pm, RuntimeToolsActivity.class);
         assertActivity(pm, MainActivity.class);
+    }
+
+    @Test
+    public void sessionRegistryCapacityIsDerivedFromCanonicalRuntimeRegistry() {
+        RuntimeSessionRegistry registry = RuntimeSessionRegistry.get(InstrumentationRegistryHolder.getContext());
+        assertEquals("session capacity must be the canonical runtime count", RuntimeRegistry.all().size(), registry.capacity());
+        assertTrue("session registry cannot report a negative size", registry.size() >= 0);
+        assertTrue("session registry cannot exceed canonical capacity", registry.size() <= registry.capacity());
+    }
+
+    @Test
+    public void sessionStateMappingIsFailClosed() {
+        assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve(null));
+        assertEquals(SessionUiState.Status.NOT_READY, SessionUiState.resolve("UNRECOGNIZED_EVENT"));
+        assertEquals(SessionUiState.Status.STARTING, SessionUiState.resolve("PTY_CREATED"));
+        assertEquals(SessionUiState.Status.RUNNING, SessionUiState.resolve("READY"));
+        assertEquals(SessionUiState.Status.STOPPING, SessionUiState.resolve("STOPPING"));
+        assertEquals(SessionUiState.Status.FAILED, SessionUiState.resolve("BLOCKED"));
+        assertEquals(SessionUiState.Status.FINISHED, SessionUiState.resolve("FINISHED"));
     }
 
     private static void assertActivity(PackageManager pm, Class<?> activityClass) {
