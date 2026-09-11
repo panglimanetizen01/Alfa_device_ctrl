@@ -84,7 +84,8 @@ public final class Gate6LaunchContract {
             if (!runtimeId.equals(p.getProperty("runtime_id"))) return false;
             if (RuntimeRegistry.get(runtimeId) == null) return false;
             token(p, "pipeline_run_id");
-            hex(p, "runtime_registry_sha256", 64);
+            String registryHash = hex(p, "runtime_registry_sha256", 64);
+            if (!RuntimeRegistry.CANONICAL_REGISTRY_SHA256.equalsIgnoreCase(registryHash)) return false;
             hex(p, "source_commit", 40);
             hex(p, "gate4_contract_sha256", 64);
             hex(p, "profile_sha256", 64);
