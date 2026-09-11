@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,12 +11,13 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Presentation-only Terminal Obsidian styling. Never supplies runtime state or capability state. */
+/** Terminal Obsidian presentation theme. It only projects visual tokens and never creates runtime truth. */
 public final class AlfaUiTheme {
-    public static final int CANVAS = Color.rgb(11, 15, 20);
-    public static final int SURFACE_1 = Color.rgb(18, 24, 32);
-    public static final int SURFACE_2 = Color.rgb(26, 34, 45);
-    public static final int BORDER = Color.rgb(31, 41, 55);
+    public static final int CANVAS = Color.rgb(16, 20, 25);
+    public static final int SURFACE_1 = Color.rgb(22, 27, 34);
+    public static final int SURFACE_2 = Color.rgb(38, 42, 48);
+    public static final int TERMINAL = Color.rgb(13, 17, 23);
+    public static final int BORDER = Color.rgb(34, 39, 46);
     public static final int BORDER_FOCUSED = Color.rgb(55, 65, 81);
     public static final int TEXT = Color.rgb(224, 226, 234);
     public static final int TEXT_MUTED = Color.rgb(187, 202, 191);
@@ -25,13 +27,15 @@ public final class AlfaUiTheme {
     public static final int TELEMETRY = Color.rgb(6, 182, 212);
     public static final int UNKNOWN = Color.rgb(100, 116, 139);
 
-    private static final int LEGACY_PRIMARY = Color.rgb(171, 199, 255);
-    private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
+    private static final int LEGACY_BG = Color.rgb(19, 19, 21);
+    private static final int LEGACY_PANEL = Color.rgb(32, 31, 33);
+    private static final int LEGACY_PANEL_HIGH = Color.rgb(42, 42, 44);
     private static final int LEGACY_ERROR = Color.rgb(255, 180, 171);
+    private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
     private static final int TOUCH_TARGET_DP = 48;
     private static final int RADIUS_DP = 4;
 
-    private AlfaUiTheme() { }
+    private AlfaUiTheme() {}
 
     public static void apply(Activity activity) {
         View root = activity.findViewById(android.R.id.content);
@@ -46,13 +50,11 @@ public final class AlfaUiTheme {
 
     private static void applyTree(View view, int depth, float density) {
         if (view.getClass().getName().contains("TerminalView")) return;
-
         int min = Math.round(TOUCH_TARGET_DP * density);
         if (view.isClickable() || view instanceof Button) {
             view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
             view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
         }
-
         if (view instanceof Button) {
             Button button = (Button) view;
             int original = button.getTextColors() == null ? TEXT : button.getTextColors().getDefaultColor();
@@ -69,47 +71,48 @@ public final class AlfaUiTheme {
             text.setTextColor(normalizeTextColor(original));
             if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
             Typeface current = text.getTypeface();
-            if (current != null) {
-                text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
-            }
+            if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
         }
-
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
                 View child = group.getChildAt(i);
-                if (!(child instanceof TextView) && !(child instanceof Button) && depth == 0) {
-                    child.setBackgroundColor(SURFACE_1);
-                }
+                normalizeContainerBackground(child, depth);
                 applyTree(child, depth + 1, density);
             }
         }
     }
 
+    private static void normalizeContainerBackground(View child, int depth) {
+        if (child instanceof TextView || child instanceof Button) return;
+        int current = child.getBackground() instanceof ColorDrawable
+                ? ((ColorDrawable) child.getBackground()).getColor() : Color.TRANSPARENT;
+        if (current == LEGACY_BG) child.setBackgroundColor(CANVAS);
+        else if (current == LEGACY_PANEL) child.setBackgroundColor(SURFACE_1);
+        else if (current == LEGACY_PANEL_HIGH) child.setBackgroundColor(SURFACE_2);
+        else if (current == Color.BLACK) child.setBackgroundColor(TERMINAL);
+        else if (depth == 0 && child.getBackground() == null) child.setBackgroundColor(SURFACE_1);
+    }
+
     private static int normalizeTextColor(int color) {
-        if (color == LEGACY_PRIMARY) return READY;
+        if (color == Color.rgb(171, 199, 255)) return READY;
         if (color == LEGACY_ERROR) return ERROR;
         if (color == LEGACY_MUTED) return TEXT_MUTED;
         if (color == Color.TRANSPARENT) return TEXT;
         return color;
     }
 
-    /**
-     * Adapts runtime cards to the measured dashboard window. It never uses physical display size
-     * or device-class assumptions. Every card remains at least 48dp high, including its controls.
-     */
+    /** Sizes runtime cards from the measured dashboard window, never from physical display assumptions. */
     private static void adaptRuntimeDashboard(View root, float density) {
         LinearLayout dashboard = findRuntimeDashboard(root);
         if (dashboard == null || dashboard.getHeight() <= 0) return;
         int runtimeCount = RuntimeRegistry.all().size();
         if (runtimeCount <= 0) return;
-
         int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
         int separatorHeight = Math.max(1, Math.round(2 * density));
         int separators = Math.max(0, runtimeCount - 1);
         int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight);
         int cardHeight = Math.max(Math.round(48 * density), available / runtimeCount);
-
         int cards = 0;
         for (int i = 0; i < dashboard.getChildCount(); i++) {
             View child = dashboard.getChildAt(i);
@@ -136,9 +139,7 @@ public final class AlfaUiTheme {
         int expected = RuntimeRegistry.all().size();
         if (expected > 0 && group.getChildCount() >= expected * 2 - 1) {
             int cards = 0;
-            for (int i = 0; i < group.getChildCount(); i += 2) {
-                if (group.getChildAt(i) instanceof LinearLayout) cards++;
-            }
+            for (int i = 0; i < group.getChildCount(); i += 2) if (group.getChildAt(i) instanceof LinearLayout) cards++;
             if (cards == expected) return (LinearLayout) group;
         }
         for (int i = 0; i < group.getChildCount(); i++) {
