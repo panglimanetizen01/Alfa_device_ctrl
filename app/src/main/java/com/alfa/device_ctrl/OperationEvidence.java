@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
@@ -74,7 +75,7 @@ public final class OperationEvidence {
 
     private static String readFdTarget(int pid, int fd) {
         try {
-            Path path = Path.of("/proc", Integer.toString(pid), "fd", Integer.toString(fd));
+            Path path = Paths.get("/proc", Integer.toString(pid), "fd", Integer.toString(fd));
             return Files.readSymbolicLink(path).toString();
         } catch (Exception ignored) {
             return null;
@@ -82,7 +83,7 @@ public final class OperationEvidence {
     }
 
     private static boolean isPts(String target) {
-        return target != null && (target.startsWith("/dev/pts/") || target.startsWith("/dev/pts/"));
+        return target != null && target.startsWith("/dev/pts/");
     }
 
     private static final class PttyProof {
