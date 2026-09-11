@@ -65,7 +65,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           stat -c '%A %U %G %n' /dev/kvm
 
-      - name: Execute Gate 1-5 instrumentation contracts on Android emulator
+      - name: Execute Gate 1-10 instrumentation contracts on Android emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -83,13 +83,13 @@ jobs:
             adb wait-for-device
             test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "34"
             adb shell getprop ro.product.cpu.abi | grep -Eq 'x86_64|x86'
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest,com.alfa.device_ctrl.Milestone6To10ContractInstrumentationTest
             test -d app/build/outputs/androidTest-results/connected || test -d app/build/test-results
-            echo "ALFA_GATE_1_5_INSTRUMENTATION=PASS"
+            echo "ALFA_GATE_1_10_INSTRUMENTATION=PASS"
 
-      - name: Gate 1-5 evidence marker
+      - name: Gate 1-10 evidence marker
         if: success()
         shell: bash
         run: |
           set -euo pipefail
-          echo "ALFA_GATE_1_5=PASS"
+          echo "ALFA_GATE_1_10=PASS"
