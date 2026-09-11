@@ -65,6 +65,10 @@ tasks.register('prepareGate7LaunchContract') {
 tasks.named('preBuild').configure { dependsOn tasks.named('prepareProotLoader'); dependsOn tasks.named('prepareGate7LaunchContract') }
 tasks.withType(Test).configureEach { dependsOn tasks.named('prepareProotLoader') }
 
+configurations.configureEach {
+    exclude group: 'com.google.guava', module: 'listenablefuture'
+}
+
 dependencies {
     implementation project(":terminal-view")
     implementation 'com.github.termux.termux-app:termux-shared:0.118.3'
