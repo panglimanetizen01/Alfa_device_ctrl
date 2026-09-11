@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 /** G17 proof: exact Gate16 authorization is executed by the instrumented app process. */
 public final class G17AndroidRuntimeExecutionTest {
     private static final String PACKAGE = "com.alfa.device_ctrl";
+    private static final String ACCEPTANCE_RUNTIME_ID = "debian";
     private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
     private static final Pattern SHA256 = Pattern.compile("[0-9a-fA-F]{64}");
 
@@ -41,7 +42,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("SELinux context missing", !selinux.isEmpty());
         assertTrue("shell SELinux context must never be accepted", !"u:r:shell:s0".equals(selinux));
 
-        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + RuntimeProfile.ID);
+        File runtime = new File(new File(c.getFilesDir(), "runtime-vault"), "runtimes/" + ACCEPTANCE_RUNTIME_ID);
         File ready = new File(runtime, "READY.evidence");
         File rootfs = new File(runtime, "rootfs");
         assertTrue("runtime READY evidence missing", ready.isFile());
@@ -49,7 +50,7 @@ public final class G17AndroidRuntimeExecutionTest {
         assertTrue("rootfs /proc missing", new File(rootfs, "proc").isDirectory());
         assertTrue("rootfs /dev missing", new File(rootfs, "dev").isDirectory());
         assertTrue("rootfs /sys missing", new File(rootfs, "sys").isDirectory());
-        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, RuntimeProfile.ID, engine, rootfs));
+        assertTrue("runtime evidence invalid", RuntimeEvidence.verify(ready, ACCEPTANCE_RUNTIME_ID, engine, rootfs));
 
         String source = arg("source_commit");
         File g16 = new File(arg("gate16_path"));
