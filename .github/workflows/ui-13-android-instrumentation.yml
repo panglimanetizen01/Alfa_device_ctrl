@@ -51,10 +51,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          ./gradlew :app:alfaApi35DebugAndroidTest --no-daemon --stacktrace
+          ./gradlew :app:alfaApi35DebugAndroidTest --no-daemon --stacktrace \
+            -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Ui13DutVisualInteractionTest
           STATUS=$?
           mkdir -p ci-evidence/ui-13
-          printf 'gate=UI-13\nstatus=%s\nsource_commit=%s\nrunner=Gradle Managed Device\ndevice=Pixel 2\napi=35\n' \
+          printf 'gate=UI-13\nstatus=%s\nsource_commit=%s\nrunner=Gradle Managed Device\ndevice=Pixel 2\napi=35\ntest_class=com.alfa.device_ctrl.Ui13DutVisualInteractionTest\n' \
             "$([ "$STATUS" -eq 0 ] && echo PASS || echo FAIL)" "$(git rev-parse HEAD)" > ci-evidence/ui-13/result.txt
           find app/build/outputs -type f -path '*androidTest-results*' -print 2>/dev/null | head -200 > ci-evidence/ui-13/results-files.txt || true
           find app/build/reports -type f -print 2>/dev/null | head -200 > ci-evidence/ui-13/report-files.txt || true
