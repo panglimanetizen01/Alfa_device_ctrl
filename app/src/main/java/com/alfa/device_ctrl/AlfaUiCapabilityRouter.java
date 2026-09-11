@@ -1,13 +1,107 @@
 package com.alfa.device_ctrl;
-import android.app.Activity;import android.content.Intent;import android.os.Handler;import android.os.Looper;import android.view.View;import android.view.ViewGroup;import com.termux.view.TerminalView;import java.lang.reflect.Field;import java.lang.reflect.Method;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.termux.view.TerminalView;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 /** Transitional adapter exposing reconciled native surfaces without duplicating MainActivity UI. */
-public final class AlfaUiCapabilityRouter{
- private static final Handler MAIN=new Handler(Looper.getMainLooper());private AlfaUiCapabilityRouter(){}
- public static void install(Activity a){if(!(a instanceof MainActivity))return;MAIN.post(()->{if(a.isFinishing()||a.isDestroyed())return;route(a,"Buka alat runtime",RuntimeToolsActivity.class);route(a,"Tampilkan file runtime",ProjectExplorerActivity.class);route(a,"Tampilkan kebijakan runtime",PolicyEvidenceActivity.class);applyAppearance(a);restoreRuntimeSelection(a);});}
- public static void persist(Activity a){if(!(a instanceof MainActivity))return;try{Field f=MainActivity.class.getDeclaredField("selectedRuntime");f.setAccessible(true);RuntimeProfile p=(RuntimeProfile)f.get(a);if(p!=null)AlfaSettingsStore.get(a).setRuntimeId(p.id());}catch(Exception ignored){}}
- private static void applyAppearance(Activity a){new Thread(()->{int size=AlfaSettingsStore.get(a).getTerminalFontSize(12);MAIN.post(()->{View root=a.findViewById(android.R.id.content);TerminalView terminal=findTerminal(root);if(terminal!=null)AppearanceLanguageSettingsActivity.applyToTerminal(terminal,size);});},"alfa-settings-appearance").start();}
- private static void restoreRuntimeSelection(Activity a){new Thread(()->{String id=AlfaSettingsStore.get(a).getRuntimeId(RuntimeSelection.DEFAULT_RUNTIME_ID);if(RuntimeSelection.profile(id)==null)id=RuntimeSelection.DEFAULT_RUNTIME_ID;final String chosen=id;MAIN.post(()->{try{Field f=MainActivity.class.getDeclaredField("selectedRuntime");f.setAccessible(true);RuntimeProfile current=(RuntimeProfile)f.get(a);if(current==null||!chosen.equals(current.id())){Method m=MainActivity.class.getDeclaredMethod("selectRuntime",String.class);m.setAccessible(true);m.invoke(a,chosen);}}catch(Exception ignored){}});},"alfa-settings-load").start();}
- private static void route(Activity a,String description,Class<? extends Activity> target){View root=a.findViewById(android.R.id.content);View found=find(root,description);if(found==null)return;found.setOnClickListener(v->a.startActivity(new Intent(a,target)));}
- private static View find(View v,String d){if(d.equals(v.getContentDescription()))return v;if(!(v instanceof ViewGroup))return null;ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View r=find(g.getChildAt(i),d);if(r!=null)return r;}return null;}
- private static TerminalView findTerminal(View v){if(v instanceof TerminalView)return(TerminalView)v;if(!(v instanceof ViewGroup))return null;ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){TerminalView r=findTerminal(g.getChildAt(i));if(r!=null)return r;}return null;}
+public final class AlfaUiCapabilityRouter {
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+
+    private AlfaUiCapabilityRouter() {}
+
+    public static void install(Activity activity) {
+        if (!(activity instanceof MainActivity)) return;
+        MAIN.post(() -> {
+            if (activity.isFinishing() || activity.isDestroyed()) return;
+            route(activity, "Buka alat runtime", RuntimeToolsActivity.class);
+            route(activity, "Tampilkan file runtime", ProjectExplorerActivity.class);
+            route(activity, "Tampilkan kebijakan runtime", PolicyEvidenceActivity.class);
+            applyAppearance(activity);
+            restoreRuntimeSelection(activity);
+        });
+    }
+
+    public static void persist(Activity activity) {
+        if (!(activity instanceof MainActivity)) return;
+        try {
+            Field field = MainActivity.class.getDeclaredField("selectedRuntime");
+            field.setAccessible(true);
+            RuntimeProfile profile = (RuntimeProfile) field.get(activity);
+            if (profile != null) AlfaSettingsStore.get(activity).setRuntimeId(profile.id());
+        } catch (Exception ignored) {
+            // Persistence failure remains observable as unchanged state; never fabricate success.
+        }
+    }
+
+    private static void applyAppearance(Activity activity) {
+        new Thread(() -> {
+            int size = AlfaSettingsStore.get(activity).getTerminalFontSize(12);
+            MAIN.post(() -> {
+                View root = activity.findViewById(android.R.id.content);
+                TerminalView terminal = findTerminal(root);
+                if (terminal != null) AppearanceLanguageSettingsActivity.applyToTerminal(terminal, size);
+            });
+        }, "alfa-settings-appearance").start();
+    }
+
+    private static void restoreRuntimeSelection(Activity activity) {
+        new Thread(() -> {
+            String id = AlfaSettingsStore.get(activity).getRuntimeId(RuntimeSelection.DEFAULT_RUNTIME_ID);
+            if (RuntimeSelection.profile(id) == null) id = RuntimeSelection.DEFAULT_RUNTIME_ID;
+            final String chosen = id;
+            MAIN.post(() -> {
+                try {
+                    Field field = MainActivity.class.getDeclaredField("selectedRuntime");
+                    field.setAccessible(true);
+                    RuntimeProfile current = (RuntimeProfile) field.get(activity);
+                    if (current == null || !chosen.equals(current.id())) {
+                        Method select = MainActivity.class.getDeclaredMethod("selectRuntime", String.class);
+                        select.setAccessible(true);
+                        select.invoke(activity, chosen);
+                    }
+                } catch (Exception ignored) {
+                    // Runtime selection remains at the existing canonical default.
+                }
+            });
+        }, "alfa-settings-load").start();
+    }
+
+    private static void route(Activity activity, String description, Class<? extends Activity> target) {
+        View root = activity.findViewById(android.R.id.content);
+        View found = find(root, description);
+        if (found == null) return;
+        found.setOnClickListener(v -> activity.startActivity(new Intent(activity, target)));
+    }
+
+    private static View find(View view, String description) {
+        if (view == null) return null;
+        if (description.equals(view.getContentDescription())) return view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View result = find(group.getChildAt(i), description);
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private static TerminalView findTerminal(View view) {
+        if (view instanceof TerminalView) return (TerminalView) view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            TerminalView result = findTerminal(group.getChildAt(i));
+            if (result != null) return result;
+        }
+        return null;
+    }
 }
