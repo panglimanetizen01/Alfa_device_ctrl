@@ -1,6 +1,8 @@
 package com.alfa.device_ctrl;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /** One persisted host-directory to guest-path PRoot bind rule. */
 public final class RuntimeDirectoryOverride {
@@ -32,7 +34,13 @@ public final class RuntimeDirectoryOverride {
     public static String canonicalDirectory(String value) {
         if (!isLexicallySharedStoragePath(value)) throw new IllegalArgumentException("host-directory-outside-shared-storage");
         try {
-            File file = new File(value.trim()).getCanonicalFile();
+            String supplied = value.trim();
+            Path candidate = Paths.get(supplied).toAbsolutePath().normalize();
+            Path sharedRoot = supplied.equals("/sdcard") || supplied.startsWith("/sdcard/")
+                    ? Paths.get("/sdcard").toAbsolutePath().normalize()
+                    : Paths.get("/storage/emulated/0").toAbsolutePath().normalize();
+            if (!candidate.startsWith(sharedRoot)) throw new IllegalArgumentException("host-directory-outside-shared-storage");
+            File file = candidate.toFile().getCanonicalFile();
             if (!file.isDirectory() || !file.canRead()) throw new IllegalArgumentException("host-directory-unavailable");
             String path = file.getAbsolutePath();
             if (!isLexicallySharedStoragePath(path)) throw new IllegalArgumentException("host-directory-outside-shared-storage");
