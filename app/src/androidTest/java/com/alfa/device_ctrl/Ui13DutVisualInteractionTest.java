@@ -16,7 +16,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * UI-13: real Android instrumentation proof for rendered Alfa shell and interaction.
@@ -71,10 +70,7 @@ public final class Ui13DutVisualInteractionTest {
 
     private static void click(Button button) {
         assertNotNull("required interactive button missing", button);
-        AtomicReference<Boolean> result = new AtomicReference<>(false);
-        button.post(() -> result.set(button.performClick()));
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-        assertTrue("button interaction was not accepted", result.get());
+        assertTrue("button interaction was not accepted", button.performClick());
     }
 
     private static View fieldView(MainActivity activity, String name) throws Exception {
