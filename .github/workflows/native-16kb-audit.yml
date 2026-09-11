@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'app/src/main/jniLibs/**'
+      - 'terminal-emulator/src/main/jni/**'
       - 'tools/build_proot_loader.sh'
       - 'tools/test_16kb_native_alignment.sh'
       - 'app/build.gradle'
@@ -13,6 +14,7 @@ on:
     branches: [master]
     paths:
       - 'app/src/main/jniLibs/**'
+      - 'terminal-emulator/src/main/jni/**'
       - 'tools/build_proot_loader.sh'
       - 'tools/test_16kb_native_alignment.sh'
       - 'app/build.gradle'
@@ -49,6 +51,24 @@ jobs:
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/build-tools/35.0.0:$PATH"
           "$SDKMANAGER" "ndk;28.0.13004108" "build-tools;35.0.0"
           test -x "$ANDROID_HOME/build-tools/35.0.0/zipalign"
+      - name: Rebuild libtermux from canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK="$ANDROID_HOME/ndk/28.0.13004108"
+          "$NDK/ndk-build" \
+            -C terminal-emulator \
+            NDK_PROJECT_PATH="$GITHUB_WORKSPACE/terminal-emulator" \
+            APP_BUILD_SCRIPT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jni/Android.mk" \
+            APP_ABI=arm64-v8a \
+            NDK_OUT="$RUNNER_TEMP/termux-obj" \
+            NDK_LIBS_OUT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jniLibs" \
+            V=1
+          LIB="terminal-emulator/src/main/jniLibs/arm64-v8a/libtermux.so"
+          test -s "$LIB"
+          READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
+          "$READELF" -lW "$LIB" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
