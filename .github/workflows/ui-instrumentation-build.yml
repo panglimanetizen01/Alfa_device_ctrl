@@ -22,18 +22,15 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
-
       - name: Setup Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
         with:
           gradle-version: '8.11.1'
-
       - name: Prepare Android SDK
         shell: bash
         run: |
@@ -41,20 +38,17 @@ jobs:
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" "ndk;28.0.13004108"
-
       - name: Compile app and instrumentation APK
         shell: bash
         run: |
           set -euo pipefail
           ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --stacktrace
-
       - name: Verify instrumentation APK exists
         shell: bash
         run: |
           set -euo pipefail
           test -f app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           echo "ALFA_UI_INSTRUMENTATION_COMPILE=PASS"
-
       - name: Enable KVM for hardware-accelerated emulator
         shell: bash
         run: |
@@ -64,8 +58,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           stat -c '%A %U %G %n' /dev/kvm
-
-      - name: Execute Gate 1-10 instrumentation contracts on Android emulator
+      - name: Execute Gate 1-12 instrumentation contracts on Android emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
@@ -83,13 +76,12 @@ jobs:
             adb wait-for-device
             test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "34"
             adb shell getprop ro.product.cpu.abi | grep -Eq 'x86_64|x86'
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest,com.alfa.device_ctrl.Milestone6To10ContractInstrumentationTest
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --stacktrace -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.Gate1To5RuntimeExecutionInstrumentationTest,com.alfa.device_ctrl.UiFoundationContractInstrumentationTest,com.alfa.device_ctrl.AlfaUiThemeInstrumentationTest,com.alfa.device_ctrl.AlfaSettingsStoreInstrumentationTest,com.alfa.device_ctrl.Milestone6To10ContractInstrumentationTest,com.alfa.device_ctrl.Milestone11To12ContractInstrumentationTest
             test -d app/build/outputs/androidTest-results/connected || test -d app/build/test-results
-            echo "ALFA_GATE_1_10_INSTRUMENTATION=PASS"
-
-      - name: Gate 1-10 evidence marker
+            echo "ALFA_GATE_1_12_INSTRUMENTATION=PASS"
+      - name: Gate 1-12 evidence marker
         if: success()
         shell: bash
         run: |
           set -euo pipefail
-          echo "ALFA_GATE_1_10=PASS"
+          echo "ALFA_GATE_1_12=PASS"
