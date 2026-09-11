@@ -1,5 +1,7 @@
 package com.alfa.device_ctrl;
 
+import android.app.Activity;
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -10,6 +12,10 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.termux.view.TerminalView;
 
 /** Owns the Android process lifetime for an explicitly started interactive runtime session. */
 public final class RuntimeKeepAliveService extends Service {
@@ -19,6 +25,8 @@ public final class RuntimeKeepAliveService extends Service {
     private static final String ACTION_STOP="com.alfa.device_ctrl.action.STOP_RUNTIME_KEEPALIVE";
     private static volatile boolean active;
     private static volatile RuntimeSessionManager owner;
+    private static volatile boolean activityPauseInProgress;
+    private Application.ActivityLifecycleCallbacks lifecycleCallbacks;
 
     public static void start(Context context, RuntimeSessionManager manager) {
         if (context == null || manager == null) throw new IllegalArgumentException("context and manager are required");
@@ -35,13 +43,33 @@ public final class RuntimeKeepAliveService extends Service {
 
     public static boolean isActive() { return active; }
     static RuntimeSessionManager owner() { return owner; }
+    static boolean isActivityPauseInProgress() { return activityPauseInProgress; }
 
     @Override public void onCreate(){
         super.onCreate();
+        registerLifecycleBridge();
         NotificationManager manager=getSystemService(NotificationManager.class);
         if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O) manager.createNotificationChannel(new NotificationChannel(CHANNEL_ID,"Alfa runtime session",NotificationManager.IMPORTANCE_LOW));
         startForegroundCompat(buildNotification());
         active=true;
+    }
+
+    private void registerLifecycleBridge() {
+        lifecycleCallbacks = new Application.ActivityLifecycleCallbacks() {
+            @Override public void onActivityStarted(Activity activity) { }
+            @Override public void onActivityStopped(Activity activity) { if (activity instanceof MainActivity && owner == null) activityPauseInProgress = false; }
+            @Override public void onActivityCreated(Activity activity, android.os.Bundle state) { }
+            @Override public void onActivityResumed(Activity activity) {
+                if (!(activity instanceof MainActivity)) return;
+                activityPauseInProgress = false;
+                RuntimeSessionManager current = owner;
+                if (current != null && current.isRunning()) RuntimeSessionReattachment.attach(activity, current);
+            }
+            @Override public void onActivityPaused(Activity activity) { if (activity instanceof MainActivity && owner != null) activityPauseInProgress = true; }
+            @Override public void onActivitySaveInstanceState(Activity activity, android.os.Bundle state) { }
+            @Override public void onActivityDestroyed(Activity activity) { }
+        };
+        AlfaApplication.getInstance().registerActivityLifecycleCallbacks(lifecycleCallbacks);
     }
 
     @Override public int onStartCommand(Intent intent,int flags,int startId){
@@ -73,6 +101,9 @@ public final class RuntimeKeepAliveService extends Service {
     }
 
     private void stopForegroundCompat(){ if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.N)stopForeground(STOP_FOREGROUND_REMOVE); else stopForeground(true); }
-    @Override public void onDestroy(){ active=false; owner=null; super.onDestroy(); }
+    @Override public void onDestroy(){
+        if (lifecycleCallbacks != null && AlfaApplication.getInstance() != null) AlfaApplication.getInstance().unregisterActivityLifecycleCallbacks(lifecycleCallbacks);
+        activityPauseInProgress=false; active=false; owner=null; super.onDestroy();
+    }
     @Override public IBinder onBind(Intent intent){return null;}
 }
