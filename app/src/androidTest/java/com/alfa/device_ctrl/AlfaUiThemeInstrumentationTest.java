@@ -40,6 +40,8 @@ public final class AlfaUiThemeInstrumentationTest {
                 View root = activity.findViewById(android.R.id.content);
                 assertTrue("root background must be a ColorDrawable", root.getBackground() instanceof ColorDrawable);
                 assertEquals("root background must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, ((ColorDrawable) root.getBackground()).getColor());
+                assertEquals("status bar must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, activity.getWindow().getStatusBarColor());
+                assertEquals("navigation bar must use Terminal Obsidian canvas", AlfaUiTheme.CANVAS, activity.getWindow().getNavigationBarColor());
                 assertNoLegacyTextColors(root);
             });
         }
