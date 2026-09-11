@@ -71,6 +71,8 @@ dependencies {
     implementation 'androidx.datastore:datastore-preferences:1.2.1'
     implementation 'androidx.datastore:datastore-guava:1.2.1'
     implementation 'androidx.core:core:1.17.0'
+    implementation 'dev.rikka.shizuku:api:12.2.0'
+    implementation 'dev.rikka.shizuku:provider:12.2.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:core:1.7.0'
