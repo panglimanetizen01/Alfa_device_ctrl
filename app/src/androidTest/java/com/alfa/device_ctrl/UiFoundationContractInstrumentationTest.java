@@ -24,11 +24,11 @@ public final class UiFoundationContractInstrumentationTest {
             scenario.onActivity(activity -> {
                 View root = activity.findViewById(android.R.id.content);
                 assertNotNull("main shell must exist", root);
-                assertNotNull("runtime capability anchor missing", findDescription(root, "Buka alat runtime"));
-                assertNotNull("project explorer capability anchor missing", findDescription(root, "Tampilkan file runtime"));
-                assertNotNull("policy capability anchor missing", findDescription(root, "Tampilkan kebijakan runtime"));
-                assertNotNull("runtime session creation control missing", findDescription(root, "Buat sesi runtime baru"));
-                assertNotNull("terminal stop control missing", findDescription(root, "Hentikan sesi runtime"));
+                assertActionable(root, "Buka alat runtime");
+                assertActionable(root, "Tampilkan file runtime");
+                assertActionable(root, "Tampilkan kebijakan runtime");
+                assertActionable(root, "Buat sesi runtime baru");
+                assertActionable(root, "Hentikan sesi runtime");
             });
         }
     }
@@ -60,6 +60,13 @@ public final class UiFoundationContractInstrumentationTest {
         assertEquals(SessionUiState.Status.STOPPING, SessionUiState.resolve("STOPPING"));
         assertEquals(SessionUiState.Status.FAILED, SessionUiState.resolve("BLOCKED"));
         assertEquals(SessionUiState.Status.FINISHED, SessionUiState.resolve("FINISHED"));
+    }
+
+    private static void assertActionable(View root, String description) {
+        View found = findDescription(root, description);
+        assertNotNull("missing UI capability: " + description, found);
+        assertTrue("UI capability is disabled: " + description, found.isEnabled());
+        assertNotNull("UI capability has no click action: " + description, found.getOnClickListenerForTesting());
     }
 
     private static void assertActivity(PackageManager pm, Class<?> activityClass) {
