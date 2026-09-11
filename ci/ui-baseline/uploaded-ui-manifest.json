@@ -1,7 +1,1 @@
-{
-  "schema_version": 1,
-  "reference_archive": "UI_alfa_device_control_final.zip",
-  "screen_count": 118,
-  "source_rule": "The archive is a visual/state reference. Production UI state must be projected from Alfa runtime/evidence contracts; reference-only simulations must never become runtime truth.",
-  "entries": []
-}
+{"schema_version":1,"reference_archive":"UI_alfa_device_control_final.zip","screen_count":118,"source_rule":"The archive is a visual/state reference. Production UI state must be projected from Alfa runtime/evidence contracts; reference-only simulations must never become runtime truth.","entries":[{"id":1,"state":"alfa_device_ctrl_operational_terminal_runtime_dashboard","reference_html":"stitch_alfa_device_control_console/alfa_device_ctrl_operational_terminal_runtime_dashboard/code.html","reference_png":"stitch_alfa_device_control_console/alfa_device_ctrl_operational_terminal_runtime_dashboard/screen.png","categories":["audit","integration","runtime","security","session","settings","storage","terminal"],"reference_only_simulation_marker":false},{"id":2,"state":"alfa_device_ctrl_security_diagnostic_console","reference_html":"stitch_alfa_device_control_console/alfa_device_ctrl_security_diagnostic_console/code.html","reference_png":"stitch_alfa_device_control_console/alfa_device_ctrl_security_diagnostic_console/screen.png","categories":["audit","integration","policy","runtime","security","settings","storage","terminal"],"reference_only_simulation_marker":true}]}
