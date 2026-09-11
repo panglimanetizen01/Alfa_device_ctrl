@@ -13,6 +13,7 @@ public final class AndroidApi36BuildContractTest {
     @Test
     public void appBuildTargetsAndroid16() throws Exception {
         File source = new File("app/build.gradle");
+        if (!source.isFile()) source = new File("build.gradle");
         assertTrue("app/build.gradle must exist", source.isFile());
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         assertTrue("compileSdk must be API 36", text.contains("compileSdk 36"));
