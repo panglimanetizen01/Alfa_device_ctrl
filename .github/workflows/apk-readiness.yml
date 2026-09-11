@@ -1,0 +1,82 @@
+name: Alfa APK Readiness
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alfa-apk-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Prepare Android SDK
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
+
+      - name: Unit tests and APK build
+        run: |
+          set -euo pipefail
+          ./gradlew test :app:assembleDebug --no-daemon --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify native ELF and 16 KB APK alignment
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
+          test "${#LIBS[@]}" -gt 0
+          for so in "${LIBS[@]}"; do
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64'
+            "$READELF" -lW "$so" | awk '$1 == "LOAD" {if ($NF != "0x4000") bad=1} END {if (NR == 0 || bad) exit 1}'
+            "$READELF" -lW "$so" | grep -q 'GNU_RELRO'
+          done
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+
+      - name: Verify package identity and emit APK digest
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$APK" | grep -Fx 'com.alfa.device_ctrl'
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$APK" | grep -E "versionCode='1'|versionName='0.1.0'"
+          sha256sum "$APK"
+
+      - name: Upload verified debug APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: alfa-device-ctrl-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
