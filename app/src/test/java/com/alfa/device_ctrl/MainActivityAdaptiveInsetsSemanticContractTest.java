@@ -24,7 +24,8 @@ public final class MainActivityAdaptiveInsetsSemanticContractTest {
         assertTrue(app.contains("owner.attachTo"));
         assertTrue(app.contains("activityPauseInProgress = true"));
         assertTrue(manager.contains("isActivityPauseInProgress()"));
-        assertTrue(activity.contains("if (sessionManager != null && sessionManager.isRunning()) sessionManager.stop();"));
+        assertTrue(manager.contains("if (AlfaApplication.isActivityPauseInProgress())"));
+        assertTrue(activity.contains("sessionManager.stop();"));
     }
 
     @Test public void semanticStateProjectionRemainsSingleSource() throws Exception {
