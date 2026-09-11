@@ -14,9 +14,7 @@ android {
     }
 
     buildTypes {
-        debug {
-            debuggable true
-        }
+        debug { debuggable true }
     }
 
     defaultConfig {
@@ -44,15 +42,9 @@ tasks.register('prepareGate7LaunchContract') {
         def selectedRuntime = System.getenv('ALFA_GATE7_RUNTIME_ID')
         def required = System.getenv('ALFA_GATE7_REQUIRED') == 'true'
         def output = file("$buildDir/generated/assets/gate7-launch.properties")
-        output.parentFile.mkdirs()
-        output.delete()
-        if (sourcePath == null || sourcePath.trim().isEmpty()) {
-            if (required) throw new GradleException('ALFA_GATE7_REQUIRED=true but ALFA_GATE7_ASSET is missing')
-            return
-        }
-        if (selectedRuntime == null || selectedRuntime.trim().isEmpty()) {
-            throw new GradleException('ALFA_GATE7_RUNTIME_ID is required when Gate 7 asset is supplied')
-        }
+        output.parentFile.mkdirs(); output.delete()
+        if (sourcePath == null || sourcePath.trim().isEmpty()) { if (required) throw new GradleException('ALFA_GATE7_REQUIRED=true but ALFA_GATE7_ASSET is missing'); return }
+        if (selectedRuntime == null || selectedRuntime.trim().isEmpty()) throw new GradleException('ALFA_GATE7_RUNTIME_ID is required when Gate 7 asset is supplied')
         def registryFile = file("${rootProject.projectDir}/runtime/runtimes.v1.json")
         def registry = new groovy.json.JsonSlurper().parse(registryFile)
         def runtime = registry.runtimes.find { it.runtime_id == selectedRuntime.trim() }
@@ -61,36 +53,22 @@ tasks.register('prepareGate7LaunchContract') {
         def registryHash = digest.digest(registryFile.bytes).collect { String.format('%02x', it) }.join()
         def source = file(sourcePath)
         if (!source.isFile()) throw new GradleException("ALFA_GATE7_ASSET is not a regular file: ${source}")
-        def text = source.getText('UTF-8')
-        ['pipeline_run_id=', 'runtime_id=', 'runtime_registry_sha256=', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key ->
-            if (!text.readLines().any { it.startsWith(key) && it.substring(key.length()).trim() }) {
-                throw new GradleException("Gate 7 launch contract missing ${key}")
-            }
-        }
-        def lines = text.readLines()
+        def text = source.getText('UTF-8'); def lines = text.readLines()
+        ['pipeline_run_id=', 'runtime_id=', 'runtime_registry_sha256=', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key -> if (!lines.any { it.startsWith(key) && it.substring(key.length()).trim() }) throw new GradleException("Gate 7 launch contract missing ${key}") }
         def value = { key -> lines.find { it.startsWith(key) }?.substring(key.length())?.trim() }
-        if (value('runtime_id') != selectedRuntime.trim()) {
-            throw new GradleException("Gate 7 runtime provenance mismatch: asset=${value('runtime_id')} selected=${selectedRuntime}")
-        }
-        if (value('runtime_registry_sha256') != registryHash) {
-            throw new GradleException("Gate 7 runtime registry provenance is stale: asset=${value('runtime_registry_sha256')} canonical=${registryHash}")
-        }
+        if (value('runtime_id') != selectedRuntime.trim()) throw new GradleException("Gate 7 runtime provenance mismatch: asset=${value('runtime_id')} selected=${selectedRuntime}")
+        if (value('runtime_registry_sha256') != registryHash) throw new GradleException("Gate 7 runtime registry provenance is stale: asset=${value('runtime_registry_sha256')} canonical=${registryHash}")
         source.withInputStream { input -> output.withOutputStream { out -> out << input } }
     }
 }
 
-tasks.named('preBuild').configure {
-    dependsOn tasks.named('prepareProotLoader')
-    dependsOn tasks.named('prepareGate7LaunchContract')
-}
-
-tasks.withType(Test).configureEach {
-    dependsOn tasks.named('prepareProotLoader')
-}
+tasks.named('preBuild').configure { dependsOn tasks.named('prepareProotLoader'); dependsOn tasks.named('prepareGate7LaunchContract') }
+tasks.withType(Test).configureEach { dependsOn tasks.named('prepareProotLoader') }
 
 dependencies {
     implementation project(":terminal-view")
     implementation 'androidx.core:core:1.18.0'
+    implementation 'androidx.documentfile:documentfile:1.1.0'
     implementation 'org.tukaani:xz:1.12'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'junit:junit:4.13.2'
