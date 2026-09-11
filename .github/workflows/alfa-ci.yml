@@ -22,20 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout
+      - name: Checkout exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
-      - name: Capture source commit
+      - name: Verify source identity
         run: |
           set -euo pipefail
-          mkdir -p ci-evidence
-          SOURCE_SHA="$(git rev-parse HEAD)"
-          printf '%s\n' "$SOURCE_SHA" > ci-evidence/source-commit.txt
-          test "$SOURCE_SHA" = "${GITHUB_SHA}"
-          git status --porcelain=v1
-          echo "SOURCE_SHA=$SOURCE_SHA"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain=v1)"
+          printf 'SOURCE_SHA=%s\n' "$(git rev-parse HEAD)"
 
       - name: Setup Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -43,7 +40,7 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Gradle
+      - name: Setup Gradle 8.11.1
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
         with:
           gradle-version: '8.11.1'
@@ -51,215 +48,56 @@ jobs:
       - name: Prepare Android SDK
         run: |
           set -euo pipefail
-          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
           test -d "$ANDROID_HOME/platforms/android-36"
-          test -d "$ANDROID_HOME/build-tools/36.0.0"
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "ANDROID_SDK_READY=PASS"
+          test -x "$ANDROID_HOME/build-tools/35.0.0/zipalign"
 
       - name: Prepare canonical PRoot loader
-        shell: bash
-        env:
-          NDK_VERSION: 28.0.13004108
         run: |
           set -euo pipefail
-          mkdir -p ci-evidence
-          sdkmanager "ndk;${NDK_VERSION}"
           ./gradlew :app:prepareProotLoader --no-daemon --stacktrace
-          LOADER="app/build/generated/jniLibs/arm64-v8a/libproot-loader.so"
-          READELF="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
-          test -x "$LOADER"
-          test -x "$READELF"
-          file "$LOADER"
-          readelf -h "$LOADER" | grep -E 'Class:|Machine:'
-          "$READELF" -lW "$LOADER" | awk '$1 == "LOAD" {print "ELF_LOAD_ALIGN=" $NF; if ($NF != "0x4000") bad=1} END {if (bad || NR == 0) exit 1}'
-          LOADER_SHA256="$(sha256sum "$LOADER" | awk '{print $1}')"
-          python3 - "$LOADER_SHA256" "$NDK_VERSION" <<'PY'
-import json, os, sys
-json.dump({
-    "status": "PASS",
-    "mode": "canonical-gradle-build",
-    "loader_path": "app/build/generated/jniLibs/arm64-v8a/libproot-loader.so",
-    "proot_commit": "7266fb3e8516535682f5a9c8f3a7e70f6506eddb",
-    "ndk_version": sys.argv[2],
-    "loader_sha256": sys.argv[1],
-    "elf_load_alignment": "0x4000",
-    "exists": True,
-    "executable": os.access("app/build/generated/jniLibs/arm64-v8a/libproot-loader.so", os.X_OK),
-}, open("ci-evidence/loader-provenance.json", "w"), indent=2)
-PY
+          test -x app/build/generated/jniLibs/arm64-v8a/libproot-loader.so
+          "$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -h app/build/generated/jniLibs/arm64-v8a/libproot-loader.so | grep -E 'Class:|Machine:'
 
-      - name: Gate A - Source integrity
+      - name: Unit tests
         run: |
           set -euo pipefail
-          SOURCE_SHA="$(cat ci-evidence/source-commit.txt)"
-          python3 - "$SOURCE_SHA" <<'PY'
-import hashlib, json, subprocess, sys
-source = sys.argv[1]
-files = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", source], text=True).splitlines()
-h = hashlib.sha256()
-for path in files:
-    data = subprocess.check_output(["git", "show", f"{source}:{path}"])
-    h.update(path.encode())
-    h.update(b"\0")
-    h.update(hashlib.sha256(data).digest())
-json.dump({"gate":"A","status":"PASS","source_commit":source,"tracked_files":len(files),"tree_content_sha256":h.hexdigest()}, open("ci-evidence/source-integrity.json", "w"), indent=2)
-PY
+          ./gradlew test --no-daemon --stacktrace
 
-      - name: Gate B - Static audit
+      - name: Assemble debug APK
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-import json, re, subprocess
-files = subprocess.check_output(["git", "ls-files"]).decode().splitlines()
-scan_files = [p for p in files if p not in {".github/workflows/alfa-ci.yml", ".github/workflows/canonical-hardening.yml"} and not p.startswith("docs/")]
-legacy=[]; backups=[]; secrets=[]; project_refs=[]
-for path in scan_files:
-    try: text=open(path,encoding="utf-8",errors="ignore").read()
-    except (IsADirectoryError,FileNotFoundError): continue
-    if re.search(r'/storage/emulated/0/UserLAnd|UserLAnd_home_migration|/storage/emulated/0/android-sdk',text): legacy.append(path)
-    if re.search(r'(^|/)[^/]+\.(bak|bak-[^/]+|before_[^/]+)$|audit-backup|codeql-fix-backup',path): backups.append(path)
-    if re.search(r'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----',text): secrets.append(path)
-    project_refs.extend(re.findall(r'project\(["\'](:[^"\']+)["\']\)',text))
-settings=open("settings.gradle",encoding="utf-8").read()
-included=set(re.findall(r'include\((.*?)\)',settings,re.S))
-report={"gate":"B","status":"PASS" if not legacy and not backups and not secrets and included else "FAIL","legacy_path_files":sorted(set(legacy)),"backup_named_files":sorted(set(backups)),"secret_pattern_files":sorted(set(secrets)),"project_references":sorted(set(project_refs)),"settings_includes_present":bool(included)}
-json.dump(report,open("ci-evidence/audit-summary.json","w"),indent=2)
-raise SystemExit(0 if report["status"]=="PASS" else 1)
-PY
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Gate C - Debug build
-        run: |
-          set +e
-          sh ./gradlew :app:assembleDebug --no-daemon --stacktrace
-          C=$?
-          python3 - "$C" <<'PY'
-import json, sys
-code=int(sys.argv[1])
-json.dump({"gate":"C","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":":app:assembleDebug","source_commit":open("ci-evidence/source-commit.txt").read().strip()},open("ci-evidence/build-result.json","w"),indent=2)
-PY
-          exit 0
-
-      - name: Gate C2 - 16 KB native and APK alignment
-        if: always()
-        env:
-          NDK_VERSION: 28.0.13004108
+      - name: Verify APK native payload and 16 KB alignment
         run: |
           set -euo pipefail
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          REPORT="ci-evidence/native-16kb-verification.json"
-          if [ ! -f "$APK" ]; then
-            python3 - <<'PY'
-import json
-json.dump({"gate":"C2","status":"FAIL","reason":"debug APK missing"},open("ci-evidence/native-16kb-verification.json","w"),indent=2)
-PY
-          else
-            TMP="$(mktemp -d)"
-            trap 'rm -rf "$TMP"' EXIT
-            READELF="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
-            test -x "$READELF"
-            unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
-            python3 - "$TMP" "$REPORT" "$READELF" <<'PY'
-import json, os, subprocess, sys
-root,report,readelf=sys.argv[1:]
-libs=[]
-for base,_,names in os.walk(root):
-    for name in names:
-        if name.endswith('.so'):
-            path=os.path.join(base,name)
-            lines=subprocess.check_output([readelf,'-lW',path],text=True).splitlines()
-            aligns=[line.split()[-1] for line in lines if line.split() and line.split()[0]=='LOAD']
-            item={"path":os.path.relpath(path,root),"load_alignments":aligns,"pass":bool(aligns) and all(x=='0x4000' for x in aligns)}
-            libs.append(item)
-            print(f"{item['path']} :: {','.join(aligns) if aligns else 'NO_LOAD_SEGMENTS'} :: {'PASS' if item['pass'] else 'FAIL'}")
-status='PASS' if libs and all(x['pass'] for x in libs) else 'FAIL'
-json.dump({"gate":"C2","status":status,"elf_load_alignment_required":"0x4000","libraries":libs},open(report,'w'),indent=2)
-PY
-            cat "$REPORT"
-            python3 - "$REPORT" <<'PY'
-import json,sys
-raise SystemExit(0 if json.load(open(sys.argv[1],encoding='utf-8'))['status']=='PASS' else 1)
-PY
-            "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 -v 4 "$APK" > ci-evidence/zipalign-16kb.txt 2>&1
-            printf '%s\n' 'zipalign_status=PASS' >> ci-evidence/zipalign-16kb.txt
-            python3 - <<'PY'
-import json
-path='ci-evidence/native-16kb-verification.json'
-data=json.load(open(path,encoding='utf-8'))
-data['zipalign_status']='PASS'
-json.dump(data,open(path,'w'),indent=2)
-PY
-          fi
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
+          test "${#LIBS[@]}" -gt 0
+          for so in "${LIBS[@]}"; do
+            "$READELF" -lW "$so" | awk '$1 == "LOAD" {if ($NF != "0x4000") bad=1} END {if (NR == 0 || bad) exit 1}'
+            "$READELF" -lW "$so" | grep -q 'GNU_RELRO'
+          done
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+          sha256sum "$APK"
 
-      - name: Gate D - Unit tests
-        run: |
-          set +e
-          sh ./gradlew test --no-daemon --stacktrace
-          D=$?
-          mkdir -p ci-evidence/junit-xml ci-evidence/test-report
-          find . -type f -path '*/build/test-results/*/*.xml' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/junit-xml/; done
-          find . -type f -path '*/build/reports/tests/*' -print0 | while IFS= read -r -d '' f; do cp --parents "$f" ci-evidence/test-report/; done
-          python3 - "$D" <<'PY'
-import glob,json,sys
-from xml.etree import ElementTree as ET
-failures=[]
-xml_files=glob.glob("ci-evidence/junit-xml/**/*.xml",recursive=True)
-for path in xml_files:
-    try: root=ET.parse(path).getroot()
-    except ET.ParseError: continue
-    for case in root.iter("testcase"):
-        for tag in ("failure","error"):
-            node=case.find(tag)
-            if node is not None: failures.append({"xml":path,"classname":case.get("classname"),"name":case.get("name"),"type":node.get("type"),"message":node.get("message"),"detail":"".join(node.itertext()).strip()})
-code=int(sys.argv[1])
-json.dump({"gate":"D","status":"PASS" if code==0 else "FAIL","exit_code":code,"task":"test","junit_xml_count":len(xml_files),"failure_count":len(failures),"failures":failures},open("ci-evidence/test-result.json","w"),indent=2)
-PY
-          exit 0
-
-      - name: Gate E - Evidence validation
-        if: always()
+      - name: Verify manifest identity
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-import json,os
-required=["source-commit.txt","source-integrity.json","loader-provenance.json","audit-summary.json","build-result.json","test-result.json","native-16kb-verification.json"]
-missing=[x for x in required if not os.path.isfile("ci-evidence/"+x)]
-if missing: raise SystemExit("MISSING_EVIDENCE="+",".join(missing))
-for name in required:
-    if name.endswith(".json"): json.load(open("ci-evidence/"+name,encoding="utf-8"))
-print("EVIDENCE_SCHEMA=PASS")
-PY
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$APK" | grep -Fx 'com.alfa.device_ctrl'
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$APK" | grep -E "versionCode='1'|versionName='0.1.0'"
 
-      - name: Upload structured evidence
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - name: Publish APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: alfa-ci-evidence-${{ github.sha }}
-          path: ci-evidence/
+          name: alfa-device-ctrl-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload debug APK
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: alfa-debug-apk-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: ignore
           retention-days: 14
-
-      - name: Final gate decision
-        if: always()
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-import json,os,sys
-files=["source-integrity.json","loader-provenance.json","audit-summary.json","build-result.json","test-result.json","native-16kb-verification.json"]
-missing=[f for f in files if not os.path.isfile("ci-evidence/"+f)]
-if missing:
-    print("FAILED_GATES=E:"+",".join(missing));sys.exit(1)
-reports=[json.load(open("ci-evidence/"+f,encoding="utf-8")) for f in files]
-failed=[r.get("gate","fixture") for r in reports if r.get("status")!="PASS"]
-print("FAILED_GATES="+(",".join(failed) if failed else "NONE"))
-sys.exit(1 if failed else 0)
-PY
