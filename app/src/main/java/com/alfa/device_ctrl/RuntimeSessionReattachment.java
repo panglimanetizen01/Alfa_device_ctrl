@@ -7,8 +7,6 @@ import android.view.ViewGroup;
 
 import com.termux.view.TerminalView;
 
-import java.lang.reflect.Field;
-
 /**
  * Rebinds the process-owned runtime session to a recreated MainActivity without creating a
  * second PTY. The foreground service remains the lifecycle owner; this class only reconnects UI.
@@ -25,16 +23,9 @@ public final class RuntimeSessionReattachment {
         TerminalView terminal = findTerminalView(activity.findViewById(android.R.id.content));
         if (terminal == null) return;
         try {
-            Field listener = RuntimeSessionManager.class.getDeclaredField("listener");
-            listener.setAccessible(true);
-            listener.set(manager, activity);
-
-            Field sessionManager = MainActivity.class.getDeclaredField("sessionManager");
-            sessionManager.setAccessible(true);
-            sessionManager.set(activity, manager);
-
+            manager.rebindListener((MainActivity) activity);
             manager.attachTo(terminal);
-        } catch (ReflectiveOperationException | RuntimeException error) {
+        } catch (RuntimeException error) {
             Log.w(TAG, "runtime session reattachment failed", error);
         }
     }
