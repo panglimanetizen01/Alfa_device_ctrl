@@ -23,6 +23,15 @@ public final class RuntimeDirectoryOverrideTest {
         assertTrue(rejects("relative/path"));
     }
 
+    @Test public void hostPathLexicalBoundaryRejectsTraversalAndLookalikes() {
+        assertTrue(RuntimeDirectoryOverride.isLexicallySharedStoragePath("/sdcard/project"));
+        assertTrue(RuntimeDirectoryOverride.isLexicallySharedStoragePath("/storage/emulated/0/project"));
+        assertTrue(!RuntimeDirectoryOverride.isLexicallySharedStoragePath("/sdcard/../data"));
+        assertTrue(!RuntimeDirectoryOverride.isLexicallySharedStoragePath("/sdcardish/project"));
+        assertTrue(!RuntimeDirectoryOverride.isLexicallySharedStoragePath("/storage/emulated/00/project"));
+        assertTrue(!RuntimeDirectoryOverride.isLexicallySharedStoragePath("/data/local/tmp"));
+    }
+
     private static boolean rejects(String path) {
         try { RuntimeDirectoryOverride.canonicalGuestPath(path); return false; }
         catch (IllegalArgumentException expected) { return true; }
