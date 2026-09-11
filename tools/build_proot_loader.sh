@@ -7,6 +7,8 @@ set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 NDK_VERSION="28.0.13004108"
+TRUSTED_LOADER_SHA256_ARM64="b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa"
+TRUSTED_LOADER_SHA256_X86_64="1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33"
 OUT="${PROOT_LOADER_OUT:-$ROOT/app/build/generated/jniLibs/arm64-v8a/libproot-loader.so}"
 WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 
@@ -28,14 +30,13 @@ case "$(uname -m)" in
   aarch64|arm64)
     CLANG="${ALFA_NATIVE_CLANG:-$(command -v clang)}"
     STRIP="${ALFA_NATIVE_STRIP:-$(command -v llvm-strip)}"
-    [ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
-    [ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
-    CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    EXPECTED_LOADER_SHA256="$TRUSTED_LOADER_SHA256_ARM64"
     ;;
   x86_64)
     TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-    CC="$TOOLCHAIN/clang --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+    CLANG="$TOOLCHAIN/clang"
     STRIP="$TOOLCHAIN/llvm-strip"
+    EXPECTED_LOADER_SHA256="$TRUSTED_LOADER_SHA256_X86_64"
     ;;
   *)
     echo 'LOADER_STATUS=BLOCKED'
@@ -43,6 +44,14 @@ case "$(uname -m)" in
     exit 20
     ;;
 esac
+
+[ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
+[ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
+if [ "$(uname -m)" = "x86_64" ]; then
+  CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+else
+  CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
+fi
 
 LOADER_LDFLAGS='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
 
@@ -56,9 +65,15 @@ make -C "$WORK/src" \
 install -m 0755 "$WORK/src/loader/loader" "$OUT"
 file "$OUT"
 readelf -h "$OUT" | grep -E 'Class:|Machine:'
+ACTUAL_LOADER_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
+printf 'LOADER_SHA256=%s\n' "$ACTUAL_LOADER_SHA256"
+if [ "$ACTUAL_LOADER_SHA256" != "$EXPECTED_LOADER_SHA256" ]; then
+  echo 'LOADER_STATUS=BLOCKED'
+  echo "LOADER_REASON=TRUSTED_SHA256_MISMATCH:expected=$EXPECTED_LOADER_SHA256:actual=$ACTUAL_LOADER_SHA256"
+  exit 21
+fi
 printf 'LOADER_STATUS=PASS\n'
 printf 'PROOT_COMMIT=%s\n' "$PROOT_COMMIT"
 printf 'NDK_VERSION=%s\n' "$NDK_VERSION"
 printf 'BUILD_HOST=%s\n' "$(uname -m)"
-printf 'LOADER_SHA256=%s\n' "$(sha256sum "$OUT" | awk '{print $1}')"
 printf 'LOADER_PATH=%s\n' "$OUT"
