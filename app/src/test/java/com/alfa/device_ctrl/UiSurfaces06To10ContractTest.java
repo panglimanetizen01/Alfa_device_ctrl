@@ -9,10 +9,10 @@ import java.nio.file.Paths;
 import org.junit.Test;
 
 public final class UiSurfaces06To10ContractTest {
-    private static final String MAIN = "app/src/main/java/com/alfa/device_ctrl/MainActivity.java";
-    private static final String SHELL = "app/src/main/java/com/alfa/device_ctrl/AlfaUiShell.java";
-    private static final String APP = "app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java";
-    private static final String STORAGE = "app/src/main/java/com/alfa/device_ctrl/StorageUiBridge.java";
+    private static final String MAIN = "src/main/java/com/alfa/device_ctrl/MainActivity.java";
+    private static final String SHELL = "src/main/java/com/alfa/device_ctrl/AlfaUiShell.java";
+    private static final String APP = "src/main/java/com/alfa/device_ctrl/AlfaApplication.java";
+    private static final String STORAGE = "src/main/java/com/alfa/device_ctrl/StorageUiBridge.java";
 
     private static String read(String path) throws Exception {
         return new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
