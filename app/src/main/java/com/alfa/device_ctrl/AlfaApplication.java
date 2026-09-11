@@ -92,6 +92,7 @@ public final class AlfaApplication extends Application {
         if (!"AUTHORIZED".equals(p.getProperty("launch_status")) || !"AUTHORIZED".equals(p.getProperty("authorization_status"))) throw new IllegalStateException("invalid-authorization-status");
         if (!"gate6-bootstrap".equals(p.getProperty("launch_source"))) throw new IllegalStateException("invalid-launch-source");
         if (RuntimeRegistry.get(p.getProperty("runtime_id")) == null) throw new IllegalStateException("unsupported-runtime-id");
+        if (!RuntimeRegistry.CANONICAL_REGISTRY_SHA256.equalsIgnoreCase(p.getProperty("runtime_registry_sha256"))) throw new IllegalStateException("stale-runtime-registry");
         if (!p.getProperty("source_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-source-commit");
         if (!p.getProperty("implementation_commit").matches("[0-9a-fA-F]{40}")) throw new IllegalStateException("invalid-implementation-commit");
         if (!p.getProperty("gate4_contract_sha256").matches("[0-9a-fA-F]{64}")) throw new IllegalStateException("invalid-gate4-hash");
