@@ -10,18 +10,19 @@ import com.termux.view.TerminalView;
 final class RuntimeSessionReattachment {
     private RuntimeSessionReattachment() { }
 
-    static void attach(Activity activity, RuntimeSessionManager manager) {
-        if (!(activity instanceof MainActivity) || manager == null || !manager.isRunning()) return;
+    static boolean attach(Activity activity, RuntimeSessionManager manager) {
+        if (!(activity instanceof MainActivity) || manager == null || !manager.isRunning()) return false;
         TerminalView terminal = findTerminalView(activity.findViewById(android.R.id.content));
-        if (terminal == null) return;
+        if (terminal == null) return false;
         try {
             java.lang.reflect.Field field = MainActivity.class.getDeclaredField("sessionManager");
             field.setAccessible(true);
             field.set(activity, manager);
-            manager.rebindListener((RuntimeSessionManager.Listener) activity);
+            if (!manager.rebindListener((RuntimeSessionManager.Listener) activity)) return false;
             manager.attachTo(terminal);
-        } catch (ReflectiveOperationException error) {
-            throw new IllegalStateException("runtime-session-ui-rebind-failed", error);
+            return true;
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return false;
         }
     }
 
