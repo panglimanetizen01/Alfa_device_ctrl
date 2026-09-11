@@ -1,0 +1,60 @@
+package com.alfa.device_ctrl;
+
+import android.app.Activity;
+import android.graphics.Color;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import java.io.File;
+
+/** Evidence-only VFS/mount policy surface bound to the selected runtime contract. */
+public final class RuntimeVfsPolicyActivity extends Activity {
+    private TextView report;
+
+    @Override protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.rgb(19,19,21)); root.setPadding(dp(14),dp(14),dp(14),dp(14));
+        TextView title = new TextView(this); title.setText("VFS / MOUNT / DIRECTORY POLICY"); title.setTextColor(Color.rgb(171,199,255)); title.setTextSize(16); title.setGravity(Gravity.CENTER_VERTICAL);
+        root.addView(title,new LinearLayout.LayoutParams(-1,dp(52)));
+        report = new TextView(this); report.setTextColor(Color.rgb(193,198,213)); report.setTextSize(10); report.setTypeface(android.graphics.Typeface.MONOSPACE); report.setGravity(Gravity.TOP|Gravity.START);
+        root.addView(report,new LinearLayout.LayoutParams(-1,0,1));
+        Button refresh = new Button(this); refresh.setText("REFRESH RUNTIME POLICY"); refresh.setContentDescription("Perbarui kebijakan VFS runtime"); refresh.setMinHeight(dp(48)); refresh.setOnClickListener(v -> refresh()); root.addView(refresh,new LinearLayout.LayoutParams(-1,dp(48)));
+        setContentView(root); refresh();
+    }
+
+    private void refresh() {
+        String runtimeId = AlfaSettingsStore.get(this).getRuntimeId(RuntimeSelection.DEFAULT_RUNTIME_ID);
+        RuntimeProfile profile = RuntimeSelection.profile(runtimeId);
+        StringBuilder b = new StringBuilder();
+        b.append("RUNTIME_ID=").append(runtimeId).append('\n');
+        b.append("POLICY_ID=").append(InteractiveSessionContract.POLICY_ID).append('\n');
+        b.append("POLICY_VERSION=").append(InteractiveSessionContract.POLICY_VERSION).append('\n');
+        b.append("POLICY_SCOPE=").append(InteractiveSessionContract.POLICY_SCOPE).append('\n');
+        if (profile == null) { b.append("RUNTIME_POLICY=BLOCKED\nunsupported-runtime-id"); report.setText(b); return; }
+        File runtime = new File(new File(new File(getFilesDir(),"runtime-vault"),"runtimes"),runtimeId);
+        File ready = new File(runtime,"READY.evidence");
+        File proot = new File(getApplicationInfo().nativeLibraryDir,"libproot.so");
+        File rootfs = new File(runtime,"rootfs");
+        File cwd = new File(getFilesDir(),"session-cwd-"+runtimeId);
+        b.append("RUNTIME_ROOT=").append(rootfs.getAbsolutePath()).append('\n');
+        b.append("HOST_CWD=").append(cwd.getAbsolutePath()).append('\n');
+        b.append("READY_EVIDENCE=").append(ready.isFile()?"PRESENT":"MISSING").append('\n');
+        b.append("PROOT=").append(proot.isFile()&&proot.canExecute()?"READY":"BLOCKED").append('\n');
+        b.append("PROOT_BINDS=");
+        String[] args = profile.prootArguments();
+        for(int i=0;i<args.length;i++){if("-b".equals(args[i])&&i+1<args.length){if(b.charAt(b.length()-1)!='=')b.append(',');b.append(args[++i]);}}
+        b.append('\n');
+        b.append("DIRECTORY_OVERRIDE_BACKEND=NOT_AVAILABLE\n");
+        b.append("DIRECTORY_OVERRIDE_STATUS=NOT_MEASURED\n");
+        b.append("NOTE=No canonical directory-override mutation API exists in the current runtime contract; UI refuses to invent one.\n");
+        boolean authorized=false;
+        try { InteractiveSessionContract contract = new InteractiveSessionContract("vfs-check-"+runtimeId,"vfs-request-"+runtimeId,"vfs",""+runtimeId,ready,proot,rootfs,cwd,new String[]{"HOME=/root","TERM=xterm-256color"}); authorized=contract.isAuthorizedForInteractiveRuntime(); } catch(Exception ignored) { }
+        b.append("RUNTIME_AUTHORIZATION=").append(authorized?"PASS":"BLOCKED");
+        report.setText(b);
+    }
+    private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
+}
