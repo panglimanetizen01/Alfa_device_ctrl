@@ -26,6 +26,31 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Forensic clean stale APK build outputs
+        run: |
+          set -euo pipefail
+          tracked_generated="$(git ls-files -z | tr '\0' '\n' | grep -E '(^|/)(build|\.build|\.gradle)(/|$)|\.apk$|\.aab$|\.apks$|\.xapk$' || true)"
+          if [ -n "$tracked_generated" ]; then
+            echo "TRACKED_GENERATED_BUILD_ARTIFACTS_FOUND"
+            printf '%s\n' "$tracked_generated"
+            exit 1
+          fi
+          rm -rf \
+            .gradle \
+            .build \
+            build \
+            app/build \
+            terminal-emulator/build \
+            terminal-view/build \
+            app/src/main/jniLibs/arm64-v8a/libtermux.so
+          if find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print -quit | grep -q .; then
+            echo "STALE_APK_ARTIFACT_REMAINS_AFTER_CLEAN"
+            find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print
+            exit 1
+          fi
+          echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
+          echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
+
       - name: Setup Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -64,7 +89,7 @@ jobs:
       - name: Unit tests and APK build
         run: |
           set -euo pipefail
-          ./gradlew test :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
 
       - name: Verify native ELF and 16 KB APK alignment
