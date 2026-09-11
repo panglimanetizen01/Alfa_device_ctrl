@@ -49,7 +49,7 @@ public final class AdaptivePanelLayoutController {
     private static LinearLayout findAdaptiveContent(ViewGroup root) {
         if (root instanceof LinearLayout) {
             LinearLayout candidate = (LinearLayout) root;
-            if (candidate.getOrientation() == LinearLayout.VERTICAL && candidate.getChildCount() >= 5) return candidate;
+            if (candidate.getOrientation() == LinearLayout.VERTICAL && candidate.getChildCount() == 5) return candidate;
         }
         for (int i = 0; i < root.getChildCount(); i++) {
             View child = root.getChildAt(i);
