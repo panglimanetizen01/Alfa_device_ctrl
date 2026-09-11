@@ -33,7 +33,7 @@ android {
                 alfaApi35(com.android.build.api.dsl.ManagedVirtualDevice) {
                     device = 'Pixel 2'
                     apiLevel = 35
-                    systemImageSource = 'google-apis'
+                    systemImageSource = 'google'
                 }
             }
         }
