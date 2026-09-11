@@ -38,7 +38,10 @@ public final class AlfaApplication extends Application {
             @Override public void onActivityCreated(Activity activity, Bundle state) {
                 installWindowInsetsPolicy(activity);
                 AlfaUiTheme.apply(activity);
-                if (activity instanceof MainActivity) activity.post(() -> AlfaUiShell.install((MainActivity) activity));
+                if (activity instanceof MainActivity) {
+                    View content = activity.findViewById(android.R.id.content);
+                    if (content != null) content.post(() -> AlfaUiShell.install((MainActivity) activity));
+                }
             }
             @Override public void onActivityResumed(Activity activity) {
                 activityPauseInProgress = false;
@@ -49,9 +52,7 @@ public final class AlfaApplication extends Application {
                 if (activity instanceof MainActivity && RuntimeKeepAliveService.owner() != null) activityPauseInProgress = true;
             }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
-            @Override public void onActivityDestroyed(Activity activity) {
-                AlfaUiShell.onActivityDestroyed(activity);
-            }
+            @Override public void onActivityDestroyed(Activity activity) { AlfaUiShell.onActivityDestroyed(activity); }
         });
         installLaunchContract();
     }
@@ -60,7 +61,6 @@ public final class AlfaApplication extends Application {
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
     public static boolean isActivityPauseInProgress() { return instance != null && instance.activityPauseInProgress; }
 
-    /** API 35+ enforces edge-to-edge; reserve system bars and display cutout insets idempotently. */
     private static void installWindowInsetsPolicy(Activity activity) {
         WindowCompat.enableEdgeToEdge(activity.getWindow());
         View content = activity.findViewById(android.R.id.content);
@@ -75,31 +75,22 @@ public final class AlfaApplication extends Application {
         ViewCompat.requestApplyInsets(content);
     }
 
-    /** Rebinds only the presentation listener/view to the already-owned foreground runtime session. */
     private static void rebindForegroundSession(Activity activity) {
         if (!(activity instanceof MainActivity)) return;
         RuntimeSessionManager owner = RuntimeKeepAliveService.owner();
         if (owner == null || !owner.isRunning()) return;
         try {
-            Field managerField = MainActivity.class.getDeclaredField("sessionManager");
-            Field terminalField = MainActivity.class.getDeclaredField("terminalView");
-            managerField.setAccessible(true); terminalField.setAccessible(true);
-            managerField.set(activity, owner);
-            owner.rebindListener((RuntimeSessionManager.Listener) activity);
-            Object terminal = terminalField.get(activity);
-            if (terminal instanceof com.termux.view.TerminalView) owner.attachTo((com.termux.view.TerminalView) terminal);
-        } catch (ReflectiveOperationException error) {
-            throw new IllegalStateException("runtime-session-ui-rebind-failed", error);
-        }
+            Field managerField = MainActivity.class.getDeclaredField("sessionManager"), terminalField = MainActivity.class.getDeclaredField("terminalView");
+            managerField.setAccessible(true); terminalField.setAccessible(true); managerField.set(activity, owner); owner.rebindListener((RuntimeSessionManager.Listener) activity);
+            Object terminal = terminalField.get(activity); if (terminal instanceof com.termux.view.TerminalView) owner.attachTo((com.termux.view.TerminalView) terminal);
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException("runtime-session-ui-rebind-failed", error); }
     }
 
     private void installLaunchContract() {
-        File vault = new File(getFilesDir(), "runtime-vault");
-        if (!vault.exists() && !vault.mkdirs()) return;
+        File vault = new File(getFilesDir(), "runtime-vault"); if (!vault.exists() && !vault.mkdirs()) return;
         File destination = new File(vault, ASSET), temporary = new File(vault, ASSET + ".part");
         try (InputStream input = getAssets().open(ASSET); FileOutputStream output = new FileOutputStream(temporary)) {
-            byte[] buffer = new byte[4096]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
-            output.getFD().sync();
+            byte[] buffer = new byte[4096]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); output.getFD().sync();
             if (!temporary.renameTo(destination)) { if (destination.exists()) destination.delete(); if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed"); }
             validate(destination);
         } catch (Exception ignored) { temporary.delete(); }
