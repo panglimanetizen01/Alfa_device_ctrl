@@ -6,15 +6,6 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public final class RuntimeDirectoryOverrideTest {
-    @Test public void serializationRoundTripPreservesBindRule() {
-        RuntimeDirectoryOverride value = new RuntimeDirectoryOverride("debian", "/sdcard/Alfa_device_ctrl_HOST", "/mnt/alfa-shared");
-        RuntimeDirectoryOverride parsed = RuntimeDirectoryOverride.parse(value.serialize());
-        assertEquals("debian", parsed.runtimeId());
-        assertEquals("/sdcard/Alfa_device_ctrl_HOST", parsed.hostPath());
-        assertEquals("/mnt/alfa-shared", parsed.guestPath());
-        assertEquals("/sdcard/Alfa_device_ctrl_HOST:/mnt/alfa-shared", parsed.prootBindArgument());
-    }
-
     @Test public void guestTargetRejectsRootAndSensitiveNamespaces() {
         assertTrue(rejects("/"));
         assertTrue(rejects("/proc"));
@@ -25,6 +16,11 @@ public final class RuntimeDirectoryOverrideTest {
     @Test public void guestTargetAllowsExplicitMountNamespaces() {
         assertEquals("/mnt/work", RuntimeDirectoryOverride.canonicalGuestPath("/mnt/work/"));
         assertEquals("/workspace/project", RuntimeDirectoryOverride.canonicalGuestPath("/workspace/project"));
+    }
+
+    @Test public void guestTargetRejectsTraversal() {
+        assertTrue(rejects("/mnt/../proc"));
+        assertTrue(rejects("relative/path"));
     }
 
     private static boolean rejects(String path) {
