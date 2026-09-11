@@ -12,10 +12,6 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
-import android.view.View;
-import android.view.ViewGroup;
-
-import com.termux.view.TerminalView;
 
 /** Owns the Android process lifetime for an explicitly started interactive runtime session. */
 public final class RuntimeKeepAliveService extends Service {
