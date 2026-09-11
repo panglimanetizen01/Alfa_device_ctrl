@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 import android.view.View;
-import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
 import java.io.File;
@@ -34,6 +33,7 @@ public final class AlfaApplication extends Application {
             @Override public void onActivityResumed(Activity activity) {
                 AlfaUiTheme.apply(activity);
                 ExecutionLanePanel.install(activity);
+                RuntimeSessionReattachment.tryReattach(activity);
             }
             @Override public void onActivityPaused(Activity activity) { }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
