@@ -22,6 +22,7 @@ public final class AlfaSettingsStore {
     private static final Preferences.Key<Integer> OVERLAY_OPACITY_PERCENT = PreferencesKeys.intKey("overlay_opacity_percent");
     private static final Preferences.Key<Integer> OVERLAY_WIDTH_DP = PreferencesKeys.intKey("overlay_width_dp");
     private static final Preferences.Key<Integer> OVERLAY_HEIGHT_DP = PreferencesKeys.intKey("overlay_height_dp");
+    private static final Preferences.Key<String> RUNTIME_DIRECTORY_OVERRIDES = PreferencesKeys.stringKey("runtime_directory_overrides_v1");
     private static volatile AlfaSettingsStore instance;
     private final GuavaDataStore<Preferences> store;
     private final Executor io = Executors.newSingleThreadExecutor(r -> { Thread t = new Thread(r, "alfa-settings-io"); t.setDaemon(true); return t; });
@@ -36,6 +37,7 @@ public final class AlfaSettingsStore {
     public int getOverlayOpacityPercent(int fallback){return getInt(OVERLAY_OPACITY_PERCENT,fallback);} public void setOverlayOpacityPercent(int value){setInt(OVERLAY_OPACITY_PERCENT,Math.max(10,Math.min(100,value)));}
     public int getOverlayWidthDp(int fallback){return getInt(OVERLAY_WIDTH_DP,fallback);} public void setOverlayWidthDp(int value){setInt(OVERLAY_WIDTH_DP,Math.max(280,Math.min(1200,value)));}
     public int getOverlayHeightDp(int fallback){return getInt(OVERLAY_HEIGHT_DP,fallback);} public void setOverlayHeightDp(int value){setInt(OVERLAY_HEIGHT_DP,Math.max(180,Math.min(900,value)));}
+    public String getRuntimeDirectoryOverrides(String fallback){return getString(RUNTIME_DIRECTORY_OVERRIDES,fallback);} public void setRuntimeDirectoryOverrides(String value){setString(RUNTIME_DIRECTORY_OVERRIDES,value);}
     private <T>T read(Preferences.Key<T> key,T fallback){try{T value=store.getDataAsync().get().get(key);return value==null?fallback:value;}catch(InterruptedException e){Thread.currentThread().interrupt();return fallback;}catch(ExecutionException e){return fallback;}}
     private String getString(Preferences.Key<String> key,String fallback){return read(key,fallback);} private int getInt(Preferences.Key<Integer> key,int fallback){return read(key,fallback);} private boolean getBoolean(Preferences.Key<Boolean> key,boolean fallback){return read(key,fallback);}
     private <T>void update(Preferences.Key<T> key,T value){store.updateDataAsync(current->{MutablePreferences mutable=current.toMutablePreferences();mutable.set(key,value);return mutable.toPreferences();});}
