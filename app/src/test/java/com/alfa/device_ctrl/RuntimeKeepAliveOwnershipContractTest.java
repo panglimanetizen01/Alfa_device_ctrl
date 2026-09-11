@@ -15,7 +15,8 @@ public final class RuntimeKeepAliveOwnershipContractTest {
         assertTrue(text.contains("Set<RuntimeSessionManager> owners"));
         assertTrue(text.contains("owners.contains(manager)"));
         assertTrue(!text.contains("RuntimeSessionManager owner;"));
-        assertTrue(text.contains("if (owners.isEmpty())"));
+        assertTrue(text.contains("empty = owners.isEmpty()"));
+        assertTrue(text.contains("if (empty) context.stopService"));
         assertTrue(text.contains("current.size() == 1"));
     }
 }
