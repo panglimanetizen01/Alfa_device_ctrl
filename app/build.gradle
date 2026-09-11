@@ -25,6 +25,19 @@ android {
         versionName '0.1.0'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
+
+    testOptions {
+        animationsDisabled true
+        managedDevices {
+            devices {
+                alfaApi35(com.android.build.api.dsl.ManagedVirtualDevice) {
+                    device = 'Pixel 2'
+                    apiLevel = 35
+                    systemImageSource = 'google'
+                }
+            }
+        }
+    }
 }
 
 tasks.register('prepareProotLoader', Exec) {
@@ -53,9 +66,9 @@ tasks.register('prepareGate7LaunchContract') {
         def registryHash = digest.digest(registryFile.bytes).collect { String.format('%02x', it) }.join()
         def source = file(sourcePath)
         if (!source.isFile()) throw new GradleException("ALFA_GATE7_ASSET is not a regular file: ${source}")
-        def text = source.getText('UTF-8')
-        ['pipeline_run_id=','runtime_id=','runtime_registry_sha256=','source_commit=','gate4_contract_sha256=','profile_sha256=','implementation_commit='].each { key -> if (!text.readLines().any { it.startsWith(key) && it.substring(key.length()).trim() }) throw new GradleException("Gate 7 launch contract missing ${key}") }
-        def lines = text.readLines(); def value = { key -> lines.find { it.startsWith(key) }?.substring(key.length())?.trim() }
+        def text = source.getText('UTF-8'); def lines = text.readLines()
+        ['pipeline_run_id=', 'runtime_id=', 'runtime_registry_sha256=', 'source_commit=', 'gate4_contract_sha256=', 'profile_sha256=', 'implementation_commit='].each { key -> if (!lines.any { it.startsWith(key) && it.substring(key.length()).trim() }) throw new GradleException("Gate 7 launch contract missing ${key}") }
+        def value = { key -> lines.find { it.startsWith(key) }?.substring(key.length())?.trim() }
         if (value('runtime_id') != selectedRuntime.trim()) throw new GradleException("Gate 7 runtime provenance mismatch: asset=${value('runtime_id')} selected=${selectedRuntime}")
         if (value('runtime_registry_sha256') != registryHash) throw new GradleException("Gate 7 runtime registry provenance is stale: asset=${value('runtime_registry_sha256')} canonical=${registryHash}")
         source.withInputStream { input -> output.withOutputStream { out -> out << input } }
@@ -71,12 +84,13 @@ dependencies {
         exclude group: 'com.github.termux.termux-app', module: 'terminal-view'
         exclude group: 'com.github.termux.termux-app', module: 'terminal-emulator'
     }
+    implementation 'androidx.core:core:1.18.0'
+    implementation 'androidx.documentfile:documentfile:1.1.0'
     implementation 'org.tukaani:xz:1.12'
     implementation 'androidx.datastore:datastore-preferences:1.2.1'
     implementation 'androidx.datastore:datastore-guava:1.2.1'
     implementation 'com.google.guava:guava:33.5.0-android'
     implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
-    implementation 'androidx.core:core:1.17.0'
     implementation 'dev.rikka.shizuku:api:12.2.0'
     implementation 'dev.rikka.shizuku:provider:12.2.0'
     testImplementation 'junit:junit:4.13.2'
