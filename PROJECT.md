@@ -29,9 +29,9 @@ The Android shared-storage workspace is user-facing project storage. It is not a
 
 The current `master` baseline is:
 
-`0b2d4f79cc01b2fdb9051fffc539ab9ab42ae187`
+`66def003ad521e6f844b40fffa73bcf94f0dd178`
 
-This baseline includes the merged G17 Android instrumentation execution proof, the canonical Alfa MCP server, the launcher manifest correction, and cleanup of tracked generated Gradle/build state. G18/G19 artifacts and branches may exist in repository history, but they MUST NOT be described as part of `master` until their commits are actually merged into `master` and verified there.
+This baseline aligns the canonical Android build lane with Android 16/API 36, including the corresponding compile/target SDK, AGP, Gradle, CI SDK, and build-contract updates. Later branch commits are not part of `master` until they are actually merged into `master` and verified there.
 
 ## Evidence Rules
 
