@@ -26,7 +26,6 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     public RuntimeSessionManager(InteractiveSessionContract contract, Listener listener) { if (contract == null) throw new IllegalArgumentException("contract is required"); this.contract = contract; this.listener = listener; }
 
-    /** Rebinds the presentation listener without replacing the live runtime session. */
     public synchronized boolean rebindListener(Listener newListener) {
         listener = newListener;
         if (session == null || !session.isRunning()) return false;
@@ -43,30 +42,31 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         if (session != null && session.isRunning()) { notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
         if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { notifyState("BLOCKED"); return false; }
         promptReady = false;
-        session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
-        session.mSessionName = contract.sessionId(); session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
         try {
             RuntimeKeepAliveService.start(AlfaApplication.getInstance(), this);
+            session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
+            session.mSessionName = contract.sessionId();
+            session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
         } catch (RuntimeException error) {
-            session.finishIfRunning();
+            if (session != null) session.finishIfRunning();
             session = null;
             promptReady = false;
-            notifyState("BLOCKED_FGS_START");
+            RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this);
+            notifyState("BLOCKED_PTY_START");
             return false;
         }
-        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid()); notifyState("PTY_CREATED"); return true;
+        OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid());
+        notifyState("PTY_CREATED");
+        return true;
     }
 
     public synchronized void attachTo(TerminalView view) { if (view == null) throw new IllegalArgumentException("view is required"); if (session == null) throw new IllegalStateException("session is not started"); view.attachSession(session); }
 
     public void stop() {
         synchronized (this) { if (session == null || !session.isRunning()) return; }
-        if (RuntimeKeepAliveService.isActivityPauseInProgress()) {
-            notifyState("BACKGROUND_SESSION_PRESERVED");
-            return;
-        }
+        if (RuntimeKeepAliveService.isActivityPauseInProgress()) { notifyState("BACKGROUND_SESSION_PRESERVED"); return; }
         if (AlfaApplication.hasVisibleActivity()) { finishNow(); return; }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) { notifyState("BACKGROUND_SESSION_PRESERVED"); } } } else finishNow(); }, 250L);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> { if (!AlfaApplication.hasVisibleActivity()) { synchronized (RuntimeSessionManager.this) { if (session != null && session.isRunning()) notifyState("BACKGROUND_SESSION_PRESERVED"); } } else finishNow(); }, 250L);
     }
 
     private void finishNow() {
@@ -74,10 +74,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this);
     }
 
-    void finishForKeepAliveStop() {
-        synchronized (this) { if (session != null && session.isRunning()) { OperationEvidence.write(contract, "STOPPING", "FOREGROUND_SERVICE_STOP", session.getPid()); session.finishIfRunning(); } }
-    }
-
+    void finishForKeepAliveStop() { synchronized (this) { if (session != null && session.isRunning()) { OperationEvidence.write(contract, "STOPPING", "FOREGROUND_SERVICE_STOP", session.getPid()); session.finishIfRunning(); } } }
     public synchronized boolean isRunning() { return session != null && session.isRunning(); }
     public synchronized TerminalSession currentSession() { return session; }
 
@@ -89,8 +86,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
                 if (transcript.contains(runtimePrompt)) { promptReady = true; OperationEvidence.write(contract, "READY", "PROMPT_OBSERVED", changedSession.getPid()); notifyState("READY"); }
             }
         }
-        Listener current = listener;
-        if (current != null) current.onTextChanged();
+        Listener current = listener; if (current != null) current.onTextChanged();
     }
 
     @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } Listener current = listener; if (current != null) current.onSessionFinished(status); }
@@ -143,11 +139,9 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             int status = 126; String output;
             try {
                 String[] profileArgs = activeContract.prootArguments();
-                List<String> argv = new ArrayList<>();
-                for (String value : profileArgs) argv.add(value);
+                List<String> argv = new ArrayList<>(); for (String value : profileArgs) argv.add(value);
                 if (argv.size() < 2 || !"-i".equals(argv.get(argv.size() - 1))) throw new IllegalStateException("profile-proot-command-contract-invalid");
-                argv.set(argv.size() - 1, "-c"); argv.add(requested);
-                argv.add(0, activeContract.prootExecutable().getAbsolutePath());
+                argv.set(argv.size() - 1, "-c"); argv.add(requested); argv.add(0, activeContract.prootExecutable().getAbsolutePath());
                 ProcessBuilder builder = new ProcessBuilder(argv); builder.directory(activeContract.hostCwd()); builder.redirectErrorStream(true);
                 for (String entry : activeContract.environment()) { if (entry == null) continue; int separator = entry.indexOf('='); if (separator <= 0) throw new IllegalStateException("invalid-runtime-environment-entry"); builder.environment().put(entry.substring(0, separator), entry.substring(separator + 1)); }
                 CommandResult result = executeProcess(builder, COMMAND_TIMEOUT_MS, MAX_COMMAND_OUTPUT_CHARS); status = result.exitStatus; output = result.timedOut ? "runtime-command-timeout\n" + result.output : result.output;
