@@ -1,15 +1,12 @@
 package com.alfa.device_ctrl;
 
 import android.content.Context;
-import androidx.datastore.preferences.core.Preferences;
-import androidx.datastore.preferences.core.PreferencesKeys;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /** Persistent runtime-bound VFS bind rules. Rules are applied to newly created PRoot sessions. */
 public final class RuntimeDirectoryOverrideStore {
-    private static final Preferences.Key<String> OVERRIDES = PreferencesKeys.stringKey("runtime_directory_overrides_v1");
     private static volatile RuntimeDirectoryOverrideStore instance;
     private final AlfaSettingsStore settings;
     private RuntimeDirectoryOverrideStore(Context context) { settings = AlfaSettingsStore.get(context); }
@@ -37,9 +34,7 @@ public final class RuntimeDirectoryOverrideStore {
     public synchronized void add(RuntimeDirectoryOverride override) {
         if (override == null) throw new IllegalArgumentException("override-required");
         List<RuntimeDirectoryOverride> current = new ArrayList<>(list());
-        for (RuntimeDirectoryOverride item : current) {
-            if (item.runtimeId().equals(override.runtimeId()) && item.guestPath().equals(override.guestPath())) current.remove(item);
-        }
+        current.removeIf(item -> item.runtimeId().equals(override.runtimeId()) && item.guestPath().equals(override.guestPath()));
         current.add(override);
         persist(current);
     }
@@ -63,6 +58,6 @@ public final class RuntimeDirectoryOverrideStore {
             if (text.length() > 0) text.append('\n');
             text.append(value.serialize());
         }
-        settings.setRuntimeDirectoryOverrides(text.toString());
+        settings.setRuntimeDirectoryOverridesBlocking(text.toString());
     }
 }
