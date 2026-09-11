@@ -1,4 +1,5 @@
 # Canonical Android 36 / AGP 8.10 native alignment audit.
+# Retriggered after verified Java compile fixes.
 name: Native 16 KB Audit
 
 on:
