@@ -22,7 +22,8 @@ public final class MainActivityAdaptiveInsetsSemanticContractTest {
         assertTrue(app.contains("RuntimeKeepAliveService.owner()"));
         assertTrue(app.contains("owner.rebindListener"));
         assertTrue(app.contains("owner.attachTo"));
-        assertTrue(app.contains("activityPauseInProgress = true"));
+        assertTrue(app.contains("onActivityPaused"));
+        assertTrue(app.contains("activityPauseInProgress"));
         assertTrue(manager.contains("isActivityPauseInProgress()"));
         assertTrue(manager.contains("if (AlfaApplication.isActivityPauseInProgress())"));
         assertTrue(activity.contains("sessionManager.stop();"));
