@@ -19,7 +19,7 @@ public final class ExecutionLanePanel {
     }
 
     public static void install(Activity activity) {
-        if (activity == null) return;
+        if (!(activity instanceof MainActivity)) return;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof ViewGroup)) return;
         if (content.findViewWithTag(TAG) != null) return;
