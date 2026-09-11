@@ -2,7 +2,6 @@ package com.alfa.device_ctrl;
 
 import android.app.Activity;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,88 +9,69 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Presentation-only Terminal Obsidian styling. Never supplies runtime state or capability state. */
+import java.util.HashSet;
+import java.util.Set;
+
+/** Centralized Terminal Obsidian visual tokens and runtime layout normalization. */
 public final class AlfaUiTheme {
     public static final int CANVAS = Color.rgb(11, 15, 20);
     public static final int SURFACE_1 = Color.rgb(18, 24, 32);
     public static final int SURFACE_2 = Color.rgb(26, 34, 45);
     public static final int BORDER = Color.rgb(31, 41, 55);
-    public static final int BORDER_FOCUSED = Color.rgb(55, 65, 81);
-    public static final int TEXT = Color.rgb(224, 226, 234);
-    public static final int TEXT_MUTED = Color.rgb(187, 202, 191);
-    public static final int READY = Color.rgb(16, 185, 129);
-    public static final int WARNING = Color.rgb(245, 158, 11);
-    public static final int ERROR = Color.rgb(239, 68, 68);
-    public static final int TELEMETRY = Color.rgb(6, 182, 212);
-    public static final int UNKNOWN = Color.rgb(100, 116, 139);
+    public static final int FOCUS_BORDER = Color.rgb(55, 65, 81);
+    public static final int EMERALD = Color.rgb(16, 185, 129);
+    public static final int AMBER = Color.rgb(245, 158, 11);
+    public static final int CRIMSON = Color.rgb(239, 68, 68);
+    public static final int CYAN = Color.rgb(6, 182, 212);
+    public static final int SLATE = Color.rgb(100, 116, 139);
 
-    private static final int LEGACY_PRIMARY = Color.rgb(171, 199, 255);
-    private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
-    private static final int LEGACY_ERROR = Color.rgb(255, 180, 171);
-    private static final int TOUCH_TARGET_DP = 48;
-    private static final int RADIUS_DP = 4;
-
-    private AlfaUiTheme() { }
+    private AlfaUiTheme() {}
 
     public static void apply(Activity activity) {
         View root = activity.findViewById(android.R.id.content);
         if (root == null) return;
         root.setBackgroundColor(CANVAS);
-        float density = activity.getResources().getDisplayMetrics().density;
-        applyTree(root, 0, density);
-        root.post(() -> adaptRuntimeDashboard(root, density));
+        applyTree(root, new HashSet<Integer>());
+        root.post(() -> applyAdaptiveRuntimeLayout(root));
     }
 
-    private static void applyTree(View view, int depth, float density) {
-        if (view.getClass().getName().contains("TerminalView")) return;
-        int min = Math.round(TOUCH_TARGET_DP * density);
-        if (view.isClickable() || view instanceof Button) {
-            view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
-            view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
+    private static void applyTree(View view, Set<Integer> visited) {
+        if (view == null || visited.contains(view.getId())) return;
+        if (view.getId() != View.NO_ID) visited.add(view.getId());
+        if (view instanceof TextView) {
+            TextView text = (TextView) view;
+            if (text.getTextSize() > 0f && text.getTextSize() < 14f) {
+                text.setTextColor(SLATE);
+            }
         }
         if (view instanceof Button) {
             Button button = (Button) view;
-            int original = button.getTextColors() == null ? TEXT : button.getTextColors().getDefaultColor();
-            int textColor = normalizeTextColor(original);
-            int accent = textColor == ERROR ? ERROR : (textColor == READY ? READY : (textColor == TELEMETRY ? TELEMETRY : BORDER_FOCUSED));
-            button.setTextSize(11);
-            button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            button.setTextColor(textColor);
-            button.setBackground(controlBackground(accent, density));
-            button.setAllCaps(false);
-        } else if (view instanceof TextView) {
-            TextView text = (TextView) view;
-            int original = text.getCurrentTextColor();
-            text.setTextColor(normalizeTextColor(original));
-            if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
-            Typeface current = text.getTypeface();
-            if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(SURFACE_2);
+            bg.setStroke(dp(1, view.getResources().getDisplayMetrics().density), BORDER);
+            bg.setCornerRadius(dp(4, view.getResources().getDisplayMetrics().density));
+            button.setBackground(bg);
+            button.setTextColor(EMERALD);
+            button.setMinHeight(dp(48, view.getResources().getDisplayMetrics().density));
+            button.setMinWidth(dp(48, view.getResources().getDisplayMetrics().density));
         }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), depth + 1, density);
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyTree(group.getChildAt(i), visited);
+            }
         }
     }
 
-    private static int normalizeTextColor(int color) {
-        if (color == LEGACY_PRIMARY) return READY;
-        if (color == LEGACY_ERROR) return ERROR;
-        if (color == LEGACY_MUTED) return TEXT_MUTED;
-        if (color == Color.TRANSPARENT) return TEXT;
-        return color;
-    }
-
-    /** Uses the measured space actually allocated to the content column after system insets. */
-    private static void adaptRuntimeDashboard(View root, float density) {
+    private static void applyAdaptiveRuntimeLayout(View root) {
         LinearLayout content = findContentColumn(root);
-        if (content == null || content.getHeight() <= 0) return;
-        int runtimeCount = Math.max(1, RuntimeRegistry.all().size());
-        int availableHeightDp = Math.max(1, Math.round(content.getHeight() / density));
-        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(availableHeightDp, runtimeCount);
-
-        View runtimeWindow = content.getChildAt(0);
+        if (content == null || content.getChildCount() < 5) return;
+        View runtimeWindow = content.getChildAt(1);
         View monitorWindow = content.getChildAt(2);
         View terminalWindow = content.getChildAt(4);
+        float density = root.getResources().getDisplayMetrics().density;
+        int heightDp = Math.round(content.getHeight() / density);
+        AdaptiveRuntimeLayoutPolicy.Layout layout = AdaptiveRuntimeLayoutPolicy.resolve(heightDp, density);
         setFixedHeight(runtimeWindow, dp(layout.runtimeDp, density));
         setFixedHeight(monitorWindow, dp(layout.monitorDp, density));
         if (terminalWindow.getLayoutParams() instanceof LinearLayout.LayoutParams) {
@@ -107,7 +87,9 @@ public final class AlfaUiTheme {
     private static LinearLayout findContentColumn(View root) {
         if (!(root instanceof ViewGroup)) return null;
         ViewGroup group = (ViewGroup) root;
-        if (group instanceof LinearLayout && group.getOrientation() == LinearLayout.VERTICAL && group.getChildCount() == 5
+        if (group instanceof LinearLayout
+                && ((LinearLayout) group).getOrientation() == LinearLayout.VERTICAL
+                && group.getChildCount() == 5
                 && group.getChildAt(0) instanceof LinearLayout
                 && group.getChildAt(2) instanceof LinearLayout
                 && group.getChildAt(4) instanceof LinearLayout) {
@@ -123,20 +105,15 @@ public final class AlfaUiTheme {
     private static void setFixedHeight(View view, int heightPx) {
         ViewGroup.LayoutParams lp = view.getLayoutParams();
         if (lp instanceof LinearLayout.LayoutParams) {
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) lp;
-            params.height = heightPx;
-            params.weight = 0f;
-            view.setLayoutParams(params);
+            lp.height = heightPx;
+            lp.weight = 0f;
+        } else {
+            lp.height = heightPx;
         }
+        view.setLayoutParams(lp);
     }
 
-    private static int dp(int value, float density) { return Math.round(value * density); }
-
-    private static GradientDrawable controlBackground(int accent, float density) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(SURFACE_2);
-        drawable.setCornerRadius(RADIUS_DP * density);
-        drawable.setStroke(Math.max(1, Math.round(density)), accent == ERROR ? ERROR : (accent == READY ? READY : BORDER));
-        return drawable;
+    private static int dp(int value, float density) {
+        return Math.round(value * density);
     }
 }
