@@ -1,0 +1,11 @@
+package com.alfa.device_ctrl;
+import android.app.Activity;import android.content.Intent;import android.os.Handler;import android.os.Looper;import android.view.View;import android.view.ViewGroup;import java.lang.reflect.Field;import java.lang.reflect.Method;
+/** Transitional adapter exposing reconciled native surfaces without duplicating MainActivity UI. */
+public final class AlfaUiCapabilityRouter{
+ private static final Handler MAIN=new Handler(Looper.getMainLooper());private AlfaUiCapabilityRouter(){}
+ public static void install(Activity a){if(!(a instanceof MainActivity))return;MAIN.post(()->{if(a.isFinishing()||a.isDestroyed())return;route(a,"Buka alat runtime",RuntimeToolsActivity.class);route(a,"Tampilkan file runtime",ProjectExplorerActivity.class);route(a,"Tampilkan kebijakan runtime",PolicyEvidenceActivity.class);restoreRuntimeSelection(a);});}
+ public static void persist(Activity a){if(!(a instanceof MainActivity))return;try{Field f=MainActivity.class.getDeclaredField("selectedRuntime");f.setAccessible(true);RuntimeProfile p=(RuntimeProfile)f.get(a);if(p!=null)AlfaSettingsStore.get(a).setRuntimeId(p.id());}catch(Exception ignored){}}
+ private static void restoreRuntimeSelection(Activity a){new Thread(()->{String id=AlfaSettingsStore.get(a).getRuntimeId(RuntimeSelection.DEFAULT_RUNTIME_ID);if(RuntimeSelection.profile(id)==null)id=RuntimeSelection.DEFAULT_RUNTIME_ID;final String chosen=id;MAIN.post(()->{try{Field f=MainActivity.class.getDeclaredField("selectedRuntime");f.setAccessible(true);RuntimeProfile current=(RuntimeProfile)f.get(a);if(current==null||!chosen.equals(current.id())){Method m=MainActivity.class.getDeclaredMethod("selectRuntime",String.class);m.setAccessible(true);m.invoke(a,chosen);}}catch(Exception ignored){}});},"alfa-settings-load").start();}
+ private static void route(Activity a,String description,Class<? extends Activity> target){View root=a.findViewById(android.R.id.content);View found=find(root,description);if(found==null)return;found.setOnClickListener(v->a.startActivity(new Intent(a,target)));}
+ private static View find(View v,String d){if(d.equals(v.getContentDescription()))return v;if(!(v instanceof ViewGroup))return null;ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View r=find(g.getChildAt(i),d);if(r!=null)return r;}return null;}
+}
