@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 /** Android-side representation of interactive-session.v1 with runtime-bound Gate 7 provenance. */
@@ -25,6 +26,7 @@ public final class InteractiveSessionContract {
     private final File runtimeRoot;
     private final File hostCwd;
     private final String[] environment;
+    private final String[] directoryOverrideBinds;
 
     public InteractiveSessionContract(
             String sessionId, String requestId, String pipelineRunId, String runtimeId,
@@ -35,13 +37,34 @@ public final class InteractiveSessionContract {
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000000000000000000000000000",
                 "0000000000000000000000000000000000000000",
-                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment);
+                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
+    }
+
+    public InteractiveSessionContract(
+            String sessionId, String requestId, String pipelineRunId, String runtimeId,
+            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd,
+            String[] environment, String[] directoryOverrideBinds) {
+        this(sessionId, requestId, pipelineRunId, runtimeId,
+                "0000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000000000000000000000000000",
+                "0000000000000000000000000000000000000000",
+                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, directoryOverrideBinds);
     }
 
     public InteractiveSessionContract(
             String sessionId, String requestId, String pipelineRunId, String runtimeId,
             String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit,
             File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment) {
+        this(sessionId, requestId, pipelineRunId, runtimeId, sourceCommit, gate4ContractSha256, profileSha256, implementationCommit,
+                runtimeReadyEvidence, prootExecutable, runtimeRoot, hostCwd, environment, new String[0]);
+    }
+
+    public InteractiveSessionContract(
+            String sessionId, String requestId, String pipelineRunId, String runtimeId,
+            String sourceCommit, String gate4ContractSha256, String profileSha256, String implementationCommit,
+            File runtimeReadyEvidence, File prootExecutable, File runtimeRoot, File hostCwd, String[] environment,
+            String[] directoryOverrideBinds) {
         this.sessionId = requireToken(sessionId, "sessionId");
         this.requestId = requireToken(requestId, "requestId");
         this.runtimeId = requireToken(runtimeId, "runtimeId");
@@ -59,6 +82,7 @@ public final class InteractiveSessionContract {
         this.runtimeRoot = requireFile(runtimeRoot, "runtimeRoot");
         this.hostCwd = requireFile(hostCwd, "hostCwd");
         this.environment = withLoader(environment, this.prootExecutable);
+        this.directoryOverrideBinds = validateBinds(directoryOverrideBinds);
     }
 
     private static Properties readLaunchContract(File runtimeReadyEvidence, String runtimeId) {
@@ -68,12 +92,8 @@ public final class InteractiveSessionContract {
         File launchFile = new File(runtimeVault, "gate7-launch.properties");
         if (!Gate6LaunchContract.verify(launchFile, runtimeId)) throw new IllegalStateException("Gate 7 launch contract is missing, stale, unauthorized, or runtime-bound to another profile");
         Properties p = new Properties();
-        try (FileInputStream in = new FileInputStream(launchFile)) {
-            p.load(in);
-            return p;
-        } catch (Exception error) {
-            throw new IllegalStateException("Gate 7 launch contract is unreadable", error);
-        }
+        try (FileInputStream in = new FileInputStream(launchFile)) { p.load(in); return p; }
+        catch (Exception error) { throw new IllegalStateException("Gate 7 launch contract is unreadable", error); }
     }
 
     private static String[] withLoader(String[] supplied, File prootExecutable) {
@@ -84,6 +104,18 @@ public final class InteractiveSessionContract {
         if (loader == null || !loader.isFile() || !loader.canExecute()) values.add("PROOT_LOADER=");
         else try { values.add("PROOT_LOADER=" + loader.getCanonicalPath()); } catch (Exception error) { values.add("PROOT_LOADER="); }
         return values.toArray(new String[0]);
+    }
+
+    private static String[] validateBinds(String[] supplied) {
+        if (supplied == null || supplied.length == 0) return new String[0];
+        String[] result = supplied.clone();
+        for (String bind : result) {
+            if (bind == null || bind.indexOf('\0') >= 0 || bind.indexOf('|') >= 0 || bind.indexOf(':') <= 0 || bind.indexOf(':') == bind.length() - 1) throw new IllegalArgumentException("directory-override-bind-invalid");
+            String host = bind.substring(0, bind.indexOf(':'));
+            String guest = bind.substring(bind.indexOf(':') + 1);
+            if (!new File(host).isDirectory() || !new File(host).canRead() || !(guest.startsWith("/mnt/") || guest.startsWith("/workspace/"))) throw new IllegalArgumentException("directory-override-bind-invalid");
+        }
+        return result;
     }
 
     public boolean isAuthorizedForInteractiveRuntime() {
@@ -109,18 +141,12 @@ public final class InteractiveSessionContract {
     private boolean hasValidProotTmpDir() {
         String value = null; for (String entry : environment) if (entry != null && entry.startsWith("PROOT_TMP_DIR=")) { value = entry.substring("PROOT_TMP_DIR=".length()); break; }
         if (value == null || value.isEmpty()) return false;
-        try {
-            File tmp = new File(value).getCanonicalFile(), runtime = runtimeRoot.getCanonicalFile(), vault = runtime.getParentFile().getParentFile().getCanonicalFile();
-            return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland")
-                    && tmp.toPath().startsWith(vault.toPath()) && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs"));
-        } catch (Exception error) { return false; }
+        try { File tmp = new File(value).getCanonicalFile(), runtime = runtimeRoot.getCanonicalFile(), vault = runtime.getParentFile().getParentFile().getCanonicalFile(); return tmp.isDirectory() && tmp.canWrite() && tmp.canExecute() && !tmp.getAbsolutePath().startsWith("/home/userland") && tmp.toPath().startsWith(vault.toPath()) && !tmp.toPath().startsWith(runtime.toPath().resolve("rootfs")); }
+        catch (Exception error) { return false; }
     }
 
     private boolean hasUnsafeEnvironmentPath() {
-        for (String entry : environment) {
-            if (entry == null || entry.indexOf('\0') >= 0) return true;
-            if (entry.startsWith("HOME=/home/userland") || entry.startsWith("TMPDIR=/home/userland")) return true;
-        }
+        for (String entry : environment) { if (entry == null || entry.indexOf('\0') >= 0) return true; if (entry.startsWith("HOME=/home/userland") || entry.startsWith("TMPDIR=/home/userland")) return true; }
         return false;
     }
 
@@ -137,14 +163,16 @@ public final class InteractiveSessionContract {
     public File runtimeRoot() { return runtimeRoot; }
     public File hostCwd() { return hostCwd; }
     public String[] environment() { return environment.clone(); }
+    public String[] directoryOverrideBinds() { return directoryOverrideBinds.clone(); }
 
     public String[] prootArguments() {
         RuntimeProfile profile = RuntimeRegistry.get(runtimeId);
         if (profile == null) throw new IllegalStateException("unsupported-runtime-id");
-        String prompt = profile.promptContract() + "\\w\\$ ";
-        String[] template = profile.prootArguments(); String[] resolved = new String[template.length];
-        for (int i = 0; i < template.length; i++) resolved[i] = template[i].replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell()).replace("{PROMPT}", prompt);
-        return resolved;
+        String prompt = profile.promptContract() + "\\w\\$ "; String[] template = profile.prootArguments();
+        ArrayList<String> resolved = new ArrayList<>();
+        for (String value : template) resolved.add(value.replace("{RUNTIME_ROOT}", runtimeRoot.getAbsolutePath()).replace("{SHELL}", profile.shell()).replace("{PROMPT}", prompt));
+        for (String bind : directoryOverrideBinds) { resolved.add("-b"); resolved.add(bind); }
+        return resolved.toArray(new String[0]);
     }
 
     private static String requireToken(String value, String name) { if (value == null || value.trim().isEmpty() || value.indexOf('\0') >= 0) throw new IllegalArgumentException(name + " is invalid"); return value; }
