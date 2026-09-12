@@ -45,6 +45,7 @@ cat > "$REQUEST.tmp" <<EOF
 schema_version=gate5-request.v1
 request_id=$REQUEST_ID
 pipeline_run_id=$RUN_ID
+runtime_id=$RUNTIME_ID
 source_commit=$RUN_SOURCE
 gate4_contract_sha256=$CONTRACT_SHA
 profile_sha256=$PROFILE_SHA
@@ -62,6 +63,7 @@ schema_version=gate5-decision.v1
 decision_id=$DECISION_ID
 request_id=$REQUEST_ID
 pipeline_run_id=$RUN_ID
+runtime_id=$RUNTIME_ID
 source_commit=$RUN_SOURCE
 gate4_contract_sha256=$CONTRACT_SHA
 profile_sha256=$PROFILE_SHA
@@ -84,12 +86,17 @@ grep -Fx "source_commit=$RUN_SOURCE" "$AUTH" >/dev/null || fail "GATE5_SOURCE_CO
 authorization_policy="$(gate5_field "$REQUEST" policy_version)"
 [ "$authorization_policy" = "$POLICY" ] || fail "GATE5_POLICY_MISMATCH"
 
+grep -Fx "runtime_id=$RUNTIME_ID" "$REQUEST" >/dev/null || fail "GATE5_RUNTIME_ID_MISSING"
+
+grep -Fx "runtime_id=$RUNTIME_ID" "$DECISION" >/dev/null || fail "GATE5_DECISION_RUNTIME_ID_MISSING"
+
 bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$REQUEST_ID" >/tmp/alfa-apk-g6.$$.out
 GATE6="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap.txt"
 [ -f "$GATE6" ] || fail "GATE6_BOOTSTRAP_MISSING"
 grep -Fx 'gate_status=PASS' "$GATE6" >/dev/null || fail "GATE6_NOT_PASS"
 grep -Fx 'bootstrap_status=PASS' "$GATE6" >/dev/null || fail "GATE6_BOOTSTRAP_NOT_PASS"
 grep -Fx "request_id=$REQUEST_ID" "$GATE6" >/dev/null || fail "GATE6_REQUEST_ID_MISMATCH"
+grep -Fx "runtime_id=$RUNTIME_ID" "$GATE6" >/dev/null || fail "GATE6_RUNTIME_ID_MISMATCH"
 grep -Fx "source_commit=$RUN_SOURCE" "$GATE6" >/dev/null || fail "GATE6_SOURCE_COMMIT_MISMATCH"
 grep -Fx 'authorization_status=AUTHORIZED' "$GATE6" >/dev/null || fail "GATE6_NOT_AUTHORIZED"
 
@@ -98,6 +105,7 @@ rm -f /tmp/alfa-apk-g5-auth.$$ /tmp/alfa-apk-g6.$$ || true
 echo 'APK_PROVENANCE_STATUS=PASS'
 echo "PIPELINE_RUN_ID=$RUN_ID"
 echo "REQUEST_ID=$REQUEST_ID"
+echo "RUNTIME_ID=$RUNTIME_ID"
 echo "SOURCE_COMMIT=$RUN_SOURCE"
 echo "GATE4_CONTRACT_SHA256=$CONTRACT_SHA"
 echo "PROFILE_SHA256=$PROFILE_SHA"
