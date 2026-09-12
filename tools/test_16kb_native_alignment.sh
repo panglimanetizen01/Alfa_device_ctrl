@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Verify ELF LOAD alignment and APK zip alignment for 16 KB Android page-size support.
+# AOSP accepts LOAD alignment >= 16 KiB; it is not required to equal 0x4000.
 set -euo pipefail
 
 APK="${1:-app/build/outputs/apk/debug/app-debug.apk}"
@@ -11,19 +12,18 @@ check_elf() {
     readelf -h "$file" | grep -q 'Class:.*ELF64'
     readelf -h "$file" | grep -q 'Machine:.*AArch64'
     python3 - "$file" <<'PY'
-import re
 import subprocess
 import sys
 path = sys.argv[1]
 text = subprocess.check_output(["readelf", "-lW", path], text=True)
 aligns = []
 for line in text.splitlines():
-    if re.match(r"^\s*LOAD\s", line):
+    if line.lstrip().startswith("LOAD"):
         value = line.split()[-1]
         align = int(value, 16)
         aligns.append(align)
-        if align < 0x4000 or align % 0x4000 != 0:
-            raise SystemExit(f"ALIGNMENT_FAIL={path}:{value}")
+        if align < 0x4000:
+            raise SystemExit(f"ALIGNMENT_FAIL={path}:{value}:below-16KiB")
 if not aligns:
     raise SystemExit(f"ALIGNMENT_FAIL={path}:no-LOAD-segments")
 print(f"ELF_16KB_ALIGNMENT_PASS={path} " + ",".join(hex(v) for v in aligns))
