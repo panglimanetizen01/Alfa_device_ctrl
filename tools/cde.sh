@@ -15,7 +15,8 @@ else
 fi
 
 TS=$(date +%Y%m%d_%H%M%S)
-OUT="artifacts/cde/cde_${TS}.txt"
+OUT="${ALFA_CDE_OUT:-artifacts/cde/cde_${TS}.txt}"
+mkdir -p "$(dirname "$OUT")" || exit 1
 
 exec > "$OUT"
 
