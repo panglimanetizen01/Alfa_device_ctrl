@@ -9,10 +9,11 @@ This document records the security boundary so that compatibility behavior is no
 ## Enforced controls
 
 1. `HostStorageDeviceProofActivity` is internal-only (`android:exported=false`). It is no longer reachable through a custom external intent action.
-2. The runtime does not bind the host `/sys` tree. `/dev` and `/proc` remain because the current PTY and process-evidence contracts depend on them.
-3. Before a runtime PTY is created, Alfa calls Android's public `android.system.Os.prctl(PR_SET_NO_NEW_PRIVS, 1, ...)`. The kernel carries this bit across fork/clone/exec, so the PRoot process and its descendants inherit the boundary.
-4. PRoot remains pinned to a specific upstream commit and its generated loader remains SHA-verified by the build pipeline.
-5. Runtime rootfs downloads are HTTPS and SHA-256 verified before acceptance; Gate 7 binds the packaged runtime to current pipeline/source provenance.
+2. The application explicitly disables cleartext traffic (`android:usesCleartextTraffic=false`). Runtime/rootfs network sources are required to use HTTPS.
+3. The runtime does not bind the host `/sys` tree. `/dev` and `/proc` remain because the current PTY and process-evidence contracts depend on them.
+4. Before a runtime PTY is created, Alfa calls Android's public `android.system.Os.prctl(PR_SET_NO_NEW_PRIVS, 1, ...)`. The kernel carries this bit across fork/clone/exec, so the PRoot process and its descendants inherit the boundary.
+5. PRoot remains pinned to a specific upstream commit and its generated loader remains SHA-verified by the build pipeline.
+6. Runtime rootfs downloads are HTTPS and SHA-256 verified before acceptance; Gate 7 binds the packaged runtime to current pipeline/source provenance.
 
 ## Deliberate residual capabilities
 
@@ -41,6 +42,7 @@ Security acceptance requires both static CI evidence and dynamic DUT evidence. T
 - `/sys` is not exposed through Alfa's explicit PRoot bindings;
 - `/dev` and `/proc` exposure is measured and recorded;
 - DNS/TCP/HTTPS egress behavior is measured and classified against the intended network policy;
+- cleartext network attempts are denied by Android network policy;
 - PTY creation, prompt readiness, `pwd`, and terminal interaction still pass;
 - timeout/process-group cleanup leaves no surviving runtime command descendants;
 - APK provenance matches the tested source commit and artifact digest.
