@@ -83,7 +83,12 @@ jobs:
           test -s "$LIB"
           READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
-          "$READELF" -lW "$LIB" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
+          mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$LIB" | awk '$1 == "LOAD" {print $NF}')
+          test "${#LOAD_ALIGNS[@]}" -gt 0
+          for align in "${LOAD_ALIGNS[@]}"; do
+            echo "LIBTERMUX_LOAD_ALIGN=$align"
+            (( align >= 16384 ))
+          done
           echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
 
       - name: Unit tests and APK build
@@ -108,9 +113,12 @@ jobs:
             TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
             case "$TYPE" in
               DYN|EXEC)
-                LOAD_ALIGN=$("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF; exit}')
-                echo "ELF_LOAD_ALIGN=$LOAD_ALIGN"
-                test "$LOAD_ALIGN" = "0x4000"
+                mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF}')
+                test "${#LOAD_ALIGNS[@]}" -gt 0
+                for align in "${LOAD_ALIGNS[@]}"; do
+                  echo "ELF_LOAD_ALIGN=$align"
+                  (( align >= 16384 ))
+                done
                 if [ "$TYPE" = "DYN" ]; then
                   RELRO=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $1; exit}')
                   test "$RELRO" = "GNU_RELRO"
