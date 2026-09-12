@@ -13,18 +13,21 @@ main() {
     BUILD_CONTEXT="${ALFA_BUILD_CONTEXT:-}"
     if [ "$BUILD_CONTEXT" = 'ci' ] || [ "${GITHUB_ACTIONS:-}" = 'true' ]; then
         SHARED_ROOT="${ALFA_CI_SHARED_ROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-shared}"
+        PRIVATE_ROOT="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-private"
         STORAGE_SCOPE='ci_builder_filesystem'
         BUILD_CONTEXT='ci'
-        mkdir -p "$SHARED_ROOT" || OVERALL_STATUS=ERROR
+        mkdir -p "$SHARED_ROOT" "$PRIVATE_ROOT" || OVERALL_STATUS=ERROR
     else
         STORAGE_SCOPE='android_shared_storage'
         BUILD_CONTEXT='android_runtime'
+        mkdir -p "$PRIVATE_ROOT" 2>/dev/null || true
     fi
 
     echo "=== ALFA EXECUTION CAPABILITY V2 ==="
     echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
     echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
     echo "shared_root=$SHARED_ROOT"
+    echo "private_root=$PRIVATE_ROOT"
     echo "storage_scope=$STORAGE_SCOPE"
     echo "build_context=$BUILD_CONTEXT"
     echo
