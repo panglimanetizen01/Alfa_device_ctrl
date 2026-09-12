@@ -20,6 +20,7 @@ public final class RuntimeSecurityContractTest {
         String block = manifest.substring(activity, end);
         assertTrue("host storage proof must be internal-only", block.contains("android:exported=\"false\""));
         assertFalse("host storage proof must not expose a custom external intent filter", block.contains("HOST_STORAGE_PROOF"));
+        assertTrue("cleartext traffic must be disabled", manifest.contains("android:usesCleartextTraffic=\"false\""));
     }
 
     @Test public void runtimeDoesNotBindHostSysTree() throws Exception {
