@@ -58,12 +58,25 @@ jobs:
           echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
           echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
 
+      - name: Setup Java and Gradle for provenance probes
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle for provenance probes
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '8.11.1'
+
       - name: Generate current-run Gate 4 pipeline evidence
         run: |
-          set -euo pipefail
+          set -u
           OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
           bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          RC=$?
           cat "$OUT"
+          [ "$RC" -eq 0 ] || exit "$RC"
           RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
           [ -n "$RUN_ID" ]
           RUN_DIR="artifacts/pipeline/$RUN_ID"
@@ -101,17 +114,6 @@ jobs:
           echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
           echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
           echo "CURRENT_RUN_GATE7=PASS"
-
-      - name: Setup Java 21
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Setup Gradle 8.11.1
-        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
-        with:
-          gradle-version: '8.11.1'
 
       - name: Prepare Android SDK
         run: |
