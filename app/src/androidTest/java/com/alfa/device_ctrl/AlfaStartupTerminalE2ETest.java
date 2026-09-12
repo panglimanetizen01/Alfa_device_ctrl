@@ -5,27 +5,43 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.os.Bundle;
 import android.os.SystemClock;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.lang.reflect.Field;
+import java.security.MessageDigest;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /** Fresh-install acceptance proof: MainActivity must reach a real PRoot prompt and execute pwd as /root. */
 @RunWith(AndroidJUnit4.class)
 public final class AlfaStartupTerminalE2ETest {
     private static final long STARTUP_TIMEOUT_MS = 180000L;
+    private static final Pattern SHA256 = Pattern.compile("[0-9a-fA-F]{64}");
 
     @Test public void freshStartupReachesTerminalPromptAndExecutesPwd() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        ApplicationInfo info = context.getApplicationInfo();
+        String expectedApkSha256 = arg("expected_apk_sha256").toLowerCase(Locale.ROOT);
+        assertTrue("expected APK SHA invalid", SHA256.matcher(expectedApkSha256).matches());
+        assertTrue("installed APK source missing", new File(info.sourceDir).isFile());
+        assertEquals("installed APK does not match exact CI artifact", expectedApkSha256, sha256(new File(info.sourceDir)));
+
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             long deadline = SystemClock.uptimeMillis() + STARTUP_TIMEOUT_MS;
             AtomicReference<RuntimeSessionManager> managerRef = new AtomicReference<>();
@@ -73,10 +89,18 @@ public final class AlfaStartupTerminalE2ETest {
             assertEquals("/root", output.get().trim());
 
             System.out.println("ALFA_STARTUP_TERMINAL_E2E=PASS");
+            System.out.println("ALFA_STARTUP_APK_SHA256=" + expectedApkSha256);
             System.out.println("ALFA_RUNTIME_PROMPT=alfa:debian:");
             System.out.println("ALFA_RUNTIME_PWD=/root");
             System.out.println("ALFA_PTY_PID=" + manager.currentSession().getPid());
         }
+    }
+
+    private static String arg(String key) {
+        Bundle args = InstrumentationRegistry.getArguments();
+        String value = args.getString(key);
+        if (value == null || value.isEmpty()) throw new AssertionError("missing instrumentation argument: " + key);
+        return value;
     }
 
     private static RuntimeSessionManager readManager(Activity activity) {
@@ -87,5 +111,17 @@ public final class AlfaStartupTerminalE2ETest {
         } catch (Exception error) {
             return null;
         }
+    }
+
+    private static String sha256(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] buffer = new byte[65536];
+        int count;
+        try (FileInputStream input = new FileInputStream(file)) {
+            while ((count = input.read(buffer)) > 0) digest.update(buffer, 0, count);
+        }
+        StringBuilder result = new StringBuilder(64);
+        for (byte value : digest.digest()) result.append(String.format("%02x", value & 255));
+        return result.toString();
     }
 }
