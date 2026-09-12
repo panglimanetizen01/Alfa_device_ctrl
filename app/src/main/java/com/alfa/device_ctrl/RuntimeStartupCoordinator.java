@@ -33,6 +33,9 @@ final class RuntimeStartupCoordinator {
 
             File vault = new File(activity.getFilesDir(), "runtime-vault");
             File launch = new File(vault, "gate7-launch.properties");
+            if (!Gate7PackagedAssetProvisioner.ensure(activity.getAssets(), launch, profile.id())) {
+                return;
+            }
             boolean gate7 = Gate6LaunchContract.verify(launch, profile.id());
             if (!gate7) return;
 
