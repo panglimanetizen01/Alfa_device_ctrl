@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/apk-runtime-readiness-e2e
   pull_request:
     branches:
       - master
