@@ -9,7 +9,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 /** Materializes the Gate 7 contract packaged in the exact APK into private runtime state. */
 final class Gate7PackagedAssetProvisioner {
