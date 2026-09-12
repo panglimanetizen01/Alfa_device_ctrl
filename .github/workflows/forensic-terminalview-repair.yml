@@ -1,0 +1,52 @@
+name: forensic-terminalview-repair
+
+on:
+  push:
+    branches:
+      - fix/runtime-native-library-extraction
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/runtime-native-library-extraction
+
+      - name: Apply proven renderer initialization repair
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('terminal-view/src/main/java/com/termux/view/TerminalView.java')
+          text = p.read_text()
+          marker = '    public TerminalView(Context context, AttributeSet attributes) { // NO_UCD (unused code)\n        super(context, attributes);\n'
+          insertion = marker + '        // TerminalView receives layout callbacks before a session may be attached.\n        // Initialize the renderer before updateSize() can consume its font metrics.\n        mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);\n'
+          if 'mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);' not in text:
+              if marker not in text:
+                  raise SystemExit('TerminalView constructor marker not found; refusing blind patch')
+              text = text.replace(marker, insertion, 1)
+              p.write_text(text)
+          else:
+              print('renderer initialization already present')
+
+      - name: Verify source invariant
+        run: |
+          grep -n -A5 -B2 'public TerminalView(Context context' terminal-view/src/main/java/com/termux/view/TerminalView.java
+          grep -q 'mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);' terminal-view/src/main/java/com/termux/view/TerminalView.java
+
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add terminal-view/src/main/java/com/termux/view/TerminalView.java
+          if git diff --cached --quiet; then
+            echo 'No source change required.'
+            exit 0
+          fi
+          git commit -m 'fix: initialize TerminalView renderer before layout callbacks'
+          git push origin HEAD:fix/runtime-native-library-extraction
