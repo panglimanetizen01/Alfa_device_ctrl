@@ -74,8 +74,6 @@ created_at=$NOW
 EOF
 mv "$DECISION.tmp" "$DECISION"
 
-# Reuse the existing authorization enforcement; it independently revalidates
-# Gate 4, identity, freshness and decision=ALLOW.
 bash "$ROOT/tools/runtime_execution_authorize.sh" "$REQUEST" "$DECISION" "$AUTH" >/tmp/alfa-apk-g5-auth.$$.out
 
 grep -Fx 'authorization_status=AUTHORIZED' "$AUTH" >/dev/null || fail "GATE5_AUTHORIZATION_DENIED"
@@ -85,12 +83,10 @@ grep -Fx "source_commit=$RUN_SOURCE" "$AUTH" >/dev/null || fail "GATE5_SOURCE_CO
 
 authorization_policy="$(gate5_field "$REQUEST" policy_version)"
 [ "$authorization_policy" = "$POLICY" ] || fail "GATE5_POLICY_MISMATCH"
-
 grep -Fx "runtime_id=$RUNTIME_ID" "$REQUEST" >/dev/null || fail "GATE5_RUNTIME_ID_MISSING"
-
 grep -Fx "runtime_id=$RUNTIME_ID" "$DECISION" >/dev/null || fail "GATE5_DECISION_RUNTIME_ID_MISSING"
 
-bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$REQUEST_ID" >/tmp/alfa-apk-g6.$$.out
+bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$RUNTIME_ID" "$REQUEST_ID" >/tmp/alfa-apk-g6.$$.out
 GATE6="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap.txt"
 [ -f "$GATE6" ] || fail "GATE6_BOOTSTRAP_MISSING"
 grep -Fx 'gate_status=PASS' "$GATE6" >/dev/null || fail "GATE6_NOT_PASS"
