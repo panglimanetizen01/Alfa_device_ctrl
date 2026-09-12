@@ -2,11 +2,14 @@
 set -euo pipefail
 ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
 PACKAGE=${ALFA_ANDROID_PACKAGE:-com.alfa.device_ctrl}
+EXPECTED_APK_SHA256=${ALFA_EXPECTED_APK_SHA256:-}
 TMP=$(mktemp -d "${TMPDIR:-/tmp}/alfa-g17-live.XXXXXX")
 trap 'rm -rf "$TMP"' EXIT HUP INT TERM
 
 # Build only the authorization/provenance chain on the host. G17 itself is never
 # executed here; the Android instrumentation test is the sole live executor.
+[ -n "$EXPECTED_APK_SHA256" ] || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=exact APK artifact SHA256 is required'; exit 1; }
+printf '%s' "$EXPECTED_APK_SHA256" | grep -Eq '^[0-9a-fA-F]{64}$' || { echo 'G17_LIVE_STATUS=BLOCKED'; echo 'G17_LIVE_REASON=invalid expected APK SHA256'; exit 1; }
 PIPE_OUT="$TMP/pipeline.out"
 if ! bash "$ROOT/tools/runtime_pipeline.sh" >"$PIPE_OUT" 2>&1; then
     cat "$PIPE_OUT"
@@ -73,7 +76,7 @@ run-as "$PACKAGE" sh -c "mkdir -p '$APP_G17_DIR' && rm -f '$APP_G16'"
 run-as "$PACKAGE" sh -c "cat > '$APP_G16'" < "$G16"
 run-as "$PACKAGE" sh -c "test -s '$APP_G16'"
 TEST_CLASS='com.alfa.device_ctrl.G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime'
-RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "/data/user/0/$PACKAGE/$APP_G16" -e source_commit "$HEAD" "$INSTRUMENTATION" 2>&1) || {
+RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "/data/user/0/$PACKAGE/$APP_G16" -e source_commit "$HEAD" -e expected_apk_sha256 "$EXPECTED_APK_SHA256" "$INSTRUMENTATION" 2>&1) || {
     printf '%s\n' "$RESULT"
     echo 'G17_LIVE_STATUS=FAIL'
     echo 'G17_LIVE_REASON=Android instrumentation execution failed'
@@ -82,6 +85,7 @@ RESULT=$(am instrument -w -r -e class "$TEST_CLASS" -e gate16_path "/data/user/0
 printf '%s\n' "$RESULT"
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_STATUS=PASS' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not produce objective PASS marker'; exit 1; }
 printf '%s\n' "$RESULT" | grep -Fqx 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not prove real Android DUT execution'; exit 1; }
+printf '%s\n' "$RESULT" | grep -Fqx "G17_LIVE_APK_SHA256=$(printf '%s' "$EXPECTED_APK_SHA256" | tr '[:upper:]' '[:lower:]')" || { echo 'G17_LIVE_STATUS=FAIL'; echo 'G17_LIVE_REASON=instrumentation did not echo exact APK digest'; exit 1; }
 
 G17_DEVICE='files/g17/gate17-runtime-execution.v1'
 run-as "$PACKAGE" sh -c "test -s '$G17_DEVICE'"
@@ -102,5 +106,7 @@ grep -Fq 'guest_pid=' "$TMP/g17.device"
 grep -Fq 'guest_proc_cwd=/root' "$TMP/g17.device"
 grep -Fq 'android_package=com.alfa.device_ctrl' "$TMP/g17.device"
 grep -Fq "android_uid=$ANDROID_UID" "$TMP/g17.device"
+grep -Fq "installed_apk_sha256=$(printf '%s' "$EXPECTED_APK_SHA256" | tr '[:upper:]' '[:lower:]')" "$TMP/g17.device"
+grep -Fq "expected_apk_sha256=$(printf '%s' "$EXPECTED_APK_SHA256" | tr '[:upper:]' '[:lower:]')" "$TMP/g17.device"
 NOW=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-printf '%s\n' 'G17_LIVE_STATUS=PASS' 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "G17_LIVE_PACKAGE=$PACKAGE" "G17_LIVE_UID=$ANDROID_UID" "G17_LIVE_APK=$APK_PATH" "G17_LIVE_INSTRUMENTATION=$INSTRUMENTATION" "G17_LIVE_ARTIFACT=$G17_DEVICE" "G17_LIVE_TIMESTAMP=$NOW"
+printf '%s\n' 'G17_LIVE_STATUS=PASS' 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "G17_LIVE_PACKAGE=$PACKAGE" "G17_LIVE_UID=$ANDROID_UID" "G17_LIVE_APK=$APK_PATH" "G17_LIVE_APK_SHA256=$(printf '%s' "$EXPECTED_APK_SHA256" | tr '[:upper:]' '[:lower:]')" "G17_LIVE_INSTRUMENTATION=$INSTRUMENTATION" "G17_LIVE_ARTIFACT=$G17_DEVICE" "G17_LIVE_TIMESTAMP=$NOW"
