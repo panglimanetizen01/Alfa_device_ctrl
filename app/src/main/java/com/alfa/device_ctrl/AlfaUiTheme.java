@@ -12,15 +12,15 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Presentation-only Terminal Obsidian styling derived from the approved UI corpus. */
+/** Presentation-only Terminal Obsidian styling derived from the supplied reference corpus. */
 public final class AlfaUiTheme {
-    public static final int OBSIDIAN_CANVAS = 0xFF0B0F14;
-    public static final int OBSIDIAN_SURFACE = 0xFF121820;
-    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF1A222D;
-    public static final int OBSIDIAN_BORDER = 0xFF1F2937;
+    public static final int OBSIDIAN_CANVAS = 0xFF101419;
+    public static final int OBSIDIAN_SURFACE = 0xFF161B22;
+    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF1C2229;
+    public static final int OBSIDIAN_BORDER = 0xFF22272E;
     public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF374151;
-    public static final int OBSIDIAN_TEXT = 0xFFE0E2EA;
-    public static final int OBSIDIAN_TEXT_MUTED = 0xFFBBCABF;
+    public static final int OBSIDIAN_TEXT = 0xFFF0F6FC;
+    public static final int OBSIDIAN_TEXT_MUTED = 0xFF8B949E;
     public static final int OBSIDIAN_READY = 0xFF10B981;
     public static final int OBSIDIAN_VERIFYING = 0xFFF59E0B;
     public static final int OBSIDIAN_ERROR = 0xFFEF4444;
