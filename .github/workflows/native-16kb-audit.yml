@@ -68,7 +68,12 @@ jobs:
           test -s "$LIB"
           READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
-          "$READELF" -lW "$LIB" | awk '$1 == "LOAD" {seen=1; if ($NF != "0x4000") bad=1} END {if (!seen || bad) exit 1}'
+          mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$LIB" | awk '$1 == "LOAD" {print $NF}')
+          test "${#LOAD_ALIGNS[@]}" -gt 0
+          for align in "${LOAD_ALIGNS[@]}"; do
+            echo "LIBTERMUX_LOAD_ALIGN=$align"
+            (( align >= 16384 ))
+          done
       - name: Build debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
