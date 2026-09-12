@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 /** Regression contract for the proven runtime-engine-missing installation failure. */
 public final class NativeRuntimeExtractionContractTest {
     @Test public void packagedProotEngineMustBeExtractedToNativeLibraryDir() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("app/build.gradle")), StandardCharsets.UTF_8);
+        String source = new String(Files.readAllBytes(Paths.get("build.gradle")), StandardCharsets.UTF_8);
         assertTrue("APK must use legacy JNI packaging so libproot.so is extracted to nativeLibraryDir",
                 source.contains("useLegacyPackaging true"));
     }
