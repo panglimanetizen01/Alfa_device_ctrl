@@ -1,10 +1,12 @@
 package com.alfa.device_ctrl;
 
+import android.graphics.Typeface;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 
 import com.termux.terminal.TerminalSession;
+import com.termux.view.TerminalRenderer;
 import com.termux.view.TerminalView;
 import com.termux.view.TerminalViewClient;
 
@@ -14,26 +16,32 @@ public final class AlfaTerminalViewClient implements TerminalViewClient {
 
     private View terminalView;
     private SoftKeyboardRequester softKeyboardRequester;
+    private int baseTextSize = 13;
+    private float lineHeight = 1.25f;
 
     public AlfaTerminalViewClient() { }
 
-    public AlfaTerminalViewClient(View terminalView, SoftKeyboardRequester requester) {
-        bind(terminalView, requester);
-    }
+    public AlfaTerminalViewClient(View terminalView, SoftKeyboardRequester requester) { bind(terminalView, requester); }
 
-    public void bind(View terminalView, SoftKeyboardRequester requester) {
-        this.terminalView = terminalView;
-        this.softKeyboardRequester = requester;
-    }
+    public void bind(View terminalView, SoftKeyboardRequester requester) { this.terminalView = terminalView; this.softKeyboardRequester = requester; }
+    public void setBaseTextSize(int size) { baseTextSize = Math.max(9, Math.min(22, size)); }
+    public void setLineHeight(float multiplier) { lineHeight = Math.max(1.0f, Math.min(1.75f, multiplier)); applyRenderer(baseTextSize); }
 
     @Override public float onScale(float scale) {
         if (terminalView instanceof TerminalView) {
             float factor = Math.max(0.75f, Math.min(1.75f, scale));
-            TerminalView view = (TerminalView) terminalView;
-            int size = Math.max(9, Math.min(22, Math.round(13f * factor)));
-            view.setTextSize(size);
+            baseTextSize = Math.max(9, Math.min(22, Math.round(13f * factor)));
+            applyRenderer(baseTextSize);
         }
         return scale;
+    }
+
+    private void applyRenderer(int size) {
+        if (!(terminalView instanceof TerminalView)) return;
+        TerminalView view = (TerminalView) terminalView;
+        view.mRenderer = new TerminalRenderer(size, Typeface.MONOSPACE, lineHeight);
+        view.updateSize();
+        view.invalidate();
     }
 
     @Override public void onSingleTapUp(MotionEvent event) {
