@@ -48,14 +48,11 @@ tasks.register('prepareGate7LaunchContract') {
     doLast {
         def sourcePath = System.getenv('ALFA_GATE7_ASSET')
         def selectedRuntime = System.getenv('ALFA_GATE7_RUNTIME_ID')
-        def releaseBuild = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
-        def required = System.getenv('ALFA_GATE7_REQUIRED') == 'true' || releaseBuild
         def output = file("$buildDir/generated/assets/gate7-launch.properties")
         output.parentFile.mkdirs()
         output.delete()
         if (sourcePath == null || sourcePath.trim().isEmpty()) {
-            if (required) throw new GradleException('Gate 7 launch provenance is required for release builds; ALFA_GATE7_ASSET is missing')
-            return
+            throw new GradleException('APK readiness is blocked: current-run Gate 7 launch provenance is missing (ALFA_GATE7_ASSET)')
         }
         if (selectedRuntime == null || selectedRuntime.trim().isEmpty()) {
             throw new GradleException('ALFA_GATE7_RUNTIME_ID is required when Gate 7 asset is supplied')
