@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Alfa Device Ctrl</string>
-    <string name="alfa_os">ALFA_OS</string>
     <string name="start_verified_session">Mulai sesi runtime terverifikasi</string>
     <string name="session_blocked">Sesi diblokir</string>
     <string name="session_blocked_reason">Evidence runtime belum lengkap</string>
