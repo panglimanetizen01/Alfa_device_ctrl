@@ -24,7 +24,7 @@ public final class AlfaUiTheme {
     public static final int OBSIDIAN_READY = 0xFF10B981;
     public static final int OBSIDIAN_VERIFYING = 0xFFF59E0B;
     public static final int OBSIDIAN_ERROR = 0xFFEF4444;
-    public static final int OBSIDIAN_TELEMETRY = 0xFF06B6D4;
+    public static final int OBSIDIAN_TELEMETRY = 0xFF38BDF8;
     public static final int OBSIDIAN_UNKNOWN = 0xFF64748B;
     public static final int TOUCH_TARGET_DP = 48;
 
@@ -61,9 +61,7 @@ public final class AlfaUiTheme {
         return OBSIDIAN_UNKNOWN;
     }
 
-    public static boolean isLegacyPalette(int color) {
-        return color == LEGACY_PRIMARY || color == LEGACY_MUTED || color == LEGACY_ERROR;
-    }
+    public static boolean isLegacyPalette(int color) { return color == LEGACY_PRIMARY || color == LEGACY_MUTED || color == LEGACY_ERROR; }
 
     public static void apply(Activity activity) {
         View root = activity.findViewById(android.R.id.content);
@@ -77,17 +75,11 @@ public final class AlfaUiTheme {
     private static void applyTree(View view, float density) {
         if (view == null || view.getClass().getName().contains("TerminalView")) return;
         int min = Math.round(TOUCH_TARGET_DP * density);
-        if (view.isClickable() || view instanceof Button) {
-            view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
-            view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
-        }
+        if (view.isClickable() || view instanceof Button) { view.setMinimumHeight(Math.max(view.getMinimumHeight(), min)); view.setMinimumWidth(Math.max(view.getMinimumWidth(), min)); }
         if (view instanceof Button) styleButton((Button) view, density, min);
         else if (view instanceof TextView) styleText((TextView) view, min);
         else if (view instanceof ViewGroup) styleContainer(view, density);
-        if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), density);
-        }
+        if (view instanceof ViewGroup) { ViewGroup group = (ViewGroup) view; for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), density); }
     }
 
     private static void styleButton(Button button, float density, int min) {
@@ -96,27 +88,16 @@ public final class AlfaUiTheme {
         int textColor = semanticTextColor(label, normalizeTextColor(original));
         int accent = textColor == OBSIDIAN_ERROR ? OBSIDIAN_ERROR : OBSIDIAN_READY;
         boolean filled = "OPEN".equals(label) || label.startsWith("SYSTEM ONLINE");
-        button.setTextSize(10);
-        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        button.setTextColor(filled ? OBSIDIAN_CANVAS : textColor);
-        button.setMinimumHeight(Math.max(button.getMinimumHeight(), min));
-        button.setMinimumWidth(Math.max(button.getMinimumWidth(), min));
-        button.setPadding(dp(8, density), dp(4, density), dp(8, density), dp(4, density));
-        button.setAllCaps(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            button.setElevation(0f);
-            button.setStateListAnimator(null);
-        }
+        button.setTextSize(10); button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL)); button.setTextColor(filled ? OBSIDIAN_CANVAS : textColor);
+        button.setMinimumHeight(Math.max(button.getMinimumHeight(), min)); button.setMinimumWidth(Math.max(button.getMinimumWidth(), min)); button.setPadding(dp(8, density), dp(4, density), dp(8, density), dp(4, density)); button.setAllCaps(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) { button.setElevation(0f); button.setStateListAnimator(null); }
         button.setBackground(controlBackground(accent, density, filled));
     }
 
     private static void styleText(TextView text, int min) {
-        int original = text.getCurrentTextColor();
-        String label = text.getText() == null ? "" : text.getText().toString().trim().toUpperCase();
-        text.setTextColor(semanticTextColor(label, normalizeTextColor(original)));
+        int original = text.getCurrentTextColor(); String label = text.getText() == null ? "" : text.getText().toString().trim().toUpperCase(); text.setTextColor(semanticTextColor(label, normalizeTextColor(original));
         if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
-        Typeface current = text.getTypeface();
-        if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
+        Typeface current = text.getTypeface(); if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
         if (text.getTextSize() <= 13 * text.getResources().getDisplayMetrics().scaledDensity) text.setLetterSpacing(0.03f);
     }
 
@@ -130,88 +111,26 @@ public final class AlfaUiTheme {
 
     private static void styleContainer(View view, float density) {
         if (!(view.getBackground() instanceof ColorDrawable)) return;
-        int color = ((ColorDrawable) view.getBackground()).getColor();
-        int normalized = normalizeSurfaceColor(color);
-        if (normalized == OBSIDIAN_CANVAS) view.setBackgroundColor(OBSIDIAN_CANVAS);
-        else view.setBackground(surfaceBackground(normalized, density));
+        int color = ((ColorDrawable) view.getBackground()).getColor(); int normalized = normalizeSurfaceColor(color);
+        if (normalized == OBSIDIAN_CANVAS) view.setBackgroundColor(OBSIDIAN_CANVAS); else view.setBackground(surfaceBackground(normalized, density));
     }
 
-    private static int normalizeTextColor(int color) {
-        if (color == LEGACY_PRIMARY) return OBSIDIAN_READY;
-        if (color == LEGACY_ERROR) return OBSIDIAN_ERROR;
-        if (color == LEGACY_MUTED) return OBSIDIAN_TEXT_MUTED;
-        if (color == Color.TRANSPARENT) return OBSIDIAN_TEXT;
-        return color;
-    }
-
-    private static int normalizeSurfaceColor(int color) {
-        if (color == LEGACY_CANVAS) return OBSIDIAN_CANVAS;
-        if (color == LEGACY_SURFACE) return OBSIDIAN_SURFACE;
-        if (color == LEGACY_SURFACE_HIGH) return OBSIDIAN_SURFACE_ACTIVE;
-        if (color == Color.BLACK) return 0xFF0A0E13;
-        if ((color >>> 24) != 0xFF) return color;
-        return color;
-    }
-
-    private static GradientDrawable surfaceBackground(int color, float density) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(color);
-        drawable.setCornerRadius(dp(RADIUS_DP, density));
-        drawable.setStroke(Math.max(1, dp(1, density)), OBSIDIAN_BORDER);
-        return drawable;
-    }
-
-    private static GradientDrawable controlBackground(int accent, float density, boolean filled) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(filled ? accent : OBSIDIAN_SURFACE_ACTIVE);
-        drawable.setCornerRadius(dp(4, density));
-        drawable.setStroke(Math.max(1, dp(1, density)), accent);
-        return drawable;
-    }
+    private static int normalizeTextColor(int color) { if (color == LEGACY_PRIMARY) return OBSIDIAN_READY; if (color == LEGACY_ERROR) return OBSIDIAN_ERROR; if (color == LEGACY_MUTED) return OBSIDIAN_TEXT_MUTED; if (color == Color.TRANSPARENT) return OBSIDIAN_TEXT; return color; }
+    private static int normalizeSurfaceColor(int color) { if (color == LEGACY_CANVAS) return OBSIDIAN_CANVAS; if (color == LEGACY_SURFACE) return OBSIDIAN_SURFACE; if (color == LEGACY_SURFACE_HIGH) return OBSIDIAN_SURFACE_ACTIVE; if (color == Color.BLACK) return 0xFF0A0E13; if ((color >>> 24) != 0xFF) return color; return color; }
+    private static GradientDrawable surfaceBackground(int color, float density) { GradientDrawable drawable = new GradientDrawable(); drawable.setColor(color); drawable.setCornerRadius(dp(RADIUS_DP, density)); drawable.setStroke(Math.max(1, dp(1, density)), OBSIDIAN_BORDER); return drawable; }
+    private static GradientDrawable controlBackground(int accent, float density, boolean filled) { GradientDrawable drawable = new GradientDrawable(); drawable.setColor(filled ? accent : OBSIDIAN_SURFACE_ACTIVE); drawable.setCornerRadius(dp(4, density)); drawable.setStroke(Math.max(1, dp(1, density)), accent); return drawable; }
 
     private static void adaptRuntimeDashboard(View root, float density) {
-        LinearLayout dashboard = findRuntimeDashboard(root);
-        if (dashboard == null || dashboard.getHeight() <= 0) return;
-        int runtimeCount = RuntimeRegistry.all().size();
-        if (runtimeCount <= 0) return;
-        int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
-        int separatorHeight = Math.max(1, dp(3, density));
-        int separators = Math.max(0, runtimeCount - 1);
-        int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight);
-        int cardHeight = Math.max(dp(48, density), available / runtimeCount);
-        int cards = 0;
-        for (int i = 0; i < dashboard.getChildCount(); i++) {
-            View child = dashboard.getChildAt(i);
-            ViewGroup.LayoutParams lp = child.getLayoutParams();
-            if (!(lp instanceof LinearLayout.LayoutParams)) continue;
-            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) lp;
-            if (child instanceof LinearLayout && cards < runtimeCount) {
-                params.height = cardHeight;
-                params.weight = 0;
-                child.setLayoutParams(params);
-                cards++;
-            } else {
-                params.height = separatorHeight;
-                params.weight = 0;
-                child.setLayoutParams(params);
-            }
-        }
+        LinearLayout dashboard = findRuntimeDashboard(root); if (dashboard == null || dashboard.getHeight() <= 0) return; int runtimeCount = RuntimeRegistry.all().size(); if (runtimeCount <= 0) return;
+        int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom(); int separatorHeight = Math.max(1, dp(3, density)); int separators = Math.max(0, runtimeCount - 1); int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight); int cardHeight = Math.max(dp(48, density), available / runtimeCount); int cards = 0;
+        for (int i = 0; i < dashboard.getChildCount(); i++) { View child = dashboard.getChildAt(i); ViewGroup.LayoutParams lp = child.getLayoutParams(); if (!(lp instanceof LinearLayout.LayoutParams)) continue; LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) lp; if (child instanceof LinearLayout && cards < runtimeCount) { params.height = cardHeight; params.weight = 0; child.setLayoutParams(params); cards++; } else { params.height = separatorHeight; params.weight = 0; child.setLayoutParams(params); } }
         dashboard.requestLayout();
     }
 
     private static LinearLayout findRuntimeDashboard(View root) {
-        if (!(root instanceof ViewGroup)) return null;
-        ViewGroup group = (ViewGroup) root;
-        int expected = RuntimeRegistry.all().size();
-        if (expected > 0 && group.getChildCount() >= expected * 2 - 1) {
-            int cards = 0;
-            for (int i = 0; i < group.getChildCount(); i += 2) if (group.getChildAt(i) instanceof LinearLayout) cards++;
-            if (cards == expected) return (LinearLayout) group;
-        }
-        for (int i = 0; i < group.getChildCount(); i++) {
-            LinearLayout found = findRuntimeDashboard(group.getChildAt(i));
-            if (found != null) return found;
-        }
+        if (!(root instanceof ViewGroup)) return null; ViewGroup group = (ViewGroup) root; int expected = RuntimeRegistry.all().size();
+        if (expected > 0 && group.getChildCount() >= expected * 2 - 1) { int cards = 0; for (int i = 0; i < group.getChildCount(); i += 2) if (group.getChildAt(i) instanceof LinearLayout) cards++; if (cards == expected) return (LinearLayout) group; }
+        for (int i = 0; i < group.getChildCount(); i++) { LinearLayout found = findRuntimeDashboard(group.getChildAt(i)); if (found != null) return found; }
         return null;
     }
 
