@@ -33,6 +33,7 @@ jobs:
       - name: Verify canonical source identity
         run: |
           set -euo pipefail
+          printf '%s' "$ALFA_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$'
           test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
@@ -46,14 +47,7 @@ jobs:
             printf '%s\n' "$tracked_generated"
             exit 1
           fi
-          rm -rf \
-            .gradle \
-            .build \
-            build \
-            app/build \
-            terminal-emulator/build \
-            terminal-view/build \
-            app/src/main/jniLibs/arm64-v8a/libtermux.so
+          rm -rf .gradle .build build app/build terminal-emulator/build terminal-view/build app/src/main/jniLibs/arm64-v8a/libtermux.so
           if find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print -quit | grep -q .; then
             echo "STALE_APK_ARTIFACT_REMAINS_AFTER_CLEAN"
             find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print
@@ -137,24 +131,14 @@ jobs:
         run: |
           set -euo pipefail
           NDK="$ANDROID_HOME/ndk/28.0.13004108"
-          "$NDK/ndk-build" \
-            -C terminal-emulator \
-            NDK_PROJECT_PATH="$GITHUB_WORKSPACE/terminal-emulator" \
-            APP_BUILD_SCRIPT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jni/Android.mk" \
-            APP_ABI=arm64-v8a \
-            NDK_OUT="$RUNNER_TEMP/termux-obj" \
-            NDK_LIBS_OUT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jniLibs" \
-            V=1
+          "$NDK/ndk-build" -C terminal-emulator NDK_PROJECT_PATH="$GITHUB_WORKSPACE/terminal-emulator" APP_BUILD_SCRIPT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jni/Android.mk" APP_ABI=arm64-v8a NDK_OUT="$RUNNER_TEMP/termux-obj" NDK_LIBS_OUT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jniLibs" V=1
           LIB="terminal-emulator/src/main/jniLibs/arm64-v8a/libtermux.so"
           test -s "$LIB"
           READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
           mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$LIB" | awk '$1 == "LOAD" {print $NF}')
           test "${#LOAD_ALIGNS[@]}" -gt 0
-          for align in "${LOAD_ALIGNS[@]}"; do
-            echo "LIBTERMUX_LOAD_ALIGN=$align"
-            (( align >= 16384 ))
-          done
+          for align in "${LOAD_ALIGNS[@]}"; do echo "LIBTERMUX_LOAD_ALIGN=$align"; (( align >= 16384 )); done
           echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
 
       - name: Unit tests and APK build
@@ -172,8 +156,7 @@ jobs:
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot-loader.so'
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot.so'
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libtermux.so'
-          TMP=$(mktemp -d)
-          trap 'rm -rf "$TMP"' EXIT
+          TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
           unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
           diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$TMP/gate7-launch.properties"
@@ -187,8 +170,7 @@ jobs:
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
-          TMP=$(mktemp -d)
-          trap 'rm -rf "$TMP"' EXIT
+          TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
           unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
           READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
           mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
@@ -201,22 +183,10 @@ jobs:
               DYN|EXEC)
                 mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF}')
                 test "${#LOAD_ALIGNS[@]}" -gt 0
-                for align in "${LOAD_ALIGNS[@]}"; do
-                  echo "ELF_LOAD_ALIGN=$align"
-                  (( align >= 16384 ))
-                done
-                if [ "$TYPE" = "DYN" ]; then
-                  RELRO=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $1; exit}')
-                  test "$RELRO" = "GNU_RELRO"
-                  echo "ELF_RELRO=PASS"
-                else
-                  echo "ELF_RELRO=NOT_APPLICABLE_EXECUTABLE"
-                fi
+                for align in "${LOAD_ALIGNS[@]}"; do echo "ELF_LOAD_ALIGN=$align"; (( align >= 16384 )); done
+                if [ "$TYPE" = "DYN" ]; then RELRO=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $1; exit}'); test "$RELRO" = "GNU_RELRO"; echo "ELF_RELRO=PASS"; else echo "ELF_RELRO=NOT_APPLICABLE_EXECUTABLE"; fi
                 ;;
-              *)
-                echo "UNEXPECTED_ELF_TYPE=$TYPE"
-                exit 1
-                ;;
+              *) echo "UNEXPECTED_ELF_TYPE=$TYPE"; exit 1 ;;
             esac
           done
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
