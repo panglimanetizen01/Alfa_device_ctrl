@@ -4,11 +4,14 @@ set -u
 
 if [ "${ALFA_BUILD_CONTEXT:-}" = 'ci' ] || [ "${GITHUB_ACTIONS:-}" = 'true' ]; then
     STORAGE_ROOT="${ALFA_CI_SHARED_ROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-shared}"
+    PRIVATE_ROOT="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-private"
     STORAGE_SCOPE='ci_builder_filesystem'
-    mkdir -p "$STORAGE_ROOT" || exit 1
+    mkdir -p "$STORAGE_ROOT" "$PRIVATE_ROOT" || exit 1
 else
     STORAGE_ROOT=/storage/emulated/0
+    PRIVATE_ROOT="${TMPDIR:-${PREFIX:-$HOME}/tmp}"
     STORAGE_SCOPE='android_shared_storage'
+    mkdir -p "$PRIVATE_ROOT" 2>/dev/null || true
 fi
 
 TS=$(date +%Y%m%d_%H%M%S)
@@ -20,6 +23,7 @@ echo "=== CDE V1 ==="
 echo
 echo "context=${ALFA_BUILD_CONTEXT:-${GITHUB_ACTIONS:+github_actions}}"
 echo "storage_root=$STORAGE_ROOT"
+echo "private_root=$PRIVATE_ROOT"
 echo "storage_scope=$STORAGE_SCOPE"
 echo
 echo "[REGISTRY]"
@@ -42,7 +46,7 @@ else
     echo "STORAGE_WRITE=ERROR | verification=Write/delete test | scope=$STORAGE_SCOPE"
 fi
 
-PVT="${TMPDIR:-${PREFIX:-$HOME}/tmp}/cde_exec_private.$$"
+PVT="$PRIVATE_ROOT/cde_exec_private.$$"
 cat > "$PVT" <<'SH'
 #!/bin/sh
 exit 0
