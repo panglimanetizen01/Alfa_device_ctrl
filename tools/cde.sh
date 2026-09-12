@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+set -u
+
+if [ "${ALFA_BUILD_CONTEXT:-}" = 'ci' ]; then
+    STORAGE_ROOT="${ALFA_CI_SHARED_ROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-shared}"
+    STORAGE_SCOPE='ci_builder_filesystem'
+    mkdir -p "$STORAGE_ROOT" || exit 1
+else
+    STORAGE_ROOT=/storage/emulated/0
+    STORAGE_SCOPE='android_shared_storage'
+fi
+
 TS=$(date +%Y%m%d_%H%M%S)
 OUT="artifacts/cde/cde_${TS}.txt"
 
@@ -7,28 +18,31 @@ exec > "$OUT"
 
 echo "=== CDE V1 ==="
 echo
-
+echo "context=${ALFA_BUILD_CONTEXT:-android_runtime}"
+echo "storage_root=$STORAGE_ROOT"
+echo "storage_scope=$STORAGE_SCOPE"
+echo
 echo "[REGISTRY]"
 echo "registry=CAPABILITY_REGISTRY_V1"
 echo
 echo "[CAPABILITIES]"
 
-if [ -r /storage/emulated/0 ]
+if [ -r "$STORAGE_ROOT" ]
 then
-    echo "STORAGE_READ=PASS | verification=Read test | scope=current_environment"
+    echo "STORAGE_READ=PASS | verification=Read test | scope=$STORAGE_SCOPE"
 else
-    echo "STORAGE_READ=ERROR | verification=Read test | scope=current_environment"
+    echo "STORAGE_READ=ERROR | verification=Read test | scope=$STORAGE_SCOPE"
 fi
 
-TMP=/storage/emulated/0/.cde_write_test.$$
+TMP="$STORAGE_ROOT/.cde_write_test.$$"
 
 if touch "$TMP" >/dev/null 2>&1
 then
-    echo "STORAGE_WRITE=PASS | verification=Write/delete test | scope=current_environment"
+    echo "STORAGE_WRITE=PASS | verification=Write/delete test | scope=$STORAGE_SCOPE"
     echo "evidence=$TMP"
     rm -f "$TMP"
 else
-    echo "STORAGE_WRITE=ERROR | verification=Write/delete test | scope=current_environment"
+    echo "STORAGE_WRITE=ERROR | verification=Write/delete test | scope=$STORAGE_SCOPE"
 fi
 
 PVT="${TMPDIR:-${PREFIX:-$HOME}/tmp}/cde_exec_private.$$"
@@ -49,7 +63,7 @@ else
 fi
 rm -f "$PVT"
 
-SHR=/storage/emulated/0/.cde_exec_shared.$$
+SHR="$STORAGE_ROOT/.cde_exec_shared.$$"
 
 cat > "$SHR" <<'SH'
 #!/bin/sh
@@ -61,9 +75,9 @@ chmod +x "$SHR"
 "$SHR" >/dev/null 2>&1
 RC=$?
 if [ "$RC" -eq 0 ]; then
-    echo "EXEC_SHARED=PASS | verification=Execution test | scope=current_environment"
+    echo "EXEC_SHARED=PASS | verification=Execution test | scope=$STORAGE_SCOPE"
 else
-    echo "EXEC_SHARED=ERROR | verification=Execution test | scope=current_environment"
+    echo "EXEC_SHARED=ERROR | verification=Execution test | scope=$STORAGE_SCOPE"
 fi
 rm -f "$SHR"
 
