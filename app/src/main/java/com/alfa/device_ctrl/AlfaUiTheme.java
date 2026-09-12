@@ -12,10 +12,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/**
- * Presentation-only Terminal Obsidian styling derived from the approved UI corpus.
- * This class never creates, infers, or overwrites runtime evidence or capability state.
- */
+/** Presentation-only Terminal Obsidian styling derived from the approved UI corpus. */
 public final class AlfaUiTheme {
     public static final int OBSIDIAN_CANVAS = 0xFF0B0F14;
     public static final int OBSIDIAN_SURFACE = 0xFF121820;
@@ -44,9 +41,12 @@ public final class AlfaUiTheme {
     public static final int TELEMETRY = OBSIDIAN_TELEMETRY;
     public static final int UNKNOWN = OBSIDIAN_UNKNOWN;
 
-    private static final int LEGACY_PRIMARY = Color.rgb(171, 199, 255);
-    private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
-    private static final int LEGACY_ERROR = Color.rgb(255, 180, 171);
+    private static final int LEGACY_PRIMARY = 0xFFABC7FF;
+    private static final int LEGACY_MUTED = 0xFFC1C6D5;
+    private static final int LEGACY_ERROR = 0xFFFFB4AB;
+    private static final int LEGACY_CANVAS = 0xFF131315;
+    private static final int LEGACY_SURFACE = 0xFF201F21;
+    private static final int LEGACY_SURFACE_HIGH = 0xFF2A2A2C;
     private static final int RADIUS_DP = 6;
 
     private AlfaUiTheme() { }
@@ -70,27 +70,23 @@ public final class AlfaUiTheme {
         if (root == null) return;
         root.setBackgroundColor(OBSIDIAN_CANVAS);
         float density = activity.getResources().getDisplayMetrics().density;
-        applyTree(root, 0, density);
+        applyTree(root, density);
         root.post(() -> adaptRuntimeDashboard(root, density));
     }
 
-    private static void applyTree(View view, int depth, float density) {
+    private static void applyTree(View view, float density) {
         if (view == null || view.getClass().getName().contains("TerminalView")) return;
         int min = Math.round(TOUCH_TARGET_DP * density);
         if (view.isClickable() || view instanceof Button) {
             view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
             view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
         }
-        if (view instanceof Button) {
-            styleButton((Button) view, density, min);
-        } else if (view instanceof TextView) {
-            styleText((TextView) view, min);
-        } else if (view instanceof ViewGroup) {
-            styleContainer(view, density);
-        }
+        if (view instanceof Button) styleButton((Button) view, density, min);
+        else if (view instanceof TextView) styleText((TextView) view, min);
+        else if (view instanceof ViewGroup) styleContainer(view, density);
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), depth + 1, density);
+            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), density);
         }
     }
 
@@ -140,9 +136,9 @@ public final class AlfaUiTheme {
     }
 
     private static int normalizeSurfaceColor(int color) {
-        if (color == Color.rgb(19, 19, 21)) return OBSIDIAN_CANVAS;
-        if (color == Color.rgb(32, 31, 33)) return OBSIDIAN_SURFACE;
-        if (color == Color.rgb(42, 42, 44)) return OBSIDIAN_SURFACE_ACTIVE;
+        if (color == LEGACY_CANVAS) return OBSIDIAN_CANVAS;
+        if (color == LEGACY_SURFACE) return OBSIDIAN_SURFACE;
+        if (color == LEGACY_SURFACE_HIGH) return OBSIDIAN_SURFACE_ACTIVE;
         if (color == Color.BLACK) return 0xFF0A0E13;
         if ((color >>> 24) != 0xFF) return color;
         return color;
@@ -160,7 +156,7 @@ public final class AlfaUiTheme {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(filled ? accent : OBSIDIAN_SURFACE_ACTIVE);
         drawable.setCornerRadius(dp(4, density));
-        drawable.setStroke(Math.max(1, dp(1, density)), accent == OBSIDIAN_READY ? OBSIDIAN_READY : accent);
+        drawable.setStroke(Math.max(1, dp(1, density)), accent);
         return drawable;
     }
 
