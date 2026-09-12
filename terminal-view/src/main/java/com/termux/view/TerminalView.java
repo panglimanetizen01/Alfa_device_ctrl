@@ -135,6 +135,9 @@ public final class TerminalView extends View {
 
     public TerminalView(Context context, AttributeSet attributes) { // NO_UCD (unused code)
         super(context, attributes);
+        // TerminalView receives layout callbacks before a session may be attached.
+        // Initialize the renderer before updateSize() can consume its font metrics.
+        mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);
         mGestureRecognizer = new GestureAndScaleRecognizer(context, new GestureAndScaleRecognizer.Listener() {
 
             boolean scrolledWithFinger;

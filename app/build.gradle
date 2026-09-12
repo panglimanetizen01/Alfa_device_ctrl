@@ -15,7 +15,10 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging false
+            // Alfa executes libproot.so directly from ApplicationInfo.nativeLibraryDir.
+            // Therefore the runtime engine and loader must be extracted to the app's
+            // native-library directory at install time, not left only inside base.apk.
+            useLegacyPackaging true
         }
     }
 
