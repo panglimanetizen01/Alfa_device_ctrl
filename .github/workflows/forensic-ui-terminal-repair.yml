@@ -1,6 +1,9 @@
 name: Forensic UI Terminal Repair
 
 on:
+  push:
+    branches:
+      - fix/apk-terminal-ui-runtime-chain-20260912
   workflow_dispatch:
 
 permissions:
