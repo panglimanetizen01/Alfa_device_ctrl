@@ -1,0 +1,68 @@
+name: Forensic UI Terminal Repair
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+          ref: fix/apk-terminal-ui-runtime-chain-20260912
+
+      - name: Apply proven renderer and runtime-dashboard repairs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          terminal = Path('terminal-view/src/main/java/com/termux/view/TerminalView.java')
+          text = terminal.read_text()
+          old = '    public TerminalView(Context context, AttributeSet attributes) { // NO_UCD (unused code)\n        super(context, attributes);\n'
+          new = '    public TerminalView(Context context, AttributeSet attributes) { // NO_UCD (unused code)\n        super(context, attributes);\n        // Layout callbacks can occur before a session is attached; renderer metrics must exist first.\n        mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);\n'
+          if old not in text:
+              raise SystemExit('TERMINALVIEW_CONSTRUCTOR_ANCHOR_MISSING')
+          if 'mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);' in text:
+              raise SystemExit('TERMINALVIEW_REPAIR_ALREADY_PRESENT')
+          terminal.write_text(text.replace(old, new, 1))
+
+          main = Path('app/src/main/java/com/alfa/device_ctrl/MainActivity.java')
+          text = main.read_text()
+          old = '        TextView brand = label(getString(R.string.alfa_os), PRIMARY, 16, true);'
+          new = '        TextView brand = label("ALFA DEVICE CTRL", PRIMARY, 16, true);'
+          if old not in text:
+              raise SystemExit('MAIN_BRAND_ANCHOR_MISSING')
+          text = text.replace(old, new, 1)
+
+          old = '        window.addView(runtimeDashboard, new LinearLayout.LayoutParams(-1, 0, 1));'
+          new = '''        android.widget.ScrollView runtimeScroll = new android.widget.ScrollView(this);\n        runtimeScroll.setFillViewport(true);\n        runtimeScroll.addView(runtimeDashboard, new android.widget.ScrollView.LayoutParams(-1, -2));\n        window.addView(runtimeScroll, new LinearLayout.LayoutParams(-1, 0, 1));'''
+          if old not in text:
+              raise SystemExit('RUNTIME_DASHBOARD_ANCHOR_MISSING')
+          text = text.replace(old, new, 1)
+          main.write_text(text)
+
+      - name: Verify exact repair invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'mRenderer = new TerminalRenderer(14, Typeface.MONOSPACE);' terminal-view/src/main/java/com/termux/view/TerminalView.java
+          grep -F 'TextView brand = label("ALFA DEVICE CTRL", PRIMARY, 16, true);' app/src/main/java/com/alfa/device_ctrl/MainActivity.java
+          grep -F 'android.widget.ScrollView runtimeScroll' app/src/main/java/com/alfa/device_ctrl/MainActivity.java
+          test "$(grep -c 'new android.widget.ScrollView(this)' app/src/main/java/com/alfa/device_ctrl/MainActivity.java)" -eq 1
+
+      - name: Commit repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add terminal-view/src/main/java/com/termux/view/TerminalView.java app/src/main/java/com/alfa/device_ctrl/MainActivity.java
+          git diff --cached --check
+          git commit -m 'fix: harden terminal renderer and multi-runtime dashboard'
+          git push origin HEAD:fix/apk-terminal-ui-runtime-chain-20260912
