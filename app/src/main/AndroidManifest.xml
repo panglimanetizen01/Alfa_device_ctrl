@@ -40,13 +40,8 @@
 
         <activity
             android:name="com.alfa.device_ctrl.HostStorageDeviceProofActivity"
-            android:exported="true"
-            android:label="Alfa SAF Device Proof">
-            <intent-filter>
-                <action android:name="com.alfa.device_ctrl.action.HOST_STORAGE_PROOF" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:label="Alfa SAF Device Proof" />
     </application>
 
 </manifest>
