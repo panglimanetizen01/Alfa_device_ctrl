@@ -41,7 +41,9 @@ jobs:
       - name: Reject retired legacy UI residue from source
         run: |
           set -euo pipefail
-          if git grep -nE 'ALFA_OS|alfa_os' -- .; then
+          if git grep -nE 'ALFA_OS|alfa_os' -- . \
+            ':(exclude).github/workflows/apk-readiness.yml' \
+            ':(exclude)app/src/test/java/com/alfa/device_ctrl/LegacyUiResidueContractTest.java'; then
             echo "RETIRED_LEGACY_UI_RESIDUE_FOUND_IN_SOURCE"
             exit 1
           fi
