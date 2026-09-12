@@ -21,6 +21,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Execute final UI unit contract
-        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.AlfaUiForensicDesignContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --tests com.alfa.device_ctrl.StitchV1ReferenceCatalogTest -x :app:prepareGate7LaunchContract -x :app:prepareProotLoader
+        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.AlfaUiForensicDesignContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --tests com.alfa.device_ctrl.StitchV1ReferenceCatalogTest --tests com.alfa.device_ctrl.AlfaUiNavigationContractTest -x :app:prepareGate7LaunchContract -x :app:prepareProotLoader
       - name: Execute terminal renderer contract
         run: ./gradlew :terminal-view:testDebugUnitTest --tests com.termux.view.TerminalRendererLineSpacingTest
