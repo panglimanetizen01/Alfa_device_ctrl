@@ -53,7 +53,6 @@ public final class AlfaStartupTerminalE2ETest {
             assertTrue("terminal PTY pid invalid", manager.currentSession().getPid() > 0);
             assertTrue("Alfa prompt was not rendered: " + transcriptRef.get(), transcriptRef.get().contains("alfa:debian:"));
 
-            File files = scenario.getClass() == null ? null : null;
             AtomicReference<File> readyRef = new AtomicReference<>();
             scenario.onActivity(activity -> {
                 File runtime = new File(new File(activity.getFilesDir(), "runtime-vault"), "runtimes/debian");
