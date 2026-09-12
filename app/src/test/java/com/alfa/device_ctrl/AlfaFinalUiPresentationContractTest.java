@@ -13,7 +13,8 @@ public final class AlfaFinalUiPresentationContractTest {
         assertEquals(0xFF10B981, AlfaUiTheme.OBSIDIAN_READY);
         assertEquals(0xFFF59E0B, AlfaUiTheme.OBSIDIAN_VERIFYING);
         assertEquals(0xFFEF4444, AlfaUiTheme.OBSIDIAN_ERROR);
-        assertEquals(0xFF38BDF8, AlfaUiTheme.OBSIDIAN_CYAN);
+        assertEquals(0xFF38BDF8, AlfaFinalUiPresentation.CYAN);
+        assertEquals(0xFF0D1117, AlfaFinalUiPresentation.TERMINAL);
         assertEquals(48, AlfaUiTheme.TOUCH_TARGET_DP);
     }
 
