@@ -15,7 +15,9 @@ android {
 
     packaging {
         jniLibs {
-            useLegacyPackaging false
+            // RuntimeInstaller executes libproot.so from ApplicationInfo.nativeLibraryDir.
+            // The APK must therefore use Android's legacy JNI packaging extraction boundary.
+            useLegacyPackaging true
         }
     }
 
