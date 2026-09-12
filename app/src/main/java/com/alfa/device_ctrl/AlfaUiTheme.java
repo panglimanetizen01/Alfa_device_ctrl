@@ -3,47 +3,82 @@ package com.alfa.device_ctrl;
 import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Presentation-only Terminal Obsidian styling. Never supplies runtime state or capability state. */
+/**
+ * Presentation-only Terminal Obsidian styling derived from the approved UI corpus.
+ * This class never creates, infers, or overwrites runtime evidence or capability state.
+ */
 public final class AlfaUiTheme {
-    public static final int CANVAS = Color.rgb(11, 15, 20);
-    public static final int SURFACE_1 = Color.rgb(18, 24, 32);
-    public static final int SURFACE_2 = Color.rgb(26, 34, 45);
-    public static final int BORDER = Color.rgb(31, 41, 55);
-    public static final int BORDER_FOCUSED = Color.rgb(55, 65, 81);
-    public static final int TEXT = Color.rgb(224, 226, 234);
-    public static final int TEXT_MUTED = Color.rgb(187, 202, 191);
-    public static final int READY = Color.rgb(16, 185, 129);
-    public static final int WARNING = Color.rgb(245, 158, 11);
-    public static final int ERROR = Color.rgb(239, 68, 68);
-    public static final int TELEMETRY = Color.rgb(6, 182, 212);
-    public static final int UNKNOWN = Color.rgb(100, 116, 139);
+    public static final int OBSIDIAN_CANVAS = 0xFF0B0F14;
+    public static final int OBSIDIAN_SURFACE = 0xFF121820;
+    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF1A222D;
+    public static final int OBSIDIAN_BORDER = 0xFF1F2937;
+    public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF374151;
+    public static final int OBSIDIAN_TEXT = 0xFFE0E2EA;
+    public static final int OBSIDIAN_TEXT_MUTED = 0xFFBB CABF;
+    public static final int OBSIDIAN_READY = 0xFF10B981;
+    public static final int OBSIDIAN_VERIFYING = 0xFFF59E0B;
+    public static final int OBSIDIAN_ERROR = 0xFFEF4444;
+    public static final int OBSIDIAN_TELEMETRY = 0xFF06B6D4;
+    public static final int OBSIDIAN_UNKNOWN = 0xFF64748B;
+    public static final int TOUCH_TARGET_DP = 48;
+
+    // Backward-compatible aliases for existing presentation code.
+    public static final int CANVAS = OBSIDIAN_CANVAS;
+    public static final int SURFACE_1 = OBSIDIAN_SURFACE;
+    public static final int SURFACE_2 = OBSIDIAN_SURFACE_ACTIVE;
+    public static final int BORDER = OBSIDIAN_BORDER;
+    public static final int BORDER_FOCUSED = OBSIDIAN_BORDER_FOCUSED;
+    public static final int TEXT = OBSIDIAN_TEXT;
+    public static final int TEXT_MUTED = OBSIDIAN_TEXT_MUTED;
+    public static final int READY = OBSIDIAN_READY;
+    public static final int WARNING = OBSIDIAN_VERIFYING;
+    public static final int ERROR = OBSIDIAN_ERROR;
+    public static final int TELEMETRY = OBSIDIAN_TELEMETRY;
+    public static final int UNKNOWN = OBSIDIAN_UNKNOWN;
 
     private static final int LEGACY_PRIMARY = Color.rgb(171, 199, 255);
     private static final int LEGACY_MUTED = Color.rgb(193, 198, 213);
     private static final int LEGACY_ERROR = Color.rgb(255, 180, 171);
-    private static final int TOUCH_TARGET_DP = 48;
-    private static final int RADIUS_DP = 4;
+    private static final int RADIUS_DP = 6;
 
     private AlfaUiTheme() { }
+
+    /** Returns the approved semantic color for a runtime/evidence label. */
+    public static int statusColor(String status) {
+        if (status == null) return OBSIDIAN_UNKNOWN;
+        String normalized = status.trim().toUpperCase();
+        if ("READY".equals(normalized) || "ACTIVE".equals(normalized) || "ONLINE".equals(normalized)) return OBSIDIAN_READY;
+        if ("VERIFYING".equals(normalized) || "WARN".equals(normalized) || "WARNING".equals(normalized) || "PARTIAL".equals(normalized)) return OBSIDIAN_VERIFYING;
+        if ("FAILED".equals(normalized) || "HALT".equals(normalized) || "DENIED".equals(normalized) || "BLOCKED".equals(normalized)) return OBSIDIAN_ERROR;
+        if ("TELEMETRY".equals(normalized) || "SOCKET".equals(normalized) || "INFO".equals(normalized)) return OBSIDIAN_TELEMETRY;
+        return OBSIDIAN_UNKNOWN;
+    }
+
+    /** Regression helper: identifies the retired Material-blue palette, never a semantic state. */
+    public static boolean isLegacyPalette(int color) {
+        return color == LEGACY_PRIMARY || color == LEGACY_MUTED || color == LEGACY_ERROR;
+    }
 
     public static void apply(Activity activity) {
         View root = activity.findViewById(android.R.id.content);
         if (root == null) return;
-        root.setBackgroundColor(CANVAS);
+        root.setBackgroundColor(OBSIDIAN_CANVAS);
         float density = activity.getResources().getDisplayMetrics().density;
         applyTree(root, 0, density);
         root.post(() -> adaptRuntimeDashboard(root, density));
     }
 
     private static void applyTree(View view, int depth, float density) {
-        if (view.getClass().getName().contains("TerminalView")) return;
+        if (view == null || view.getClass().getName().contains("TerminalView")) return;
 
         int min = Math.round(TOUCH_TARGET_DP * density);
         if (view.isClickable() || view instanceof Button) {
@@ -52,49 +87,101 @@ public final class AlfaUiTheme {
         }
 
         if (view instanceof Button) {
-            Button button = (Button) view;
-            int original = button.getTextColors() == null ? TEXT : button.getTextColors().getDefaultColor();
-            int textColor = normalizeTextColor(original);
-            int accent = textColor == ERROR ? ERROR : (textColor == READY ? READY : (textColor == TELEMETRY ? TELEMETRY : BORDER_FOCUSED));
-            button.setTextSize(11);
-            button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            button.setTextColor(textColor);
-            button.setBackground(controlBackground(accent, density));
-            button.setAllCaps(false);
+            styleButton((Button) view, density, min);
         } else if (view instanceof TextView) {
-            TextView text = (TextView) view;
-            int original = text.getCurrentTextColor();
-            text.setTextColor(normalizeTextColor(original));
-            if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
-            Typeface current = text.getTypeface();
-            if (current != null) {
-                text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
-            }
+            styleText((TextView) view, min);
+        } else if (view instanceof ViewGroup) {
+            styleContainer(view, density);
         }
 
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                View child = group.getChildAt(i);
-                if (!(child instanceof TextView) && !(child instanceof Button) && depth == 0) {
-                    child.setBackgroundColor(SURFACE_1);
-                }
-                applyTree(child, depth + 1, density);
+                applyTree(group.getChildAt(i), depth + 1, density);
             }
         }
     }
 
+    private static void styleButton(Button button, float density, int min) {
+        int original = button.getTextColors() == null ? OBSIDIAN_TEXT : button.getTextColors().getDefaultColor();
+        int textColor = normalizeTextColor(original);
+        String label = button.getText() == null ? "" : button.getText().toString().trim().toUpperCase();
+        int accent = textColor == OBSIDIAN_ERROR ? OBSIDIAN_ERROR : OBSIDIAN_READY;
+        boolean filled = "OPEN".equals(label) || label.startsWith("SYSTEM ONLINE");
+        button.setTextSize(10);
+        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        button.setTextColor(filled ? OBSIDIAN_CANVAS : textColor);
+        button.setMinimumHeight(Math.max(button.getMinimumHeight(), min));
+        button.setMinimumWidth(Math.max(button.getMinimumWidth(), min));
+        button.setPadding(dp(8, density), dp(4, density), dp(8, density), dp(4, density));
+        button.setAllCaps(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            button.setElevation(0f);
+            button.setStateListAnimator(null);
+        }
+        button.setBackground(controlBackground(accent, density, filled));
+    }
+
+    private static void styleText(TextView text, int min) {
+        int original = text.getCurrentTextColor();
+        text.setTextColor(normalizeTextColor(original));
+        if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
+        Typeface current = text.getTypeface();
+        if (current != null) {
+            text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
+        }
+        if (text.getTextSize() <= 13 * text.getResources().getDisplayMetrics().scaledDensity) {
+            text.setLetterSpacing(0.03f);
+        }
+    }
+
+    private static void styleContainer(View view, float density) {
+        if (!(view.getBackground() instanceof ColorDrawable)) return;
+        int color = ((ColorDrawable) view.getBackground()).getColor();
+        int normalized = normalizeSurfaceColor(color);
+        if (normalized == OBSIDIAN_CANVAS) {
+            view.setBackgroundColor(OBSIDIAN_CANVAS);
+        } else {
+            view.setBackground(surfaceBackground(normalized, density));
+        }
+    }
+
     private static int normalizeTextColor(int color) {
-        if (color == LEGACY_PRIMARY) return READY;
-        if (color == LEGACY_ERROR) return ERROR;
-        if (color == LEGACY_MUTED) return TEXT_MUTED;
-        if (color == Color.TRANSPARENT) return TEXT;
+        if (color == LEGACY_PRIMARY) return OBSIDIAN_READY;
+        if (color == LEGACY_ERROR) return OBSIDIAN_ERROR;
+        if (color == LEGACY_MUTED) return OBSIDIAN_TEXT_MUTED;
+        if (color == Color.TRANSPARENT) return OBSIDIAN_TEXT;
         return color;
     }
 
+    private static int normalizeSurfaceColor(int color) {
+        if (color == Color.rgb(19, 19, 21)) return OBSIDIAN_CANVAS;
+        if (color == Color.rgb(32, 31, 33)) return OBSIDIAN_SURFACE;
+        if (color == Color.rgb(42, 42, 44)) return OBSIDIAN_SURFACE_ACTIVE;
+        if (color == Color.BLACK) return 0xFF0A0E13;
+        if ((color >>> 24) != 0xFF) return color;
+        return color;
+    }
+
+    private static GradientDrawable surfaceBackground(int color, float density) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(dp(RADIUS_DP, density));
+        drawable.setStroke(Math.max(1, dp(1, density)), OBSIDIAN_BORDER);
+        return drawable;
+    }
+
+    private static GradientDrawable controlBackground(int accent, float density, boolean filled) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(filled ? accent : OBSIDIAN_SURFACE_ACTIVE);
+        drawable.setCornerRadius(dp(4, density));
+        drawable.setStroke(Math.max(1, dp(1, density)), accent == OBSIDIAN_READY ? OBSIDIAN_READY : accent);
+        return drawable;
+    }
+
     /**
-     * Adapts runtime cards to the measured dashboard window. It never uses physical display size
-     * or device-class assumptions. Every card remains at least 48dp high, including its controls.
+     * Adapts runtime cards to the measured dashboard. No physical-display assumptions are used;
+     * each card retains the Android 48dp touch floor while the ScrollView handles overflow.
      */
     private static void adaptRuntimeDashboard(View root, float density) {
         LinearLayout dashboard = findRuntimeDashboard(root);
@@ -103,10 +190,10 @@ public final class AlfaUiTheme {
         if (runtimeCount <= 0) return;
 
         int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
-        int separatorHeight = Math.max(1, Math.round(2 * density));
+        int separatorHeight = Math.max(1, dp(3, density));
         int separators = Math.max(0, runtimeCount - 1);
         int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight);
-        int cardHeight = Math.max(Math.round(48 * density), available / runtimeCount);
+        int cardHeight = Math.max(dp(48, density), available / runtimeCount);
 
         int cards = 0;
         for (int i = 0; i < dashboard.getChildCount(); i++) {
@@ -146,11 +233,7 @@ public final class AlfaUiTheme {
         return null;
     }
 
-    private static GradientDrawable controlBackground(int accent, float density) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(SURFACE_2);
-        drawable.setCornerRadius(RADIUS_DP * density);
-        drawable.setStroke(Math.max(1, Math.round(density)), accent == ERROR ? ERROR : (accent == READY ? READY : BORDER));
-        return drawable;
+    private static int dp(int value, float density) {
+        return Math.round(value * density);
     }
 }
