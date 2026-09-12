@@ -88,10 +88,25 @@ public final class AlfaStartupTerminalE2ETest {
             assertEquals("pwd inside runtime must exit 0", 0, exitCode.get());
             assertEquals("/root", output.get().trim());
 
+            CountDownLatch securityDone = new CountDownLatch(1);
+            AtomicReference<String> securityOutput = new AtomicReference<>("");
+            AtomicInteger securityExit = new AtomicInteger(126);
+            manager.runRuntimeCommand("printf 'NNP='; grep '^NoNewPrivs:' /proc/self/status; printf 'SYS_CLASS_NET='; if test -e /sys/class/net; then echo PRESENT; else echo ABSENT; fi", (text, code) -> {
+                securityOutput.set(text == null ? "" : text);
+                securityExit.set(code);
+                securityDone.countDown();
+            });
+            assertTrue("runtime security command timed out", securityDone.await(35, TimeUnit.SECONDS));
+            assertEquals("runtime security probe must exit 0: " + securityOutput.get(), 0, securityExit.get());
+            assertTrue("runtime must inherit no_new_privs=1: " + securityOutput.get(), securityOutput.get().contains("NoNewPrivs:\t1"));
+            assertTrue("host /sys/class/net must not be exposed by Alfa's explicit runtime bindings: " + securityOutput.get(), securityOutput.get().contains("SYS_CLASS_NET=ABSENT"));
+
             System.out.println("ALFA_STARTUP_TERMINAL_E2E=PASS");
             System.out.println("ALFA_STARTUP_APK_SHA256=" + expectedApkSha256);
             System.out.println("ALFA_RUNTIME_PROMPT=alfa:debian:");
             System.out.println("ALFA_RUNTIME_PWD=/root");
+            System.out.println("ALFA_RUNTIME_NNP=1");
+            System.out.println("ALFA_RUNTIME_SYS_CLASS_NET=ABSENT");
             System.out.println("ALFA_PTY_PID=" + manager.currentSession().getPid());
         }
     }
