@@ -2,6 +2,9 @@ package com.alfa.device_ctrl;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.system.Os;
+import android.system.OsConstants;
+import android.system.ErrnoException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,16 +36,12 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         return true;
     }
 
-    private void notifyState(String event) {
-        Listener current = listener;
-        if (current != null) current.onState(SessionUiState.resolve(event).name());
-    }
-
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
         if (session != null && session.isRunning()) { notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
         if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { notifyState("BLOCKED"); return false; }
         promptReady = false;
         try {
+            applyRuntimeSecurityBoundary();
             RuntimeKeepAliveService.start(AlfaApplication.getInstance(), this);
             session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
             session.mSessionName = contract.sessionId();
@@ -58,6 +57,20 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         OperationEvidence.write(contract, "PTY_CREATED", "PENDING_PROMPT", session.getPid());
         notifyState("PTY_CREATED");
         return true;
+    }
+
+    /**
+     * Apply the kernel no-new-privileges boundary before the runtime process is
+     * created. Android exposes prctl(2) through the public android.system API;
+     * the kernel then inherits this bit across fork/clone/exec.
+     */
+    private static void applyRuntimeSecurityBoundary() {
+        try {
+            int result = Os.prctl(OsConstants.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+            if (result != 0) throw new IllegalStateException("no-new-privs-prctl-returned:" + result);
+        } catch (ErrnoException error) {
+            throw new IllegalStateException("no-new-privs-prctl-failed:" + error.errno, error);
+        }
     }
 
     public synchronized void attachTo(TerminalView view) { if (view == null) throw new IllegalArgumentException("view is required"); if (session == null) throw new IllegalStateException("session is not started"); view.attachSession(session); }
