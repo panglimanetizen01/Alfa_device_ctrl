@@ -23,7 +23,7 @@ public final class AlfaUiTheme {
     public static final int OBSIDIAN_BORDER = 0xFF1F2937;
     public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF374151;
     public static final int OBSIDIAN_TEXT = 0xFFE0E2EA;
-    public static final int OBSIDIAN_TEXT_MUTED = 0xFFBB CABF;
+    public static final int OBSIDIAN_TEXT_MUTED = 0xFFBBCABF;
     public static final int OBSIDIAN_READY = 0xFF10B981;
     public static final int OBSIDIAN_VERIFYING = 0xFFF59E0B;
     public static final int OBSIDIAN_ERROR = 0xFFEF4444;
@@ -31,7 +31,6 @@ public final class AlfaUiTheme {
     public static final int OBSIDIAN_UNKNOWN = 0xFF64748B;
     public static final int TOUCH_TARGET_DP = 48;
 
-    // Backward-compatible aliases for existing presentation code.
     public static final int CANVAS = OBSIDIAN_CANVAS;
     public static final int SURFACE_1 = OBSIDIAN_SURFACE;
     public static final int SURFACE_2 = OBSIDIAN_SURFACE_ACTIVE;
@@ -52,7 +51,6 @@ public final class AlfaUiTheme {
 
     private AlfaUiTheme() { }
 
-    /** Returns the approved semantic color for a runtime/evidence label. */
     public static int statusColor(String status) {
         if (status == null) return OBSIDIAN_UNKNOWN;
         String normalized = status.trim().toUpperCase();
@@ -63,7 +61,6 @@ public final class AlfaUiTheme {
         return OBSIDIAN_UNKNOWN;
     }
 
-    /** Regression helper: identifies the retired Material-blue palette, never a semantic state. */
     public static boolean isLegacyPalette(int color) {
         return color == LEGACY_PRIMARY || color == LEGACY_MUTED || color == LEGACY_ERROR;
     }
@@ -79,13 +76,11 @@ public final class AlfaUiTheme {
 
     private static void applyTree(View view, int depth, float density) {
         if (view == null || view.getClass().getName().contains("TerminalView")) return;
-
         int min = Math.round(TOUCH_TARGET_DP * density);
         if (view.isClickable() || view instanceof Button) {
             view.setMinimumHeight(Math.max(view.getMinimumHeight(), min));
             view.setMinimumWidth(Math.max(view.getMinimumWidth(), min));
         }
-
         if (view instanceof Button) {
             styleButton((Button) view, density, min);
         } else if (view instanceof TextView) {
@@ -93,12 +88,9 @@ public final class AlfaUiTheme {
         } else if (view instanceof ViewGroup) {
             styleContainer(view, density);
         }
-
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                applyTree(group.getChildAt(i), depth + 1, density);
-            }
+            for (int i = 0; i < group.getChildCount(); i++) applyTree(group.getChildAt(i), depth + 1, density);
         }
     }
 
@@ -127,23 +119,16 @@ public final class AlfaUiTheme {
         text.setTextColor(normalizeTextColor(original));
         if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
         Typeface current = text.getTypeface();
-        if (current != null) {
-            text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
-        }
-        if (text.getTextSize() <= 13 * text.getResources().getDisplayMetrics().scaledDensity) {
-            text.setLetterSpacing(0.03f);
-        }
+        if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
+        if (text.getTextSize() <= 13 * text.getResources().getDisplayMetrics().scaledDensity) text.setLetterSpacing(0.03f);
     }
 
     private static void styleContainer(View view, float density) {
         if (!(view.getBackground() instanceof ColorDrawable)) return;
         int color = ((ColorDrawable) view.getBackground()).getColor();
         int normalized = normalizeSurfaceColor(color);
-        if (normalized == OBSIDIAN_CANVAS) {
-            view.setBackgroundColor(OBSIDIAN_CANVAS);
-        } else {
-            view.setBackground(surfaceBackground(normalized, density));
-        }
+        if (normalized == OBSIDIAN_CANVAS) view.setBackgroundColor(OBSIDIAN_CANVAS);
+        else view.setBackground(surfaceBackground(normalized, density));
     }
 
     private static int normalizeTextColor(int color) {
@@ -179,22 +164,16 @@ public final class AlfaUiTheme {
         return drawable;
     }
 
-    /**
-     * Adapts runtime cards to the measured dashboard. No physical-display assumptions are used;
-     * each card retains the Android 48dp touch floor while the ScrollView handles overflow.
-     */
     private static void adaptRuntimeDashboard(View root, float density) {
         LinearLayout dashboard = findRuntimeDashboard(root);
         if (dashboard == null || dashboard.getHeight() <= 0) return;
         int runtimeCount = RuntimeRegistry.all().size();
         if (runtimeCount <= 0) return;
-
         int padding = dashboard.getPaddingTop() + dashboard.getPaddingBottom();
         int separatorHeight = Math.max(1, dp(3, density));
         int separators = Math.max(0, runtimeCount - 1);
         int available = Math.max(0, dashboard.getHeight() - padding - separators * separatorHeight);
         int cardHeight = Math.max(dp(48, density), available / runtimeCount);
-
         int cards = 0;
         for (int i = 0; i < dashboard.getChildCount(); i++) {
             View child = dashboard.getChildAt(i);
@@ -221,9 +200,7 @@ public final class AlfaUiTheme {
         int expected = RuntimeRegistry.all().size();
         if (expected > 0 && group.getChildCount() >= expected * 2 - 1) {
             int cards = 0;
-            for (int i = 0; i < group.getChildCount(); i += 2) {
-                if (group.getChildAt(i) instanceof LinearLayout) cards++;
-            }
+            for (int i = 0; i < group.getChildCount(); i += 2) if (group.getChildAt(i) instanceof LinearLayout) cards++;
             if (cards == expected) return (LinearLayout) group;
         }
         for (int i = 0; i < group.getChildCount(); i++) {
@@ -233,7 +210,5 @@ public final class AlfaUiTheme {
         return null;
     }
 
-    private static int dp(int value, float density) {
-        return Math.round(value * density);
-    }
+    private static int dp(int value, float density) { return Math.round(value * density); }
 }
