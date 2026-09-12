@@ -20,7 +20,7 @@ public final class StitchV1ReferenceCatalogTest {
 
     @Test public void highRiskReferenceStatesAreExplicitlyClassified() {
         assertEquals("security", StitchV1ReferenceCatalog.category("alfa_device_ctrl_security_diagnostic_console"));
-        assertEquals("network", StitchV1ReferenceCatalog.category("alfa_device_ctrl_security_diagnostic_console_socket_rebind_success_fd_10"));
+        assertEquals("security", StitchV1ReferenceCatalog.category("alfa_device_ctrl_security_diagnostic_console_socket_rebind_success_fd_10"));
         assertEquals("split", StitchV1ReferenceCatalog.category("alfa_device_ctrl_split_pane_terminal_workspace_ubuntu_vs_kali"));
         assertEquals("floating", StitchV1ReferenceCatalog.category("alfa_device_ctrl_floating_terminal_overlay_permission_request"));
         assertEquals("settings", StitchV1ReferenceCatalog.category("alfa_device_ctrl_appearance_settings_datastore_proto_active_configuration"));
