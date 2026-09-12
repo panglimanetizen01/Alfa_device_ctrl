@@ -29,14 +29,28 @@ jobs:
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
           ALFA_GATE7_RUNTIME_ID=debian ALFA_GATE7_ASSET="$GITHUB_WORKSPACE/.github/workflows/forensic-apk-zipalign.yml" ./gradlew :app:assembleDebug -x :app:prepareGate7LaunchContract
-      - name: Capture APK compression and offsets
+      - name: Capture exact native ELF and ZIP alignment evidence
         run: |
-          set +e
+          set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
-          echo '=== NATIVE ZIP ENTRIES ==='
-          unzip -lv "$APK" | grep 'lib/arm64-v8a/.*\.so' || true
-          echo '=== ZIPALIGN CHECK ==='
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
+          test "${#LIBS[@]}" -gt 0
+          for so in "${LIBS[@]}"; do
+            echo "=== ELF_CHECK=$so ==="
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:'
+            TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
+            mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF}')
+            for align in "${LOAD_ALIGNS[@]}"; do
+              echo "ELF_LOAD_ALIGN=$align"
+              ALIGN_DEC=$(printf '%s\n' "$align" | awk '{if ($1 ~ /^0x/) printf "%d", strtonum($1); else printf "%d", $1}')
+              test "$ALIGN_DEC" -ge 16384
+            done
+            echo "ELF_TYPE=$TYPE"
+          done
+          unzip -lv "$APK" | grep 'lib/arm64-v8a/.*\.so'
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
-          RC=$?
-          echo "ZIPALIGN_RC=$RC"
-          exit 0
+          echo 'EXACT_APK_NATIVE_ELF_AND_ZIPALIGN=PASS'
