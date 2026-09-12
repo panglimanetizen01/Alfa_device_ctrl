@@ -143,9 +143,6 @@ jobs:
           echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
 
       - name: Unit tests and APK build
-        env:
-          ALFA_GATE7_ASSET: ${{ env.ALFA_GATE7_ASSET }}
-          ALFA_GATE7_RUNTIME_ID: debian
         run: |
           set -euo pipefail
           test -s "$ALFA_GATE7_ASSET"
