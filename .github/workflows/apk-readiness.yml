@@ -2,9 +2,12 @@ name: Alfa APK Readiness
 
 on:
   push:
-    branches: [master, fix/apk-runtime-readiness-e2e]
+    branches:
+      - master
+      - fix/apk-runtime-readiness-e2e
   pull_request:
-    branches: [master]
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
