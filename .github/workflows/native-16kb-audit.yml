@@ -50,13 +50,22 @@ jobs:
         with:
           gradle-version: '9.2.1'
 
+      - name: Configure CI capability roots
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          echo "ALFA_EXEC_SHARED_ROOT=$RUNNER_TEMP/alfa-ci-shared" >> "$GITHUB_ENV"
+          echo "TMPDIR=$RUNNER_TEMP/alfa-ci-private" >> "$GITHUB_ENV"
+
       - name: Generate current-run Gate 4 pipeline evidence
+        shell: bash {0}
         run: |
           set -u
           OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
           bash tools/runtime_pipeline.sh > "$OUT" 2>&1
           RC=$?
           cat "$OUT"
+          echo "RUNTIME_PIPELINE_RC=$RC"
           [ "$RC" -eq 0 ] || exit "$RC"
           RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
           [ -n "$RUN_ID" ]
@@ -83,6 +92,7 @@ jobs:
           grep -Fx 'gate_status=READY' "$OUT"
           grep -Fx 'launch_status=AUTHORIZED' "$OUT"
           grep -Fx "source_commit=$(git rev-parse HEAD)" "$OUT"
+          grep -Fx 'runtime_id=debian' "$OUT"
           echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
           echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
 
