@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 60
     env:
       ALFA_SOURCE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      ALFA_GATE7_RUNTIME_ID: debian
     steps:
       - name: Checkout exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -30,6 +31,7 @@ jobs:
           set -euo pipefail
           printf '%s' "$ALFA_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$'
           test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
+          test "$ALFA_GATE7_RUNTIME_ID" = "debian"
           git fsck --full --no-progress
       - name: Forensic clean stale APK build outputs
         run: |
@@ -67,25 +69,25 @@ jobs:
       - name: Generate current-run Gate 5 and Gate 6 provenance
         run: |
           set -euo pipefail
-          bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" debian apk-readiness
+          bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" "$ALFA_GATE7_RUNTIME_ID" apk-readiness
           GATE6="$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
           grep -Fx 'gate_status=PASS' "$GATE6"
           grep -Fx 'bootstrap_status=PASS' "$GATE6"
           grep -Fx 'authorization_status=AUTHORIZED' "$GATE6"
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$GATE6"
-          grep -Fx 'runtime_id=debian' "$GATE6"
+          grep -Fx "runtime_id=$ALFA_GATE7_RUNTIME_ID" "$GATE6"
       - name: Prepare exact Gate 7 Android launch asset
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/gate7-launch.properties"
-          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID=debian bash tools/prepare_gate7_android_asset.sh "$ALFA_PIPELINE_RUN_ID"
+          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID="$ALFA_GATE7_RUNTIME_ID" bash tools/prepare_gate7_android_asset.sh "$ALFA_PIPELINE_RUN_ID"
           test -s "$OUT"
           grep -Fx 'schema_version=gate7-launch.v1' "$OUT"
           grep -Fx 'gate_status=READY' "$OUT"
           grep -Fx 'launch_status=AUTHORIZED' "$OUT"
           grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$OUT"
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT"
-          grep -Fx 'runtime_id=debian' "$OUT"
+          grep -Fx "runtime_id=$ALFA_GATE7_RUNTIME_ID" "$OUT"
           echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
       - name: Prepare Android SDK
         run: |
@@ -102,5 +104,6 @@ jobs:
         run: |
           set -euo pipefail
           test -s "$ALFA_GATE7_ASSET"
+          test "$ALFA_GATE7_RUNTIME_ID" = "debian"
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
