@@ -25,7 +25,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-
       - name: Verify canonical source identity
         run: |
           set -euo pipefail
@@ -33,7 +32,6 @@ jobs:
           test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
-
       - name: Forensic clean stale APK build outputs
         run: |
           set -euo pipefail
@@ -51,20 +49,67 @@ jobs:
           fi
           echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
           echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
-
       - name: Setup Java and Gradle for provenance probes
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
-
       - name: Setup Gradle for provenance probes
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
         with:
           gradle-version: '8.11.1'
-
+      - name: Configure CI capability roots
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          echo "ALFA_EXEC_SHARED_ROOT=$RUNNER_TEMP/alfa-ci-shared" >> "$GITHUB_ENV"
+          echo "TMPDIR=$RUNNER_TEMP/alfa-ci-private" >> "$GITHUB_ENV"
+      - name: Generate current-run Gate 4 pipeline evidence
+        shell: bash {0}
+        run: |
+          set -u
+          OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
+          bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          RC=$?
+          cat "$OUT"
+          echo "RUNTIME_PIPELINE_RC=$RC"
+          [ "$RC" -eq 0 ] || exit "$RC"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
+          [ -n "$RUN_ID" ]
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          echo "CURRENT_RUN_GATE4=PASS"
+      - name: Generate current-run production Gate 5 and Gate 6 provenance
+        run: |
+          set -euo pipefail
+          bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" debian apk-readiness
+          GATE6="$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
+          test -s "$GATE6"
+          grep -Fx 'gate_status=PASS' "$GATE6"
+          grep -Fx 'bootstrap_status=PASS' "$GATE6"
+          grep -Fx 'authorization_status=AUTHORIZED' "$GATE6"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$GATE6"
+          grep -Fx 'runtime_id=debian' "$GATE6"
+          echo "CURRENT_RUN_GATE5_GATE6=PASS"
+      - name: Prepare exact Gate 7 Android launch asset
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID=debian bash tools/prepare_gate7_android_asset.sh "$ALFA_PIPELINE_RUN_ID"
+          test -s "$OUT"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT"
+          grep -Fx 'gate_status=READY' "$OUT"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT"
+          grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$OUT"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT"
+          grep -Fx 'runtime_id=debian' "$OUT"
+          echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
+          echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
+          echo "CURRENT_RUN_GATE7=PASS"
       - name: Parser-safe continuation probe
         run: |
           set -euo pipefail
-          echo "APK_READINESS_PREFLIGHT=PASS"
-          echo "ALFA_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
+          echo "APK_READINESS_GATES_4_TO_7_PARSED=PASS"
