@@ -2,15 +2,47 @@ package com.alfa.device_ctrl;
 
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.ScaleGestureDetector;
+import android.view.View;
 
 import com.termux.terminal.TerminalSession;
+import com.termux.view.TerminalView;
 import com.termux.view.TerminalViewClient;
 
-/** Minimal host adapter for the upstream Apache-2.0 TerminalView library. */
+/** Host adapter for TerminalView with an explicit native Android IME boundary. */
 public final class AlfaTerminalViewClient implements TerminalViewClient {
-    @Override public float onScale(float scale) { return scale; }
-    @Override public void onSingleTapUp(MotionEvent event) { }
+    public interface SoftKeyboardRequester { void show(View target); }
+
+    private View terminalView;
+    private SoftKeyboardRequester softKeyboardRequester;
+
+    public AlfaTerminalViewClient() { }
+
+    public AlfaTerminalViewClient(View terminalView, SoftKeyboardRequester requester) {
+        bind(terminalView, requester);
+    }
+
+    public void bind(View terminalView, SoftKeyboardRequester requester) {
+        this.terminalView = terminalView;
+        this.softKeyboardRequester = requester;
+    }
+
+    @Override public float onScale(float scale) {
+        if (terminalView instanceof TerminalView) {
+            float factor = Math.max(0.75f, Math.min(1.75f, scale));
+            TerminalView view = (TerminalView) terminalView;
+            int size = Math.max(9, Math.min(22, Math.round(13f * factor)));
+            view.setTextSize(size);
+        }
+        return scale;
+    }
+
+    @Override public void onSingleTapUp(MotionEvent event) {
+        if (terminalView == null) return;
+        terminalView.setFocusableInTouchMode(true);
+        terminalView.requestFocus();
+        if (softKeyboardRequester != null) softKeyboardRequester.show(terminalView);
+    }
+
     @Override public boolean shouldBackButtonBeMappedToEscape() { return true; }
     @Override public boolean shouldEnforceCharBasedInput() { return true; }
     @Override public boolean shouldUseCtrlSpaceWorkaround() { return false; }
