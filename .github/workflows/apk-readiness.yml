@@ -20,16 +20,19 @@ jobs:
   apk-readiness:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      ALFA_SOURCE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Checkout exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Verify canonical source identity
         run: |
           set -euo pipefail
-          test "${GITHUB_SHA}" = "$(git rev-parse HEAD)"
+          test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
@@ -90,7 +93,7 @@ jobs:
           [ -n "$RUN_ID" ]
           RUN_DIR="artifacts/pipeline/$RUN_ID"
           test -s "$RUN_DIR/gate4/environment_contract.txt"
-          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$(git rev-parse HEAD)"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
           echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
           echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
           echo "CURRENT_RUN_GATE4=PASS"
@@ -104,7 +107,7 @@ jobs:
           grep -Fx 'gate_status=PASS' "$GATE6"
           grep -Fx 'bootstrap_status=PASS' "$GATE6"
           grep -Fx 'authorization_status=AUTHORIZED' "$GATE6"
-          grep -Fx "source_commit=$(git rev-parse HEAD)" "$GATE6"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$GATE6"
           grep -Fx 'runtime_id=debian' "$GATE6"
           echo "CURRENT_RUN_GATE5_GATE6=PASS"
 
@@ -118,7 +121,7 @@ jobs:
           grep -Fx 'gate_status=READY' "$OUT"
           grep -Fx 'launch_status=AUTHORIZED' "$OUT"
           grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$OUT"
-          grep -Fx "source_commit=$(git rev-parse HEAD)" "$OUT"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT"
           grep -Fx 'runtime_id=debian' "$OUT"
           echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
           echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
@@ -172,7 +175,7 @@ jobs:
           trap 'rm -rf "$TMP"' EXIT
           unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
           diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
-          grep -Fx "source_commit=$(git rev-parse HEAD)" "$TMP/gate7-launch.properties"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$TMP/gate7-launch.properties"
           grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$TMP/gate7-launch.properties"
           grep -Fx 'authorization_status=AUTHORIZED' "$TMP/gate7-launch.properties"
           grep -Fq 'RuntimeStartupCoordinator.onActivityResumed(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
@@ -225,14 +228,14 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$APK" | grep -E "versionCode='1'|versionName='0.1.0'"
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
           echo "APK_SHA256=$APK_SHA256"
-          echo "APK_SOURCE_COMMIT=$GITHUB_SHA"
+          echo "APK_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
           echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
           cat > "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt" <<EOF
 schema_version=apk-artifact-provenance.v1
-artifact_name=alfa-device-ctrl-debug-${GITHUB_SHA}
+artifact_name=alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}
 apk_path=app/build/outputs/apk/debug/app-debug.apk
 apk_sha256=$APK_SHA256
-source_commit=$GITHUB_SHA
+source_commit=$ALFA_SOURCE_COMMIT
 pipeline_run_id=$ALFA_PIPELINE_RUN_ID
 package_name=com.alfa.device_ctrl
 version_code=1
@@ -245,7 +248,7 @@ EOF
       - name: Upload verified APK and provenance evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: alfa-device-ctrl-debug-${{ github.sha }}
+          name: alfa-device-ctrl-debug-${{ env.ALFA_SOURCE_COMMIT }}
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate4/environment_contract.txt
