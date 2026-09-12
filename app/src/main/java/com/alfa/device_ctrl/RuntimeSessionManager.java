@@ -36,6 +36,11 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
         return true;
     }
 
+    private void notifyState(String event) {
+        Listener current = listener;
+        if (current != null) current.onState(SessionUiState.resolve(event).name());
+    }
+
     public synchronized boolean start(int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
         if (session != null && session.isRunning()) { notifyState(promptReady ? "RUNNING" : "PTY_WAITING_FOR_PROMPT"); return promptReady; }
         if (columns < 1 || rows < 1 || !contract.isAuthorizedForInteractiveRuntime()) { notifyState("BLOCKED"); return false; }
