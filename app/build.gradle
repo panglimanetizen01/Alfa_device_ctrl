@@ -90,3 +90,19 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareProotLoader')
     dependsOn tasks.named('prepareGate7LaunchContract')
 }
+
+tasks.withType(Test).configureEach {
+    dependsOn tasks.named('prepareProotLoader')
+}
+
+dependencies {
+    implementation project(":terminal-view")
+    implementation 'org.tukaani:xz:1.12'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:core:1.7.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test:rules:1.7.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+}
