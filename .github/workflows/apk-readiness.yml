@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: alfa-apk-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   apk-readiness:
     runs-on: ubuntu-latest
@@ -26,6 +30,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
       - name: Verify canonical source identity
         run: |
           set -euo pipefail
@@ -33,49 +38,77 @@ jobs:
           test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
           test "$ALFA_GATE7_RUNTIME_ID" = "debian"
           git fsck --full --no-progress
+          echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
+
       - name: Forensic clean stale APK build outputs
         run: |
           set -euo pipefail
           tracked_generated="$(git ls-files -z | tr '\0' '\n' | grep -E '(^|/)(build|\.build|\.gradle)(/|$)|\.apk$|\.aab$|\.apks$|\.xapk$' || true)"
-          test -z "$tracked_generated"
+          if [ -n "$tracked_generated" ]; then
+            echo "TRACKED_GENERATED_BUILD_ARTIFACTS_FOUND"
+            printf '%s\n' "$tracked_generated"
+            exit 1
+          fi
           rm -rf .gradle .build build app/build terminal-emulator/build terminal-view/build app/src/main/jniLibs/arm64-v8a/libtermux.so
-      - name: Setup Java and Gradle
+          if find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print -quit | grep -q .; then
+            echo "STALE_APK_ARTIFACT_REMAINS_AFTER_CLEAN"
+            find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print
+            exit 1
+          fi
+          echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
+          echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
+
+      - name: Setup Java and Gradle for provenance probes
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
-      - name: Setup Gradle
+
+      - name: Setup Gradle for provenance probes
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
         with:
           gradle-version: '8.11.1'
+          cache-read-only: true
+
       - name: Configure CI capability roots
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
           echo "ALFA_EXEC_SHARED_ROOT=$RUNNER_TEMP/alfa-ci-shared" >> "$GITHUB_ENV"
           echo "TMPDIR=$RUNNER_TEMP/alfa-ci-private" >> "$GITHUB_ENV"
+
       - name: Generate current-run Gate 4 pipeline evidence
+        shell: bash {0}
         run: |
-          set -euo pipefail
+          set -u
           OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
           bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          RC=$?
+          cat "$OUT"
+          echo "RUNTIME_PIPELINE_RC=$RC"
+          [ "$RC" -eq 0 ] || exit "$RC"
           RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
-          test -n "$RUN_ID"
+          [ -n "$RUN_ID" ]
           RUN_DIR="artifacts/pipeline/$RUN_ID"
           test -s "$RUN_DIR/gate4/environment_contract.txt"
           test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
           echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
           echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
-      - name: Generate current-run Gate 5 and Gate 6 provenance
+          echo "CURRENT_RUN_GATE4=PASS"
+
+      - name: Generate current-run production Gate 5 and Gate 6 provenance
         run: |
           set -euo pipefail
           bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" "$ALFA_GATE7_RUNTIME_ID" apk-readiness
           GATE6="$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
+          test -s "$GATE6"
           grep -Fx 'gate_status=PASS' "$GATE6"
           grep -Fx 'bootstrap_status=PASS' "$GATE6"
           grep -Fx 'authorization_status=AUTHORIZED' "$GATE6"
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$GATE6"
           grep -Fx "runtime_id=$ALFA_GATE7_RUNTIME_ID" "$GATE6"
+          echo "CURRENT_RUN_GATE5_GATE6=PASS"
+
       - name: Prepare exact Gate 7 Android launch asset
         run: |
           set -euo pipefail
@@ -89,10 +122,13 @@ jobs:
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT"
           grep -Fx "runtime_id=$ALFA_GATE7_RUNTIME_ID" "$OUT"
           echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
+          echo "CURRENT_RUN_GATE7=PASS"
+
       - name: Prepare Android SDK
         run: |
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
+
       - name: Rebuild libtermux from canonical source
         run: |
           set -euo pipefail
@@ -100,6 +136,13 @@ jobs:
           "$NDK/ndk-build" -C terminal-emulator NDK_PROJECT_PATH="$GITHUB_WORKSPACE/terminal-emulator" APP_BUILD_SCRIPT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jni/Android.mk" APP_ABI=arm64-v8a NDK_OUT="$RUNNER_TEMP/termux-obj" NDK_LIBS_OUT="$GITHUB_WORKSPACE/terminal-emulator/src/main/jniLibs" V=1
           LIB="terminal-emulator/src/main/jniLibs/arm64-v8a/libtermux.so"
           test -s "$LIB"
+          READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          "$READELF" -h "$LIB" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:.*DYN'
+          mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$LIB" | awk '$1 == "LOAD" {print $NF}')
+          test "${#LOAD_ALIGNS[@]}" -gt 0
+          for align in "${LOAD_ALIGNS[@]}"; do echo "LIBTERMUX_LOAD_ALIGN=$align"; (( align >= 16384 )); done
+          echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
+
       - name: Unit tests and APK build
         run: |
           set -euo pipefail
@@ -107,3 +150,117 @@ jobs:
           test "$ALFA_GATE7_RUNTIME_ID" = "debian"
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify packaged runtime startup contract and provenance
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          unzip -l "$APK" | grep -F 'assets/gate7-launch.properties'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot-loader.so'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot.so'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libtermux.so'
+          TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+          unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
+          diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$TMP/gate7-launch.properties"
+          grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$TMP/gate7-launch.properties"
+          grep -Fx 'launch_status=AUTHORIZED' "$TMP/gate7-launch.properties"
+          grep -Fq 'RuntimeStartupCoordinator.onActivityResumed(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
+          grep -Fq 'RuntimeStartupPolicy.shouldAutoStart' app/src/main/java/com/alfa/device_ctrl/RuntimeStartupCoordinator.java
+          echo "PACKAGED_RUNTIME_STARTUP_AND_PROVENANCE=PASS"
+
+      - name: Verify native ELF and 16 KB APK alignment
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
+          test "${#LIBS[@]}" -gt 0
+          for so in "${LIBS[@]}"; do
+            echo "ELF_CHECK=$so"
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:'
+            TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
+            case "$TYPE" in
+              DYN|EXEC)
+                mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF}')
+                test "${#LOAD_ALIGNS[@]}" -gt 0
+                for align in "${LOAD_ALIGNS[@]}"; do echo "ELF_LOAD_ALIGN=$align"; (( align >= 16384 )); done
+                if [ "$TYPE" = "DYN" ]; then
+                  RELRO_VIRT=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $3; exit}')
+                  RELRO_MEM=$("$READELF" -lW "$so" | awk '$1 == "GNU_RELRO" {print $6; exit}')
+                  test -n "$RELRO_VIRT"
+                  test -n "$RELRO_MEM"
+                  RELRO_VIRT=${RELRO_VIRT#0x}
+                  RELRO_MEM=${RELRO_MEM#0x}
+                  RELRO_END=$((16#$RELRO_VIRT + 16#$RELRO_MEM))
+                  test $((RELRO_END % 16384)) -eq 0
+                  echo "ELF_RELRO=PASS"
+                else
+                  echo "ELF_RELRO=NOT_APPLICABLE_EXECUTABLE"
+                fi
+                ;;
+              *) echo "UNEXPECTED_ELF_TYPE=$TYPE"; exit 1 ;;
+            esac
+          done
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+
+      - name: Verify package identity manifest ABI permissions and launcher
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt2"
+          "$AAPT" dump packagename "$APK" | grep -Fx 'com.alfa.device_ctrl'
+          BADGING=$("$AAPT" dump badging "$APK")
+          printf '%s\n' "$BADGING" | grep -F "versionCode='1'"
+          printf '%s\n' "$BADGING" | grep -F "versionName='0.1.0'"
+          printf '%s\n' "$BADGING" | grep -F "native-code: 'arm64-v8a'"
+          printf '%s\n' "$BADGING" | grep -F "launchable-activity: name='com.alfa.device_ctrl.MainActivity'"
+          PERMS=$("$AAPT" dump permissions "$APK")
+          printf '%s\n' "$PERMS" | grep -F 'uses-permission:'
+          echo "APK_PACKAGE_MANIFEST_ABI_LAUNCHER=PASS"
+
+      - name: Verify APK digest and emit immutable provenance
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
+          test "${#APK_SHA256}" -eq 64
+          echo "APK_SHA256=$APK_SHA256"
+          echo "APK_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
+          echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
+          cat > "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt" <<EOF
+schema_version=apk-artifact-provenance.v1
+artifact_name=alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}
+apk_path=app/build/outputs/apk/debug/app-debug.apk
+apk_sha256=$APK_SHA256
+source_commit=$ALFA_SOURCE_COMMIT
+pipeline_run_id=$ALFA_PIPELINE_RUN_ID
+package_name=com.alfa.device_ctrl
+version_code=1
+version_name=0.1.0
+abi=arm64-v8a
+gate7_asset=assets/gate7-launch.properties
+gate7_pipeline_run_id=$ALFA_PIPELINE_RUN_ID
+EOF
+          test -s "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt"
+          cp "$APK" "$ALFA_PIPELINE_RUN_DIR/alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}.apk"
+          sha256sum "$ALFA_PIPELINE_RUN_DIR/alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}.apk" | grep -F "$APK_SHA256"
+          echo "APK_IMMUTABLE_PROVENANCE=PASS"
+
+      - name: Upload verified APK and provenance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: alfa-device-ctrl-debug-${{ env.ALFA_SOURCE_COMMIT }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/alfa-device-ctrl-debug-${{ env.ALFA_SOURCE_COMMIT }}.apk
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate4/environment_contract.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/requests/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/decisions/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/authorizations/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate6/bootstrap.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/apk-artifact-provenance.txt
+          if-no-files-found: error
+          retention-days: 14
