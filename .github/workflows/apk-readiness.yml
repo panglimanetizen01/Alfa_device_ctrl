@@ -69,6 +69,13 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Configure CI capability roots
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          echo "ALFA_EXEC_SHARED_ROOT=$RUNNER_TEMP/alfa-ci-shared" >> "$GITHUB_ENV"
+          echo "TMPDIR=$RUNNER_TEMP/alfa-ci-private" >> "$GITHUB_ENV"
+
       - name: Generate current-run Gate 4 pipeline evidence
         shell: bash {0}
         run: |
