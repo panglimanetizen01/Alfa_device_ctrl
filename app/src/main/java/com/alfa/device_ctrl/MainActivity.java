@@ -115,7 +115,7 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         LinearLayout bar = row(PANEL_HIGH);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(12), 0, dp(12), 0);
-        TextView brand = label(getString(R.string.alfa_os), PRIMARY, 16, true);
+        TextView brand = label("ALFA DEVICE CTRL", PRIMARY, 16, true);
         brand.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         bar.addView(brand, new LinearLayout.LayoutParams(0, dp(42), 1));
         telemetryText = label("RUNTIME: UNKNOWN  |  READY: 0/0", MUTED, 10, false);
@@ -169,7 +169,10 @@ public final class MainActivity extends Activity implements RuntimeSessionManage
         window.addView(header);
         runtimeDashboard = column(Color.BLACK);
         runtimeDashboard.setPadding(dp(8), dp(5), dp(8), dp(5));
-        window.addView(runtimeDashboard, new LinearLayout.LayoutParams(-1, 0, 1));
+        android.widget.ScrollView runtimeScroll = new android.widget.ScrollView(this);
+        runtimeScroll.setFillViewport(true);
+        runtimeScroll.addView(runtimeDashboard, new android.widget.ScrollView.LayoutParams(-1, -2));
+        window.addView(runtimeScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         return window;
     }
 
