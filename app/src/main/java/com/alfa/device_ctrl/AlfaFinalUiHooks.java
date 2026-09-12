@@ -2,6 +2,7 @@ package com.alfa.device_ctrl;
 
 import android.app.Activity;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -76,13 +77,30 @@ public final class AlfaFinalUiHooks {
     private static int dp(Activity a, int value) { return Math.round(value * a.getResources().getDisplayMetrics().density); }
 
     private static final class FrameOverlay {
+        private static final int BACK_TAG = 0xA1FA0B0;
+
         static void show(Activity activity, ViewGroup content, View panel) {
             android.widget.FrameLayout overlay = new android.widget.FrameLayout(activity);
             overlay.setBackgroundColor(AlfaUiTheme.CANVAS);
+            overlay.setTag(BACK_TAG);
             overlay.addView(panel, new android.widget.FrameLayout.LayoutParams(-1, -1));
-            Button close = new Button(activity); close.setText("BACK"); close.setTextColor(AlfaUiTheme.CYAN); close.setMinHeight(dp(activity, 48)); close.setOnClickListener(v -> content.removeView(overlay));
+            final android.window.OnBackInvokedCallback[] callback = new android.window.OnBackInvokedCallback[1];
+            Runnable close = () -> {
+                content.removeView(overlay);
+                if (Build.VERSION.SDK_INT >= 33 && callback[0] != null) activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(callback[0]);
+            };
+            Button closeButton = new Button(activity);
+            closeButton.setText("BACK");
+            closeButton.setTextColor(AlfaUiTheme.CYAN);
+            closeButton.setMinHeight(dp(activity, 48));
+            closeButton.setOnClickListener(v -> close.run());
             android.widget.FrameLayout.LayoutParams closeParams = new android.widget.FrameLayout.LayoutParams(dp(activity, 76), dp(activity, 48), android.view.Gravity.TOP | android.view.Gravity.END);
-            overlay.addView(close, closeParams); content.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
+            overlay.addView(closeButton, closeParams);
+            content.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
+            if (Build.VERSION.SDK_INT >= 33) {
+                callback[0] = close::run;
+                activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY, callback[0]);
+            }
         }
     }
 }
