@@ -163,7 +163,7 @@ jobs:
           diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
           grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$TMP/gate7-launch.properties"
           grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$TMP/gate7-launch.properties"
-          grep -Fx 'launch_status=AUTHORIZED' "$TMP/gate7-launch.properties'
+          grep -Fx 'launch_status=AUTHORIZED' "$TMP/gate7-launch.properties"
           grep -Fq 'RuntimeStartupCoordinator.onActivityResumed(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
           grep -Fq 'RuntimeStartupPolicy.shouldAutoStart' app/src/main/java/com/alfa/device_ctrl/RuntimeStartupCoordinator.java
           echo "PACKAGED_RUNTIME_STARTUP_AND_PROVENANCE=PASS"
