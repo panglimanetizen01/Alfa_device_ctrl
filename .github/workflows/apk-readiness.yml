@@ -38,6 +38,15 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
+      - name: Reject retired legacy UI residue from source
+        run: |
+          set -euo pipefail
+          if git grep -nE 'ALFA_OS|alfa_os' -- .; then
+            echo "RETIRED_LEGACY_UI_RESIDUE_FOUND_IN_SOURCE"
+            exit 1
+          fi
+          echo "SOURCE_LEGACY_UI_RESIDUE=ZERO"
+
       - name: Forensic clean stale APK build outputs
         run: |
           set -euo pipefail
@@ -147,6 +156,21 @@ jobs:
           test -s "$ALFA_GATE7_ASSET"
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Reject retired legacy UI residue from built APK
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          AAPT2="$ANDROID_HOME/build-tools/35.0.0/aapt2"
+          if "$AAPT2" dump resources "$APK" | grep -Eiq 'ALFA_OS|alfa_os'; then
+            echo "RETIRED_LEGACY_UI_RESIDUE_FOUND_IN_APK"
+            exit 1
+          fi
+          if unzip -p "$APK" resources.arsc 2>/dev/null | strings | grep -Eiq 'ALFA_OS|alfa_os'; then
+            echo "RETIRED_LEGACY_UI_BINARY_RESIDUE_FOUND_IN_APK"
+            exit 1
+          fi
+          echo "APK_LEGACY_UI_RESIDUE=ZERO"
 
       - name: Verify packaged runtime startup contract and provenance
         run: |
