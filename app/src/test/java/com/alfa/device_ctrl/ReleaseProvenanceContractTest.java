@@ -8,15 +8,18 @@ import java.nio.file.Files;
 
 import org.junit.Test;
 
-/** Release builds must not silently omit runtime provenance or accept an untrusted loader. */
+/** APK builds must not silently omit current-run runtime provenance or accept an untrusted loader. */
 public final class ReleaseProvenanceContractTest {
-    @Test public void releaseBuildRequiresGate7Asset() throws Exception {
+    @Test public void apkBuildRequiresCurrentRunGate7Asset() throws Exception {
         File source = new File("build.gradle");
         assertTrue(source.isFile());
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
-        assertTrue(text.contains("gradle.startParameter.taskNames.any"));
-        assertTrue(text.contains("|| releaseBuild"));
-        assertTrue(text.contains("Gate 7 launch provenance is required for release builds"));
+        assertTrue(text.contains("ALFA_GATE7_ASSET"));
+        assertTrue(text.contains("APK readiness is blocked: current-run Gate 7 launch provenance is missing"));
+        assertTrue(text.contains("ALFA_GATE7_RUNTIME_ID"));
+        assertTrue(text.contains("value = { key ->"));
+        assertTrue(text.contains("key.endsWith('=')"));
+        assertTrue(!text.contains("gradle.startParameter.taskNames.any"));
     }
 
     @Test public void loaderBuildFailsOnTrustedShaMismatch() throws Exception {

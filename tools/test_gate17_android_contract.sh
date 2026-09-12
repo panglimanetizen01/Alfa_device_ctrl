@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 T="app/src/androidTest/java/com/alfa/device_ctrl/G17AndroidRuntimeExecutionTest.java"
+E="app/src/androidTest/java/com/alfa/device_ctrl/AlfaStartupTerminalE2ETest.java"
 L="tools/test_gate17_live.sh"
 test -s "$T"
+test -s "$E"
 grep -Fq 'InstrumentationRegistry.getInstrumentation().getTargetContext()' "$T"
 grep -Fq 'android.os.Process.myUid()' "$T"
 grep -Fq 'new ProcessBuilder(x)' "$T"
@@ -12,12 +14,24 @@ grep -Fq 'gate16-runtime-execution-authorization.v1' "$T"
 grep -Fq 'execution_status' "$T"
 grep -Fq 'DEFERRED:G17' "$T"
 grep -Fq 'G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION' "$T"
+grep -Fq 'expected_apk_sha256' "$T"
+grep -Fq 'ai.sourceDir' "$T"
+grep -Fq 'installed APK does not match exact CI artifact' "$T"
 ! grep -Fq 'com.termux' "$T"
 ! grep -Fq '/home/userland' "$T"
 ! grep -Fq 'runtime_execution.sh' "$T"
 ! grep -Fq 'RuntimeSessionManager' "$T"
+grep -Fq 'ActivityScenario.launch(MainActivity.class)' "$E"
+grep -Fq 'expected_apk_sha256' "$E"
+grep -Fq 'ALFA_STARTUP_TERMINAL_E2E=PASS' "$E"
+grep -Fq 'ALFA_RUNTIME_PROMPT=alfa:debian:' "$E"
+grep -Fq 'ALFA_RUNTIME_PWD=/root' "$E"
+grep -Fq 'manager.runRuntimeCommand("pwd"' "$E"
 grep -Fq 'am instrument -w -r' "$L"
+grep -Fq 'AlfaStartupTerminalE2ETest#freshStartupReachesTerminalPromptAndExecutesPwd' "$L"
 grep -Fq 'G17AndroidRuntimeExecutionTest#exactGate16AuthorizationExecutesPwdInsidePackagedRuntime' "$L"
+grep -Fq 'expected_apk_sha256' "$L"
+grep -Fq 'pm clear "$PACKAGE"' "$L"
 grep -Fq 'gate16_path' "$L"
 grep -Fq 'run-as "$PACKAGE"' "$L"
 grep -Fq 'gate16_runtime_execution_authorization.sh' "$L" || true
@@ -27,4 +41,5 @@ grep -Fq 'gate16_runtime_execution_authorization.sh' "$L" || true
 ! grep -Fq 'G17_LIVE_PROOT=' "$L"
 ! grep -Fq 'G17_LIVE_ROOTFS=' "$L"
 echo G17_ANDROID_INSTRUMENTATION_BOUNDARY=PASS
-echo G17_LIVE_DELEGATES_TO_ANDROID=PASS
+echo G17_LIVE_EXACT_APK_BINDING=PASS
+echo G17_LIVE_FRESH_STARTUP_TERMINAL=PASS

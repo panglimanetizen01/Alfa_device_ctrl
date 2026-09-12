@@ -27,6 +27,12 @@ public final class G17AndroidRuntimeExecutionTest {
         Context c = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertEquals(PACKAGE, c.getPackageName());
         ApplicationInfo ai = c.getApplicationInfo();
+        String expectedApkSha256 = arg("expected_apk_sha256");
+        assertTrue("expected APK SHA invalid", SHA256.matcher(expectedApkSha256).matches());
+        File installedApk = new File(ai.sourceDir);
+        assertTrue("installed APK source missing", installedApk.isFile());
+        assertEquals("installed APK does not match exact CI artifact", expectedApkSha256.toLowerCase(Locale.ROOT), sha256(installedApk));
+
         File engine = new File(ai.nativeLibraryDir, "libproot.so");
         File loader = new File(ai.nativeLibraryDir, "libproot-loader.so");
         assertTrue("packaged PRoot missing", engine.isFile() && engine.canExecute());
@@ -106,6 +112,7 @@ public final class G17AndroidRuntimeExecutionTest {
             w.write("execution_status=EXECUTED\nresult_status=PASS\ncommand=pwd\ncommand_semantics=POSIX_PWD\ncommand_result=/root\ncommand_returncode=0\n");
             w.write("guest_pid="+pid+"\nguest_proc_exe="+exe+"\nguest_proc_cwd="+cwd+"\nguest_proc_root="+root+"\n");
             w.write("android_package="+PACKAGE+"\nandroid_uid="+uid+"\nandroid_selinux_context="+selinux+"\n");
+            w.write("installed_apk_source="+installedApk.getCanonicalPath()+"\ninstalled_apk_sha256="+sha256(installedApk)+"\nexpected_apk_sha256="+expectedApkSha256.toLowerCase(Locale.ROOT)+"\n");
             w.write("execution_engine="+engine.getCanonicalPath()+"\nengine_sha256="+sha256(engine)+"\nrootfs_path="+rootfs.getCanonicalPath()+"\nrootfs_os_release_sha256="+sha256(new File(rootfs,"etc/os-release"))+"\n");
             w.write("pipeline_run_id="+a.getProperty("pipeline_run_id")+"\nsource_commit="+source+"\ngate4_contract_sha256="+a.getProperty("gate4_contract_sha256")+"\nprofile_sha256="+a.getProperty("profile_sha256")+"\ngate16_authorization_sha256="+g16Hash+"\ngate16_authorization_id="+a.getProperty("authorization_id")+"\ntimestamp="+System.currentTimeMillis()+"\n");
         }
@@ -113,6 +120,7 @@ public final class G17AndroidRuntimeExecutionTest {
         System.out.println("G17_LIVE_RESULT=REAL_ANDROID_DUT_EXECUTION");
         System.out.println("G17_LIVE_PACKAGE="+PACKAGE);
         System.out.println("G17_LIVE_UID="+uid);
+        System.out.println("G17_LIVE_APK_SHA256="+expectedApkSha256.toLowerCase(Locale.ROOT));
         System.out.println("G17_LIVE_SELINUX="+selinux);
         System.out.println("G17_LIVE_ARTIFACT="+out);
     }
