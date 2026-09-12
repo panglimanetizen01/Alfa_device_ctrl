@@ -16,14 +16,13 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Copies the explicit build-time Gate 7 launch attestation into the private runtime vault. */
-public final class AlfaApplication {
+public final class AlfaApplication extends Application {
     private static final String ASSET = "gate7-launch.properties";
     private static AlfaApplication instance;
     private final AtomicInteger startedActivities = new AtomicInteger();
 
     @Override public void onCreate() {
-        super.onCreate();
-        instance = this;
+        super.onCreate(); instance = this;
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
             @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
@@ -40,29 +39,18 @@ public final class AlfaApplication {
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
 
     private static void installWindowMetricsAndInsetsPolicy(Activity activity) {
-        if (!(activity instanceof MainActivity)) return;
-        View content = activity.findViewById(android.R.id.content);
-        if (!(content instanceof FrameLayout)) return;
+        if (!(activity instanceof MainActivity)) return; View content = activity.findViewById(android.R.id.content); if (!(content instanceof FrameLayout)) return;
         ActualWindowMetrics metrics = ActualWindowMetrics.from(activity); content.setTag(metrics); AdaptivePanelLayoutController.install(content, metrics);
         content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> { if (right != oldRight || bottom != oldBottom) { ActualWindowMetrics current = ActualWindowMetrics.from(activity); content.setTag(current); AdaptivePanelLayoutController.install(content, current); } });
-        final int baseLeft = content.getPaddingLeft(); final int baseTop = content.getPaddingTop(); final int baseRight = content.getPaddingRight(); final int baseBottom = content.getPaddingBottom();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) activity.getWindow().setDecorFitsSystemWindows(false);
-        activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> {
-            final int left; final int top; final int right; final int bottom;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { android.graphics.Insets system = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout() | WindowInsets.Type.mandatorySystemGestures()); left = system.left; top = system.top; right = system.right; bottom = system.bottom; }
-            else { left = insets.getSystemWindowInsetLeft(); top = insets.getSystemWindowInsetTop(); right = insets.getSystemWindowInsetRight(); bottom = insets.getSystemWindowInsetBottom(); }
-            content.setPadding(baseLeft + left, baseTop + top, baseRight + right, baseBottom + bottom); return insets;
-        });
+        final int baseLeft = content.getPaddingLeft(); final int baseTop = content.getPaddingTop(); final int baseRight = content.getPaddingRight(); final int baseBottom = content.getPaddingBottom(); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) activity.getWindow().setDecorFitsSystemWindows(false);
+        activity.getWindow().getDecorView().setOnApplyWindowInsetsListener((decor, insets) -> { final int left; final int top; final int right; final int bottom; if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { android.graphics.Insets system = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout() | WindowInsets.Type.mandatorySystemGestures()); left = system.left; top = system.top; right = system.right; bottom = system.bottom; } else { left = insets.getSystemWindowInsetLeft(); top = insets.getSystemWindowInsetTop(); right = insets.getSystemWindowInsetRight(); bottom = insets.getSystemWindowInsetBottom(); } content.setPadding(baseLeft + left, baseTop + top, baseRight + right, baseBottom + bottom); return insets; });
         activity.getWindow().getDecorView().requestApplyInsets();
     }
 
     private void installLaunchContract() {
-        File vault = new File(getFilesDir(), "runtime-vault"); if (!vault.exists() && !vault.mkdirs()) return;
-        File destination = new File(vault, ASSET); File temporary = new File(vault, ASSET + ".part"); if (destination.exists() && !destination.delete()) return;
-        try (InputStream input = getAssets().open(ASSET); FileOutputStream output = new FileOutputStream(temporary)) { byte[] buffer = new byte[4096]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); output.getFD().sync(); validate(temporary); if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed"); }
-        catch (Exception ignored) { temporary.delete(); destination.delete(); }
+        File vault = new File(getFilesDir(), "runtime-vault"); if (!vault.exists() && !vault.mkdirs()) return; File destination = new File(vault, ASSET); File temporary = new File(vault, ASSET + ".part"); if (destination.exists() && !destination.delete()) return;
+        try (InputStream input = getAssets().open(ASSET); FileOutputStream output = new FileOutputStream(temporary)) { byte[] buffer = new byte[4096]; int count; while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count); output.getFD().sync(); validate(temporary); if (!temporary.renameTo(destination)) throw new IllegalStateException("launch-contract-publish-failed"); } catch (Exception ignored) { temporary.delete(); destination.delete(); }
     }
-
     private static void validate(File file) throws Exception {
         Properties p = new Properties(); try (FileInputStream input = new FileInputStream(file)) { p.load(input); }
         require(p, "schema_version"); require(p, "gate"); require(p, "gate_status"); require(p, "launch_status"); require(p, "launch_source"); require(p, "authorization_status"); require(p, "pipeline_run_id"); require(p, "runtime_id"); require(p, "source_commit"); require(p, "gate4_contract_sha256"); require(p, "profile_sha256"); require(p, "implementation_commit"); require(p, "runtime_registry_sha256");
