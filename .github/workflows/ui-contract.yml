@@ -21,4 +21,4 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
       - name: Execute final UI unit contract
-        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.AlfaUiForensicDesignContractTest -x :app:prepareGate7LaunchContract -x :app:prepareProotLoader
+        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.AlfaUiForensicDesignContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest -x :app:prepareGate7LaunchContract -x :app:prepareProotLoader
