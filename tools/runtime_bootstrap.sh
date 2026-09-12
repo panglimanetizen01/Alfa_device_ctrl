@@ -4,21 +4,27 @@
 set -u
 
 main() {
-    local ROOT RUN_ID REQUEST_ID REQUEST DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT RUNTIME_REGISTRY_SHA
+    local ROOT RUN_ID RUNTIME_ID REQUEST_ID REQUEST DECISION AUTH OUTPUT STATE_DIR MARKER READY_TMP IMPLEMENTATION_COMMIT RUNTIME_REGISTRY_SHA
     local CONTRACT SOURCE_COMMIT PROFILE_SHA CONTRACT_SHA DECISION_ID
     local AUTH_STATUS AUTH_DECISION_ID AUTH_REQUEST_ID AUTH_RUN AUTH_SOURCE AUTH_PROFILE AUTH_CONTRACT
-    local STATUS REASON PROBE NOW MARKER_CONTENT MARKER_READ POLICY ACTION RESOURCE CONTEXT
+    local STATUS REASON PROBE NOW MARKER_CONTENT MARKER_READ POLICY ACTION RESOURCE CONTEXT REQUEST_ID_IN_REQUEST
 
     ROOT=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)
     RUN_ID=${1:-}
-    REQUEST_ID=${2:-}
-    if [ -z "$RUN_ID" ] || [ -z "$REQUEST_ID" ]; then
+    RUNTIME_ID=${2:-}
+    REQUEST_ID=${3:-}
+    if [ -z "$RUN_ID" ] || [ -z "$RUNTIME_ID" ] || [ -z "$REQUEST_ID" ]; then
         printf '%s\n' 'GATE6_STATUS=BLOCKED'
-        printf '%s\n' 'GATE6_REASON=explicit pipeline_run_id and Gate 5 request_id are required'
+        printf '%s\n' 'GATE6_REASON=explicit pipeline_run_id, runtime_id and Gate 5 request_id are required'
         return 1
     fi
 
     . "$ROOT/tools/runtime_chain_common.sh"
+    if ! chain_runtime_supported "$ROOT" "$RUNTIME_ID"; then
+        printf '%s\n' 'GATE6_STATUS=BLOCKED'
+        printf '%s\n' 'GATE6_REASON=unsupported-runtime-id'
+        return 1
+    fi
     RUNTIME_REGISTRY_SHA=$(sha256sum "$ROOT/runtime/runtimes.v1.json" 2>/dev/null | awk '{print $1}')
     if [ -z "$RUNTIME_REGISTRY_SHA" ] || ! printf '%s' "$RUNTIME_REGISTRY_SHA" | grep -Eq '^[0-9a-f]{64}$'; then
         printf '%s\n' 'GATE6_STATUS=BLOCKED'
@@ -67,6 +73,8 @@ main() {
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 authorization artifact missing for explicit request_id'
     elif [ "$REQUEST_ID_IN_REQUEST" != "$REQUEST_ID" ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 request_id mismatch'
+    elif [ "$(chain_field "$REQUEST" runtime_id 2>/dev/null || printf '%s')" != "$RUNTIME_ID" ]; then
+        STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 runtime_id mismatch'
     elif [ "$POLICY" != 'gate5-apk-readiness-v1' ] || [ "$ACTION" != 'assembleDebug' ] || [ "$RESOURCE" != 'apk' ] || [ "$CONTEXT" != 'purpose=apk-readiness' ]; then
         STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 request is not the approved APK readiness policy'
     elif ! chain_identity_ok "$CONTRACT" "$DECISION"; then
@@ -92,16 +100,10 @@ main() {
     fi
 
     if [ "$STATUS" = 'PASS' ]; then
-        if ! chain_runtime_supported "$ROOT" "$(chain_field "$REQUEST" runtime_id 2>/dev/null || printf '%s')" 2>/dev/null; then
-            STATUS=BLOCKED; PROBE=BLOCKED; REASON='Gate 5 request runtime is unsupported'
-        fi
-    fi
-
-    if [ "$STATUS" = 'PASS' ]; then
         if ! mkdir -p "$STATE_DIR"; then
             STATUS=ERROR; PROBE=ERROR; REASON='bootstrap state directory creation failed'
         else
-            MARKER_CONTENT="pipeline_run_id=$RUN_ID|request_id=$REQUEST_ID|runtime_registry_sha256=$RUNTIME_REGISTRY_SHA|source_commit=$SOURCE_COMMIT|profile_sha256=$PROFILE_SHA|gate4_contract_sha256=$CONTRACT_SHA|decision_id=$DECISION_ID"
+            MARKER_CONTENT="pipeline_run_id=$RUN_ID|request_id=$REQUEST_ID|runtime_id=$RUNTIME_ID|runtime_registry_sha256=$RUNTIME_REGISTRY_SHA|source_commit=$SOURCE_COMMIT|profile_sha256=$PROFILE_SHA|gate4_contract_sha256=$CONTRACT_SHA|decision_id=$DECISION_ID"
             if ! printf '%s\n' "$MARKER_CONTENT" > "$MARKER"; then
                 STATUS=ERROR; PROBE=ERROR; REASON='bootstrap marker write failed'
             elif ! MARKER_READ=$(cat "$MARKER" 2>/dev/null); then
@@ -129,8 +131,8 @@ main() {
         printf '%s\n' 'gate=gate6'
         printf '%s\n' "gate_status=$STATUS"
         printf '%s\n' "pipeline_run_id=$RUN_ID"
+        printf '%s\n' "runtime_id=$RUNTIME_ID"
         printf '%s\n' "request_id=$REQUEST_ID"
-        printf '%s\n' "runtime_id=$(chain_field "$REQUEST" runtime_id 2>/dev/null || printf '%s')"
         printf '%s\n' "runtime_registry_sha256=$RUNTIME_REGISTRY_SHA"
         printf '%s\n' "source_commit=$SOURCE_COMMIT"
         printf '%s\n' "implementation_commit=$IMPLEMENTATION_COMMIT"
@@ -148,6 +150,7 @@ main() {
 
     printf '%s\n' '=== ALFA GATE 6 V1 BOOTSTRAP ==='
     printf '%s\n' "pipeline_run_id=$RUN_ID"
+    printf '%s\n' "runtime_id=$RUNTIME_ID"
     printf '%s\n' "request_id=$REQUEST_ID"
     printf '%s\n' "GATE6_STATUS=$STATUS"
     printf '%s\n' "GATE6_RESULT=$([ "$STATUS" = 'PASS' ] && printf '%s' 'BOOTSTRAP_PASS' || printf '%s' "$STATUS")"
