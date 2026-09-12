@@ -19,7 +19,7 @@ concurrency:
 jobs:
   apk-readiness:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -57,6 +57,50 @@ jobs:
           fi
           echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
           echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
+
+      - name: Generate current-run Gate 4 pipeline evidence
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
+          bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          cat "$OUT"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
+          [ -n "$RUN_ID" ]
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$(git rev-parse HEAD)"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          echo "CURRENT_RUN_GATE4=PASS"
+
+      - name: Generate current-run production Gate 5 and Gate 6 provenance
+        run: |
+          set -euo pipefail
+          bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" debian apk-readiness
+          GATE6="$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
+          test -s "$GATE6"
+          grep -Fx 'gate_status=PASS' "$GATE6"
+          grep -Fx 'bootstrap_status=PASS' "$GATE6"
+          grep -Fx 'authorization_status=AUTHORIZED' "$GATE6"
+          grep -Fx "source_commit=$(git rev-parse HEAD)" "$GATE6"
+          grep -Fx 'runtime_id=debian' "$GATE6"
+          echo "CURRENT_RUN_GATE5_GATE6=PASS"
+
+      - name: Prepare exact Gate 7 Android launch asset
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID=debian bash tools/prepare_gate7_android_asset.sh "$ALFA_PIPELINE_RUN_ID"
+          test -s "$OUT"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT"
+          grep -Fx 'gate_status=READY' "$OUT"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT"
+          grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$OUT"
+          grep -Fx "source_commit=$(git rev-parse HEAD)" "$OUT"
+          grep -Fx 'runtime_id=debian' "$OUT"
+          echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
+          echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
+          echo "CURRENT_RUN_GATE7=PASS"
 
       - name: Setup Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -99,12 +143,16 @@ jobs:
           echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
 
       - name: Unit tests and APK build
+        env:
+          ALFA_GATE7_ASSET: ${{ env.ALFA_GATE7_ASSET }}
+          ALFA_GATE7_RUNTIME_ID: debian
         run: |
           set -euo pipefail
+          test -s "$ALFA_GATE7_ASSET"
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Verify packaged runtime startup contract
+      - name: Verify packaged runtime startup contract and provenance
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
@@ -112,9 +160,16 @@ jobs:
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot-loader.so'
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot.so'
           unzip -l "$APK" | grep -F 'lib/arm64-v8a/libtermux.so'
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
+          diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
+          grep -Fx "source_commit=$(git rev-parse HEAD)" "$TMP/gate7-launch.properties"
+          grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$TMP/gate7-launch.properties"
+          grep -Fx 'authorization_status=AUTHORIZED' "$TMP/gate7-launch.properties"
           grep -Fq 'RuntimeStartupCoordinator.onActivityResumed(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
           grep -Fq 'RuntimeStartupPolicy.shouldAutoStart' app/src/main/java/com/alfa/device_ctrl/RuntimeStartupCoordinator.java
-          echo "PACKAGED_RUNTIME_STARTUP_CONTRACT=PASS"
+          echo "PACKAGED_RUNTIME_STARTUP_AND_PROVENANCE=PASS"
 
       - name: Verify native ELF and 16 KB APK alignment
         run: |
@@ -162,11 +217,18 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$APK" | grep -E "versionCode='1'|versionName='0.1.0'"
           echo "APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
           echo "APK_SOURCE_COMMIT=$GITHUB_SHA"
+          echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
 
-      - name: Upload verified debug APK
+      - name: Upload verified APK and provenance evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: alfa-device-ctrl-debug-${{ github.sha }}
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate4/environment_contract.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/requests/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/decisions/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/authorizations/apk-readiness.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate6/bootstrap.txt
           if-no-files-found: error
           retention-days: 14
