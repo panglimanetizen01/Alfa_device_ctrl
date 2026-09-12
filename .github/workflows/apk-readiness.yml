@@ -16,10 +16,55 @@ permissions:
 jobs:
   apk-readiness:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ALFA_SOURCE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Parser and runner smoke test
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify canonical source identity
         run: |
           set -euo pipefail
-          echo "APK_READINESS_WORKFLOW_PARSED=PASS"
-          echo "GITHUB_SHA=$GITHUB_SHA"
-          echo "GITHUB_REF=$GITHUB_REF"
+          printf '%s' "$ALFA_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$'
+          test "$ALFA_SOURCE_COMMIT" = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+          echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
+
+      - name: Forensic clean stale APK build outputs
+        run: |
+          set -euo pipefail
+          tracked_generated="$(git ls-files -z | tr '\0' '\n' | grep -E '(^|/)(build|\.build|\.gradle)(/|$)|\.apk$|\.aab$|\.apks$|\.xapk$' || true)"
+          if [ -n "$tracked_generated" ]; then
+            echo "TRACKED_GENERATED_BUILD_ARTIFACTS_FOUND"
+            printf '%s\n' "$tracked_generated"
+            exit 1
+          fi
+          rm -rf .gradle .build build app/build terminal-emulator/build terminal-view/build app/src/main/jniLibs/arm64-v8a/libtermux.so
+          if find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print -quit | grep -q .; then
+            echo "STALE_APK_ARTIFACT_REMAINS_AFTER_CLEAN"
+            find . -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.apks' -o -name '*.xapk' \) -print
+            exit 1
+          fi
+          echo "STALE_APK_BUILD_OUTPUTS=REMOVED"
+          echo "SOURCE_TREE_BUILD_ARTIFACT_BOUNDARY=PASS"
+
+      - name: Setup Java and Gradle for provenance probes
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle for provenance probes
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Parser-safe continuation probe
+        run: |
+          set -euo pipefail
+          echo "APK_READINESS_PREFLIGHT=PASS"
+          echo "ALFA_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
