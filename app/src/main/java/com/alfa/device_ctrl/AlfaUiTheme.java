@@ -92,8 +92,8 @@ public final class AlfaUiTheme {
 
     private static void styleButton(Button button, float density, int min) {
         int original = button.getTextColors() == null ? OBSIDIAN_TEXT : button.getTextColors().getDefaultColor();
-        int textColor = normalizeTextColor(original);
         String label = button.getText() == null ? "" : button.getText().toString().trim().toUpperCase();
+        int textColor = semanticTextColor(label, normalizeTextColor(original));
         int accent = textColor == OBSIDIAN_ERROR ? OBSIDIAN_ERROR : OBSIDIAN_READY;
         boolean filled = "OPEN".equals(label) || label.startsWith("SYSTEM ONLINE");
         button.setTextSize(10);
@@ -112,11 +112,20 @@ public final class AlfaUiTheme {
 
     private static void styleText(TextView text, int min) {
         int original = text.getCurrentTextColor();
-        text.setTextColor(normalizeTextColor(original));
+        String label = text.getText() == null ? "" : text.getText().toString().trim().toUpperCase();
+        text.setTextColor(semanticTextColor(label, normalizeTextColor(original)));
         if (text.isClickable()) text.setMinimumHeight(Math.max(text.getMinimumHeight(), min));
         Typeface current = text.getTypeface();
         if (current != null) text.setTypeface(Typeface.create(current, current.isBold() ? Typeface.BOLD : Typeface.NORMAL));
         if (text.getTextSize() <= 13 * text.getResources().getDisplayMetrics().scaledDensity) text.setLetterSpacing(0.03f);
+    }
+
+    private static int semanticTextColor(String label, int fallback) {
+        if ("READY".equals(label) || "ACTIVE".equals(label) || "ONLINE".equals(label)) return OBSIDIAN_READY;
+        if ("VERIFYING".equals(label) || "WARN".equals(label) || "WARNING".equals(label) || "PARTIAL".equals(label)) return OBSIDIAN_VERIFYING;
+        if ("FAILED".equals(label) || "HALT".equals(label) || "DENIED".equals(label) || "BLOCKED".equals(label)) return OBSIDIAN_ERROR;
+        if ("TELEMETRY".equals(label) || "SOCKET".equals(label) || "INFO".equals(label)) return OBSIDIAN_TELEMETRY;
+        return fallback;
     }
 
     private static void styleContainer(View view, float density) {
