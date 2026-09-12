@@ -223,9 +223,24 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump packagename "$APK" | grep -Fx 'com.alfa.device_ctrl'
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging "$APK" | grep -E "versionCode='1'|versionName='0.1.0'"
-          echo "APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
+          APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
+          echo "APK_SHA256=$APK_SHA256"
           echo "APK_SOURCE_COMMIT=$GITHUB_SHA"
           echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
+          cat > "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt" <<EOF
+schema_version=apk-artifact-provenance.v1
+artifact_name=alfa-device-ctrl-debug-${GITHUB_SHA}
+apk_path=app/build/outputs/apk/debug/app-debug.apk
+apk_sha256=$APK_SHA256
+source_commit=$GITHUB_SHA
+pipeline_run_id=$ALFA_PIPELINE_RUN_ID
+package_name=com.alfa.device_ctrl
+version_code=1
+version_name=0.1.0
+gate7_asset=assets/gate7-launch.properties
+gate7_pipeline_run_id=$ALFA_PIPELINE_RUN_ID
+EOF
+          test -s "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt"
 
       - name: Upload verified APK and provenance evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -238,5 +253,6 @@ jobs:
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/decisions/apk-readiness.txt
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/authorizations/apk-readiness.txt
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate6/bootstrap.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/apk-artifact-provenance.txt
           if-no-files-found: error
           retention-days: 14
