@@ -161,10 +161,6 @@ public final class AlfaFinalUiPresentation {
         TextView title = text("ALFA PTY  •  INTERACTIVE SESSION", AlfaUiTheme.TEXT, 11, true);
         title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         bar.addView(title, new LinearLayout.LayoutParams(0, -1, 1));
-        addHeaderAction(bar, "—", "Minimize terminal", v -> showScreen(AlfaUiNavigation.Screen.RUNTIME));
-        addHeaderAction(bar, "↗", "Fullscreen terminal", v -> setFullscreen(!fullscreen));
-        addHeaderAction(bar, "□", "Split terminal (requires independent session)", v -> blocked("SPLIT", "independent second PTY evidence belum tersedia"));
-        addHeaderAction(bar, "×", "Hentikan sesi terminal", v -> invokeHost("stopSession"));
         return bar;
     }
 
