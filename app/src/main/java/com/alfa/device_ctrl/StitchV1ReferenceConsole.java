@@ -30,7 +30,6 @@ public final class StitchV1ReferenceConsole {
     private static final int MUTED = Color.rgb(139, 148, 158);
     private static final int GREEN = Color.rgb(16, 185, 129);
     private static final int CYAN = Color.rgb(56, 189, 248);
-    private static final int RED = Color.rgb(239, 68, 68);
 
     private StitchV1ReferenceConsole() {}
 
@@ -64,9 +63,10 @@ public final class StitchV1ReferenceConsole {
 
         LinearLayout filters = row(activity, SURFACE);
         String[] cats = {"ALL", "TERMINAL", "RUNTIME", "SESSIONS", "SPLIT", "FLOATING", "SETTINGS", "SECURITY", "NETWORK", "STORAGE"};
+        final LinearLayout[] listRef = new LinearLayout[1];
         for (String cat : cats) {
             Button b = button(activity, cat, cat.equals("ALL") ? GREEN : TEXT);
-            b.setOnClickListener(v -> renderList(activity, root, String.valueOf(b.getText()).toLowerCase(Locale.US)));
+            b.setOnClickListener(v -> { if (listRef[0] != null) renderList(activity, listRef[0], String.valueOf(b.getText()).toLowerCase(Locale.US)); });
             filters.addView(b, new LinearLayout.LayoutParams(0, dp(activity, 46), 1));
         }
         ScrollView filterScroll = new ScrollView(activity);
@@ -84,16 +84,17 @@ public final class StitchV1ReferenceConsole {
         root.addView(search, new LinearLayout.LayoutParams(-1, dp(activity, 50)));
 
         LinearLayout list = column(activity, BG);
+        listRef[0] = list;
         ScrollView scroll = new ScrollView(activity);
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         root.addView(footer(activity), new LinearLayout.LayoutParams(-1, dp(activity, 48)));
         overlay.addView(root, new FrameLayout.LayoutParams(-1, -1));
         activity.addContentView(overlay, new ViewGroup.LayoutParams(-1, -1));
-        renderList(activity, root, "all");
+        renderList(activity, list, "all");
         search.addTextChangedListener(new android.text.TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-            public void onTextChanged(CharSequence s, int st, int before, int count) { renderList(activity, root, s.toString().trim().toLowerCase(Locale.US)); }
+            public void onTextChanged(CharSequence s, int st, int before, int count) { renderList(activity, list, s.toString().trim().toLowerCase(Locale.US)); }
             public void afterTextChanged(android.text.Editable e) {}
         });
     }
@@ -115,11 +116,7 @@ public final class StitchV1ReferenceConsole {
         return f;
     }
 
-    private static void renderList(Activity activity, LinearLayout root, String filter) {
-        ScrollView scroll = null;
-        for (int i = 0; i < root.getChildCount(); i++) if (root.getChildAt(i) instanceof ScrollView) scroll = (ScrollView) root.getChildAt(i);
-        if (scroll == null || !(scroll.getChildAt(0) instanceof LinearLayout)) return;
-        LinearLayout list = (LinearLayout) scroll.getChildAt(0);
+    private static void renderList(Activity activity, LinearLayout list, String filter) {
         list.removeAllViews();
         int shown = 0;
         for (String id : StitchV1ReferenceCatalog.screenIds()) {
@@ -167,7 +164,7 @@ public final class StitchV1ReferenceConsole {
         if ("security".equals(category)) return "security=MAP_TO_ACTUAL_MANIFEST_RUNTIME_AND_POLICY_EVIDENCE\nroot_rish_seccomp=ONLY_REPORT_WHAT_CANONICAL_RUNTIME_PROVES\n";
         if ("floating".equals(category)) return "floating=REQUIRE_ACTUAL_SYSTEM_OVERLAY_CAPABILITY_BEFORE_ENABLEMENT\n";
         if ("split".equals(category)) return "split=REQUIRE_INDEPENDENT_SECOND_PTY_SESSION_BEFORE_BROADCAST\n";
-        if ("sessions".equals(category)) return "sessions=MAP_TO_RUNTIME_SESSION_MANAGER; DO_NOT_SYNTHESIZE_SESSION_COUNT\n";
+        if ("sessions".equals(category)) return "sessions=MAP_TO_RUNTIME_SESSION_MANAGER; DO_NOT_SYNTHESIZE SESSION COUNT\n";
         if ("storage-policy".equals(category) || "project-storage".equals(category)) return "storage=RECONCILE_REFERENCE_PATHS_TO_CANONICAL_HOST_STORAGE_BRIDGE\n";
         if ("settings".equals(category)) return "settings=IMPLEMENT_AS_NATIVE_PERSISTED_CONFIGURATION; REFERENCE_PACKAGE_NAMES_ARE_NON-CANONICAL\n";
         return "ui=ADAPT_REFERENCE_VISUAL_STATE_TO_CANONICAL_NATIVE_ARCHITECTURE\n";
