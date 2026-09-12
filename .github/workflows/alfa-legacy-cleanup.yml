@@ -1,0 +1,86 @@
+name: Alfa Legacy APK UI Artifact Cleanup
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout canonical master
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Delete all GitHub Actions artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[] | [.id,.name] | @tsv' > "$RUNNER_TEMP/artifacts.tsv" || true
+          while IFS=$'\t' read -r id name; do
+            [ -n "${id:-}" ] || continue
+            echo "DELETE_ARTIFACT id=$id name=$name"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/$id"
+          done < "$RUNNER_TEMP/artifacts.tsv"
+
+      - name: Delete stale APK/UI/ALFA_OS branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*' --prune
+          git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin/ | sort -u > "$RUNNER_TEMP/branches.txt"
+          while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            [ "$branch" = "master" ] && continue
+            ref="refs/remotes/origin/$branch"
+            legacy=0
+            if git show "$ref:app/src/main/res/values/strings.xml" 2>/dev/null | grep -Eq 'ALFA_OS|alfa_os'; then
+              legacy=1
+            fi
+            case "$branch" in
+              fix/apk-*|fix/final-ui-*|fix/multi-runtime-ui*|fix/ui-*|verify/apk-*|tmp/apk-*|fix/remove-legacy-alfa-os-*) legacy=1 ;;
+            esac
+            if [ "$legacy" -eq 1 ]; then
+              echo "DELETE_BRANCH branch=$branch"
+              gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/$branch"
+            fi
+          done < "$RUNNER_TEMP/branches.txt"
+
+      - name: Verify canonical source has no ALFA_OS residue
+        run: |
+          set -euo pipefail
+          if git grep -nE 'ALFA_OS|alfa_os' HEAD -- .; then
+            echo 'LEGACY_ALFA_OS_RESIDUE_FOUND_IN_MASTER'
+            exit 1
+          fi
+          echo 'MASTER_ALFA_OS_RESIDUE=ZERO'
+
+      - name: Verify no Actions artifacts remain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          count="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" --jq '.artifacts | length' | awk '{s+=$1} END {print s+0}')"
+          test "$count" -eq 0
+          echo 'ACTIONS_ARTIFACT_COUNT=0'
+
+      - name: Remove this temporary cleanup workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/alfa-legacy-cleanup.yml?ref=master" --jq '.sha')"
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/alfa-legacy-cleanup.yml" \
+            -f message='cleanup: remove temporary legacy cleanup workflow' \
+            -f sha="$sha" \
+            -f branch='master'
