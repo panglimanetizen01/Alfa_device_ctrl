@@ -1,7 +1,13 @@
 package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.junit.Test;
 
@@ -25,5 +31,19 @@ public final class AlfaFinalUiPresentationContractTest {
         assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.0f));
         assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.25f));
         assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.5f));
+    }
+
+    @Test public void terminalHeaderContainsNoLegacyActionButtons() throws Exception {
+        Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
+        String text = Files.readString(source, StandardCharsets.UTF_8);
+        int start = text.indexOf("private View terminalHeader() {");
+        int end = text.indexOf("\n    private View accessoryBar()", start);
+        assertTrue("terminalHeader method must exist", start >= 0);
+        assertTrue("terminalHeader method boundary must exist", end > start);
+        String header = text.substring(start, end);
+        assertFalse("terminal header must not render minimize action", header.contains("addHeaderAction(bar, \"—\""));
+        assertFalse("terminal header must not render fullscreen action", header.contains("addHeaderAction(bar, \"↗\""));
+        assertFalse("terminal header must not render split action", header.contains("addHeaderAction(bar, \"□\""));
+        assertFalse("terminal header must not render kill action", header.contains("addHeaderAction(bar, \"×\""));
     }
 }
