@@ -5,15 +5,25 @@ set -u
 main() {
     local SHARED_ROOT="${ALFA_EXEC_SHARED_ROOT:-/storage/emulated/0}"
     local PRIVATE_ROOT="${TMPDIR:-${PREFIX:-$HOME}/tmp}"
-    local P S
+    local P S STORAGE_SCOPE
     local EXEC_PRIVATE_STATUS SHARED_STORAGE_IO_STATUS SCRIPT_BASH_STATUS SCRIPT_PYTHON_STATUS PROCESS_SPAWN_STATUS
     local SHARED_STORAGE_IO_REASON=PASS
     local OVERALL_STATUS=PASS
+
+    if [ "${ALFA_BUILD_CONTEXT:-}" = 'ci' ]; then
+        SHARED_ROOT="${ALFA_CI_SHARED_ROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-shared}"
+        STORAGE_SCOPE='ci_builder_filesystem'
+        mkdir -p "$SHARED_ROOT" || OVERALL_STATUS=ERROR
+    else
+        STORAGE_SCOPE='android_shared_storage'
+    fi
 
     echo "=== ALFA EXECUTION CAPABILITY V2 ==="
     echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
     echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
     echo "shared_root=$SHARED_ROOT"
+    echo "storage_scope=$STORAGE_SCOPE"
+    echo "build_context=${ALFA_BUILD_CONTEXT:-android_runtime}"
     echo
     echo "[CAPABILITIES]"
 
@@ -30,7 +40,8 @@ main() {
     rm -f "$P" 2>/dev/null || true
     echo "EXEC_PRIVATE=$EXEC_PRIVATE_STATUS | verification=private file execution | scope=current_execution_workspace"
 
-    # Shared storage is deliberately tested as data I/O, never as executable code.
+    # Shared storage is a data-I/O capability. On CI this deliberately targets
+    # an ephemeral runner directory; it never claims Android external storage.
     S="$SHARED_ROOT/.alfa_storage_io.$$"
     SHARED_VALUE='ALFA_SHARED_STORAGE_IO_OK'
     if [ ! -d "$SHARED_ROOT" ]; then
@@ -55,7 +66,7 @@ main() {
         OVERALL_STATUS=ERROR
         rm -f "$S" 2>/dev/null || true
     fi
-    echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=shared_storage_data_only"
+    echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=$STORAGE_SCOPE"
     echo "SHARED_STORAGE_IO_REASON=$SHARED_STORAGE_IO_REASON"
 
     if printf '%s\n' 'printf "%s\\n" SCRIPT_BASH_OK' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
