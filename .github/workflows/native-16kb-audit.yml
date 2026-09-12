@@ -27,12 +27,53 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+
+      - name: Verify canonical source identity
+        run: |
+          set -euo pipefail
+          test "${GITHUB_SHA}" = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+
+      - name: Generate current-run Gate 4 pipeline evidence
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
+          bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          cat "$OUT"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
+          [ -n "$RUN_ID" ]
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$(git rev-parse HEAD)"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+
+      - name: Generate current-run production Gate 5 and Gate 6 provenance
+        run: |
+          set -euo pipefail
+          bash tools/apk_readiness_provenance.sh "$ALFA_PIPELINE_RUN_ID" debian apk-readiness
+          grep -Fx 'gate_status=PASS' "$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'authorization_status=AUTHORIZED' "$ALFA_PIPELINE_RUN_DIR/gate6/bootstrap.txt"
+
+      - name: Prepare exact Gate 7 Android launch asset
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID=debian bash tools/prepare_gate7_android_asset.sh "$ALFA_PIPELINE_RUN_ID"
+          test -s "$OUT"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT"
+          grep -Fx 'gate_status=READY' "$OUT"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT"
+          grep -Fx "source_commit=$(git rev-parse HEAD)" "$OUT"
+          echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
+          echo "ALFA_GATE7_RUNTIME_ID=debian" >> "$GITHUB_ENV"
+
       - name: Setup Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -76,7 +117,10 @@ jobs:
           done
       - name: Build debug APK
         shell: bash
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          set -euo pipefail
+          test -s "$ALFA_GATE7_ASSET"
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
       - name: Verify 16 KB native alignment
         shell: bash
         run: |
