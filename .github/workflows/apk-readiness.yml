@@ -251,7 +251,8 @@ jobs:
           printf '%s\n' "$BADGING" | grep -F "versionName='0.1.0'"
           printf '%s\n' "$BADGING" | grep -F "native-code: 'arm64-v8a'"
           printf '%s\n' "$BADGING" | grep -F "launchable-activity: name='com.alfa.device_ctrl.MainActivity'"
-          printf '%s\n' "$BADGING" | grep -F 'ALFA DEVICE CTRL'
+          DEX_TEXT=$(for dex in $(unzip -Z1 "$APK" | grep -E '^classes[0-9]*\.dex$'); do unzip -p "$APK" "$dex"; done | strings)
+          printf '%s\n' "$DEX_TEXT" | grep -F 'ALFA DEVICE CTRL'
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
           test "${#APK_SHA256}" -eq 64
           echo "APK_SHA256=$APK_SHA256"
