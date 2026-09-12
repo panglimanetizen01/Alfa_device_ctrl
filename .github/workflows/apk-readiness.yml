@@ -70,12 +70,14 @@ jobs:
           gradle-version: '8.11.1'
 
       - name: Generate current-run Gate 4 pipeline evidence
+        shell: bash {0}
         run: |
           set -u
           OUT="$RUNNER_TEMP/alfa-runtime-pipeline.out"
           bash tools/runtime_pipeline.sh > "$OUT" 2>&1
           RC=$?
           cat "$OUT"
+          echo "RUNTIME_PIPELINE_RC=$RC"
           [ "$RC" -eq 0 ] || exit "$RC"
           RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
           [ -n "$RUN_ID" ]
