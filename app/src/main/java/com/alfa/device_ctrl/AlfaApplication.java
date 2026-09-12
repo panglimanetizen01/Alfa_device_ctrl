@@ -27,8 +27,8 @@ public final class AlfaApplication extends Application {
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
             @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
-            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowMetricsAndInsetsPolicy(activity); AlfaUiTheme.apply(activity); }
-            @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); RuntimeStartupCoordinator.onActivityResumed(activity); }
+            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowMetricsAndInsetsPolicy(activity); AlfaUiTheme.apply(activity); AlfaFinalUiPresentation.apply(activity); }
+            @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); AlfaFinalUiPresentation.apply(activity); RuntimeStartupCoordinator.onActivityResumed(activity); }
             @Override public void onActivityPaused(Activity activity) { }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
             @Override public void onActivityDestroyed(Activity activity) { }
