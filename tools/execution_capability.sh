@@ -5,34 +5,19 @@ set -u
 main() {
     local SHARED_ROOT="${ALFA_EXEC_SHARED_ROOT:-/storage/emulated/0}"
     local PRIVATE_ROOT="${TMPDIR:-${PREFIX:-$HOME}/tmp}"
-    local P S STORAGE_SCOPE BUILD_CONTEXT
+    local P S
     local EXEC_PRIVATE_STATUS SHARED_STORAGE_IO_STATUS SCRIPT_BASH_STATUS SCRIPT_PYTHON_STATUS PROCESS_SPAWN_STATUS
     local SHARED_STORAGE_IO_REASON=PASS
     local OVERALL_STATUS=PASS
-
-    BUILD_CONTEXT="${ALFA_BUILD_CONTEXT:-}"
-    if [ "$BUILD_CONTEXT" = 'ci' ] || [ "${GITHUB_ACTIONS:-}" = 'true' ]; then
-        SHARED_ROOT="${ALFA_CI_SHARED_ROOT:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-shared}"
-        PRIVATE_ROOT="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/alfa-ci-private"
-        STORAGE_SCOPE='ci_builder_filesystem'
-        BUILD_CONTEXT='ci'
-        mkdir -p "$SHARED_ROOT" "$PRIVATE_ROOT" || OVERALL_STATUS=ERROR
-    else
-        STORAGE_SCOPE='android_shared_storage'
-        BUILD_CONTEXT='android_runtime'
-        mkdir -p "$PRIVATE_ROOT" 2>/dev/null || true
-    fi
 
     echo "=== ALFA EXECUTION CAPABILITY V2 ==="
     echo "timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo UNKNOWN)"
     echo "execution_path=$(pwd 2>/dev/null || echo UNKNOWN)"
     echo "shared_root=$SHARED_ROOT"
-    echo "private_root=$PRIVATE_ROOT"
-    echo "storage_scope=$STORAGE_SCOPE"
-    echo "build_context=$BUILD_CONTEXT"
     echo
     echo "[CAPABILITIES]"
 
+    # Execution semantics are tested only in the private execution-capable workspace.
     P="$PRIVATE_ROOT/alfa_exec_private.$$"
     if printf '%s\n' '#!/bin/sh' 'printf "%s\\n" EXEC_PRIVATE_OK' > "$P" 2>/dev/null \
        && chmod +x "$P" 2>/dev/null \
@@ -45,6 +30,7 @@ main() {
     rm -f "$P" 2>/dev/null || true
     echo "EXEC_PRIVATE=$EXEC_PRIVATE_STATUS | verification=private file execution | scope=current_execution_workspace"
 
+    # Shared storage is deliberately tested as data I/O, never as executable code.
     S="$SHARED_ROOT/.alfa_storage_io.$$"
     SHARED_VALUE='ALFA_SHARED_STORAGE_IO_OK'
     if [ ! -d "$SHARED_ROOT" ]; then
@@ -69,7 +55,7 @@ main() {
         OVERALL_STATUS=ERROR
         rm -f "$S" 2>/dev/null || true
     fi
-    echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=$STORAGE_SCOPE"
+    echo "SHARED_STORAGE_IO=$SHARED_STORAGE_IO_STATUS | verification=create-write-read-delete | scope=shared_storage_data_only"
     echo "SHARED_STORAGE_IO_REASON=$SHARED_STORAGE_IO_REASON"
 
     if printf '%s\n' 'printf "%s\\n" SCRIPT_BASH_OK' | bash 2>/dev/null | grep -qx 'SCRIPT_BASH_OK'; then
