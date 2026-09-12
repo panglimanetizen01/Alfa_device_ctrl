@@ -1,3 +1,4 @@
+# temporary one-shot cleanup: legacy APK/UI/ALFA_OS branches and Actions artifacts
 name: Alfa Legacy APK UI Artifact Cleanup
 
 on:
