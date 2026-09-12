@@ -6,10 +6,10 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public final class AlfaFinalUiPresentationContractTest {
-    @Test public void finalPresentationUsesObsidianAnd48dpTouchFloor() {
-        assertEquals(0xFF0B0F14, AlfaUiTheme.OBSIDIAN_CANVAS);
-        assertEquals(0xFF121820, AlfaUiTheme.OBSIDIAN_SURFACE);
-        assertEquals(0xFF1A222D, AlfaUiTheme.OBSIDIAN_SURFACE_ACTIVE);
+    @Test public void finalPresentationUsesDominantStitchObsidianTokensAnd48dpTouchFloor() {
+        assertEquals(0xFF101419, AlfaUiTheme.OBSIDIAN_CANVAS);
+        assertEquals(0xFF161B22, AlfaUiTheme.OBSIDIAN_SURFACE);
+        assertEquals(0xFF1C2229, AlfaUiTheme.OBSIDIAN_SURFACE_ACTIVE);
         assertEquals(0xFF10B981, AlfaUiTheme.OBSIDIAN_READY);
         assertEquals(0xFFF59E0B, AlfaUiTheme.OBSIDIAN_VERIFYING);
         assertEquals(0xFFEF4444, AlfaUiTheme.OBSIDIAN_ERROR);
