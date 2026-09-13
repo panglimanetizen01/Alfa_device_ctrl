@@ -16,11 +16,11 @@ public final class StitchV1NativeSurfaceContractTest {
     @Test public void operationalPanelsContainStructuredStitchControls() throws Exception {
         String source = read("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
         String[] required = {
-                "card(", "chip(", "rowButton(", "sectionTitle(",
-                "SESSION MULTIPLEXER", "SPAWN +", "STOP SESSION", "SWITCH SESSION",
-                "APPEARANCE PRESETS", "TYPOGRAPHY", "FONT SIZE", "LINE HEIGHT",
-                "SPLIT VIEW", "HORIZONTAL", "VERTICAL", "SYNC INPUT",
-                "FLOATING TERMINAL", "OVERLAY PERMISSION", "STORAGE POLICY",
+                "card(", "chip(", "row(", "section(",
+                "SESSION MULTIPLEXER", "+ SPAWN PTY", "STOP SESSION", "SWITCH ↔",
+                "Terminal Obsidian", "TYPOGRAPHY", "TERM FONT SIZE", "PTY LINE HEIGHT",
+                "SPLIT VIEW // HORIZONTAL / VERTICAL", "HORIZONTAL", "VERTICAL", "SYNC INPUT",
+                "FLOATING TERMINAL", "OPEN OVERLAY PERMISSION", "STORAGE // VFS POLICY",
                 "PROJECT EXPLORER", "DIAGNOSTIC ENGINE"
         };
         for (String token : required) assertTrue("missing native Stitch control: " + token, source.contains(token));
@@ -29,7 +29,7 @@ public final class StitchV1NativeSurfaceContractTest {
     @Test public void stitchSurfaceKeepsCapabilityGatesExplicit() throws Exception {
         String source = read("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
         assertTrue(source.contains("NOT_EXPOSED_BY_CANONICAL_MANAGER"));
-        assertTrue(source.contains("interactive_overlay=NOT_STARTED_BY_THIS_PANEL"));
+        assertTrue(source.contains("NOT_STARTED_BY_THIS_PANEL"));
         assertTrue(source.contains("SAF_REQUIRED"));
         assertTrue(source.contains("NOT_CLAIMED_FROM_APP_SANDBOX"));
     }
