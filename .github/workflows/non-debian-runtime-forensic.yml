@@ -107,13 +107,14 @@ jobs:
           set -euo pipefail
           proot=.build/proot/src/proot
           root=.build/runtime/rootfs
-          "$proot" -R "$root" -q /usr/bin/qemu-aarch64-static /bin/sh -c '
+          "$proot" -R "$root" -0 -q /usr/bin/qemu-aarch64-static /bin/sh -c '
             set -eu
             echo "RUNTIME_ID=${{ matrix.runtime }}"
             echo "RUNTIME_FAMILY=${{ matrix.family }}"
             echo "RUNTIME_VERSION=${{ matrix.version }}"
             echo "GUEST_ARCH=$(uname -m)"
             echo "GUEST_UID=$(id -u)"
+            test "$(id -u)" = 0
             test -x /bin/sh
             case "${{ matrix.package_manager }}" in
               apt) command -v apt-get >/dev/null; apt-get --version | head -1 ;;
@@ -125,7 +126,8 @@ jobs:
             grep -q "Iface" /proc/net/route
             echo "ROUTE_TABLE=PASS"
             test -x /host-rootfs/usr/bin/curl
-            /host-rootfs/usr/bin/curl --fail --silent --show-error --max-time 10 https://example.com >/tmp/alfa-runtime-network-proof.txt
+            test -s /host-rootfs/etc/ssl/certs/ca-certificates.crt
+            /host-rootfs/usr/bin/curl --fail --silent --show-error --max-time 10 --cacert /host-rootfs/etc/ssl/certs/ca-certificates.crt https://example.com >/tmp/alfa-runtime-network-proof.txt
             test -s /tmp/alfa-runtime-network-proof.txt
             echo "NETWORK_SOCKET_HTTP=PASS"
             echo "SHELL_INTERACTIVE_ENTRYPOINT=PASS"
