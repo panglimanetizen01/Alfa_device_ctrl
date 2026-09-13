@@ -3,7 +3,9 @@ import hashlib
 import html.parser
 import json
 import os
+import posixpath
 import re
+import struct
 import sys
 import zipfile
 
@@ -13,6 +15,7 @@ EXPECTED_COUNTS = {"code.html": 159, ".png": 160, ".md": 7, "files": 326}
 HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 CSS_NUMERIC_RE = re.compile(r"(?<![A-Za-z0-9_-])(\d+(?:\.\d+)?)(px|rem|em|sp|dp|%)\b")
 FONT_RE = re.compile(r"font-family\s*:\s*([^;}]+)", re.I)
+URL_RE = re.compile(r"url\(\s*['\"]?([^'\")]+)", re.I)
 
 class Parser(html.parser.HTMLParser):
     def __init__(self):
@@ -26,11 +29,9 @@ class Parser(html.parser.HTMLParser):
         self.links = []
         self.scripts = []
         self._capture = None
-        self._tag_stack = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
-        self._tag_stack.append(tag)
         if tag == "title": self._capture = "title"
         elif re.fullmatch(r"h[1-6]", tag): self._capture = tag
         if tag == "img": self.images.append(a.get("src", ""))
@@ -40,10 +41,8 @@ class Parser(html.parser.HTMLParser):
         if tag == "script": self.scripts.append(a.get("src") or "inline")
 
     def handle_endtag(self, tag):
-        if self._capture and (tag == self._capture or (self._capture.startswith("h") and tag == self._capture)):
+        if self._capture == tag or (self._capture and self._capture.startswith("h") and tag == self._capture):
             self._capture = None
-        if self._tag_stack:
-            self._tag_stack.pop()
 
     def handle_data(self, data):
         s = " ".join(data.split())
@@ -55,6 +54,10 @@ class Parser(html.parser.HTMLParser):
         if self.links: self.links[-1]["text"] = (self.links[-1]["text"] + " " + s).strip()
 
 
+def sha256_bytes(data):
+    return hashlib.sha256(data).hexdigest()
+
+
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -63,22 +66,43 @@ def sha256(path):
     return h.hexdigest()
 
 
-def analyze_html(name, data):
+def png_metadata(data):
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        return {"valid_png_signature": False}
+    width, height = struct.unpack(">II", data[16:24])
+    return {"valid_png_signature": True, "width": width, "height": height, "bytes": len(data), "sha256": sha256_bytes(data)}
+
+
+def resolve_asset(state_path, reference):
+    if not reference or reference.startswith(("data:", "http:", "https:", "#")):
+        return None
+    state_dir = posixpath.dirname(state_path)
+    candidate = posixpath.normpath(posixpath.join(state_dir, reference.split("#", 1)[0].split("?", 1)[0]))
+    return candidate.lstrip("./")
+
+
+def analyze_html(name, data, zip_names):
     text = data.decode("utf-8", "replace")
     p = Parser()
     p.feed(text)
     colors = sorted(set(HEX_RE.findall(text)), key=lambda x: x.lower())
     numeric = sorted(set(CSS_NUMERIC_RE.findall(text)))
     fonts = sorted(set(x.strip() for x in FONT_RE.findall(text)))
+    refs = []
+    raw_refs = list(p.images) + URL_RE.findall(text)
+    for ref in raw_refs:
+        resolved = resolve_asset(name, ref)
+        refs.append({"source": ref, "resolved": resolved, "exists_in_zip": resolved in zip_names if resolved else False})
     return {
         "path": name,
-        "sha256": hashlib.sha256(data).hexdigest(),
+        "sha256": sha256_bytes(data),
         "bytes": len(data),
         "title": " ".join(p.title),
         "headings": p.headings[:20],
         "buttons": p.buttons[:100],
         "inputs": p.inputs[:100],
         "images": p.images[:100],
+        "asset_references": refs[:200],
         "links": p.links[:100],
         "scripts": p.scripts[:100],
         "hex_colors": colors,
@@ -96,6 +120,7 @@ def main(path):
         raise SystemExit(f"SHA mismatch: {actual_sha} != {EXPECTED_SHA}")
     with zipfile.ZipFile(path) as z:
         names = [n for n in z.namelist() if not n.endswith("/")]
+        name_set = set(names)
         counts = {
             "code.html": sum(n.lower().endswith("code.html") for n in names),
             ".png": sum(n.lower().endswith(".png") for n in names),
@@ -108,15 +133,22 @@ def main(path):
         html_states = []
         for name in sorted(names):
             if name.lower().endswith("code.html"):
-                html_states.append(analyze_html(name, z.read(name)))
-        pngs = [n for n in names if n.lower().endswith(".png")]
+                html_states.append(analyze_html(name, z.read(name), name_set))
+        pngs = []
+        for name in sorted(names):
+            if name.lower().endswith(".png"):
+                data = z.read(name)
+                pngs.append({"path": name, **png_metadata(data)})
         markdown = [n for n in names if n.lower().endswith((".md", ".markdown"))]
+        referenced_assets = sorted({r["resolved"] for s in html_states for r in s["asset_references"] if r["resolved"] and r["exists_in_zip"]})
         manifest = {
             "artifact": os.path.basename(path),
             "sha256": actual_sha,
             "counts": counts,
             "files": sorted(names),
-            "png_files": sorted(pngs),
+            "png_files": sorted(n["path"] for n in pngs),
+            "png_assets": pngs,
+            "referenced_png_assets": [p for p in pngs if p["path"] in referenced_assets],
             "markdown_files": sorted(markdown),
             "html_states": html_states,
         }
@@ -126,16 +158,19 @@ def main(path):
     with open("stitch-forensic/deep-summary.txt", "w", encoding="utf-8") as f:
         f.write(f"ZIP_SHA256={actual_sha}\n")
         f.write(json.dumps(counts, sort_keys=True) + "\n")
+        f.write(f"PNG_REFERENCED={len(manifest['referenced_png_assets'])}\n")
         for state in html_states:
             f.write(f"\nSTATE={state['path']}\nTITLE={state['title']}\n")
             f.write("HEADINGS=" + " | ".join(state["headings"]) + "\n")
             f.write("BUTTONS=" + json.dumps(state["buttons"], ensure_ascii=False) + "\n")
             f.write("INPUTS=" + json.dumps(state["inputs"], ensure_ascii=False) + "\n")
             f.write("IMAGES=" + json.dumps(state["images"], ensure_ascii=False) + "\n")
+            f.write("ASSET_REFERENCES=" + json.dumps(state["asset_references"], ensure_ascii=False) + "\n")
             f.write("COLORS=" + ",".join(state["hex_colors"]) + "\n")
             f.write("FONTS=" + ",".join(state["font_families"]) + "\n")
     print(f"STITCH_FORENSIC=PASS SHA256={actual_sha}")
     print(f"COUNTS={json.dumps(counts, sort_keys=True)}")
+    print(f"PNG_REFERENCED={len(manifest['referenced_png_assets'])}")
     print("MANIFEST=stitch-forensic/deep-manifest.json")
 
 if __name__ == "__main__":
