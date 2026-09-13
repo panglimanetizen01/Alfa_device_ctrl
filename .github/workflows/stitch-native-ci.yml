@@ -1,0 +1,69 @@
+name: Stitch Native CI
+run-name: Stitch Native CI — ${{ github.sha }}
+
+on:
+  push:
+    branches: [work/stitch-native-implementation]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-ci:
+    name: Stitch native unit/build/provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Verify canonical Stitch artifact
+        run: |
+          set -euo pipefail
+          test -f stitch/stitch_alfa_device_control_v1.0.0.zip
+          sha256sum stitch/stitch_alfa_device_control_v1.0.0.zip | grep -F '7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d'
+          python3 tools/stitch_v1_forensic.py stitch/stitch_alfa_device_control_v1.0.0.zip
+
+      - name: Run focused Stitch contract tests
+        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.StitchV1NativeSurfaceContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --no-daemon --stacktrace
+
+      - name: Run full unit tests and debug APK build
+        run: ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify Stitch native source contracts
+        run: |
+          set -euo pipefail
+          grep -Fq 'SESSION MULTIPLEXER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'APPEARANCE PRESETS' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'STORAGE / VFS POLICY' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'DIAGNOSTIC ENGINE' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'NOT_EXPOSED_BY_CANONICAL_MANAGER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'SAF_REQUIRED' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'AlfaUiTheme.TOUCH_TARGET_DP' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          echo 'STITCH_NATIVE_SOURCE_CONTRACT=PASS'
+
+      - name: Upload debug APK and forensic manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: stitch-native-ci-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            stitch-forensic/deep-manifest.json
+            stitch-forensic/deep-summary.txt
