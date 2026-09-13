@@ -8,10 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
-
-import java.util.List;
 
 /** Final-shell navigation bindings for evidence-backed Stitch operational states. */
 public final class AlfaFinalUiHooks {
@@ -50,6 +47,13 @@ public final class AlfaFinalUiHooks {
         menu.setPadding(dp(activity, 12), dp(activity, 8), dp(activity, 12), dp(activity, 12));
         TextView title = text(activity, "STITCH V1 • OPERATIONAL STATES", AlfaUiTheme.CYAN, 14, true);
         menu.addView(title, new LinearLayout.LayoutParams(-1, dp(activity, 52)));
+        Button catalog = new Button(activity);
+        catalog.setText("159 STATE CATALOG");
+        catalog.setTextColor(AlfaUiTheme.READY);
+        catalog.setMinHeight(dp(activity, 48));
+        catalog.setContentDescription("Open all 159 Stitch states");
+        catalog.setOnClickListener(v -> showOverlay(activity, content, StitchV1StatePanel.build(activity, screen -> showPanel(activity, content, screen))));
+        menu.addView(catalog, new LinearLayout.LayoutParams(-1, dp(activity, 48)));
         String[] names = {"NETWORK", "SECURITY", "STORAGE", "AUDIT", "PROJECT", "SESSIONS", "SPLIT", "FLOATING", "APPEARANCE", "SETTINGS", "DIAGNOSTICS"};
         AlfaUiNavigation.Screen[] screens = {AlfaUiNavigation.Screen.NETWORK, AlfaUiNavigation.Screen.SECURITY, AlfaUiNavigation.Screen.STORAGE, AlfaUiNavigation.Screen.AUDIT, AlfaUiNavigation.Screen.PROJECT, AlfaUiNavigation.Screen.SESSIONS, AlfaUiNavigation.Screen.SPLIT, AlfaUiNavigation.Screen.FLOATING, AlfaUiNavigation.Screen.APPEARANCE, AlfaUiNavigation.Screen.SETTINGS, AlfaUiNavigation.Screen.DIAGNOSTICS};
         for (int i = 0; i < names.length; i++) {
