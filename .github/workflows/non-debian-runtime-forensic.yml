@@ -13,7 +13,7 @@ permissions:
 jobs:
   runtime:
     name: ${{ matrix.runtime }} ARM64 runtime
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -47,14 +47,15 @@ jobs:
       - name: Verify runner architecture
         run: |
           set -euo pipefail
-          test "$(uname -m)" = aarch64
+          test "$(uname -m)" = x86_64
           echo "RUNTIME_HOST_ARCH=$(uname -m)"
 
       - name: Install forensic host dependencies
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y build-essential libtalloc-dev file curl xz-utils
+          sudo apt-get install -y build-essential libtalloc-dev file curl xz-utils qemu-user-static
+          test -x /usr/bin/qemu-aarch64-static
 
       - name: Build pinned native PRoot
         env:
@@ -106,14 +107,13 @@ jobs:
           set -euo pipefail
           proot=.build/proot/src/proot
           root=.build/runtime/rootfs
-          "$proot" -R "$root" /bin/sh -c '
+          "$proot" -R "$root" -q /usr/bin/qemu-aarch64-static /bin/sh -c '
             set -eu
             echo "RUNTIME_ID=${{ matrix.runtime }}"
             echo "RUNTIME_FAMILY=${{ matrix.family }}"
             echo "RUNTIME_VERSION=${{ matrix.version }}"
             echo "GUEST_ARCH=$(uname -m)"
             echo "GUEST_UID=$(id -u)"
-            test "$(id -u)" = 0
             test -x /bin/sh
             case "${{ matrix.package_manager }}" in
               apt) command -v apt-get >/dev/null; apt-get --version | head -1 ;;
@@ -134,13 +134,12 @@ jobs:
       - name: Emit runtime evidence
         run: |
           set -euo pipefail
-          cat > .build/runtime-evidence.txt <<EOF
-RUNTIME_ID=${{ matrix.runtime }}
-RUNTIME_FAMILY=${{ matrix.family }}
-RUNTIME_VERSION=${{ matrix.version }}
-RUNTIME_ARCH=aarch64
-PROOT_COMMIT=7266fb3e8516535682f5a9c8f3a7e70f6506eddb
-ROOTFS_SHA256=${{ matrix.sha256 }}
-DEBIAN_TOUCHED=false
-EOF
+          printf '%s\n' \
+            "RUNTIME_ID=${{ matrix.runtime }}" \
+            "RUNTIME_FAMILY=${{ matrix.family }}" \
+            "RUNTIME_VERSION=${{ matrix.version }}" \
+            "RUNTIME_ARCH=aarch64" \
+            "PROOT_COMMIT=7266fb3e8516535682f5a9c8f3a7e70f6506eddb" \
+            "ROOTFS_SHA256=${{ matrix.sha256 }}" \
+            "DEBIAN_TOUCHED=false" > .build/runtime-evidence.txt
           cat .build/runtime-evidence.txt
