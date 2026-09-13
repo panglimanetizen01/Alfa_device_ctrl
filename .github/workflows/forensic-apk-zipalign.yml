@@ -1,0 +1,56 @@
+name: Alfa Forensic APK Zipalign
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk-zipalign-forensic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          gradle-version: '8.11.1'
+      - name: Build debug APK
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "ndk;28.0.13004108"
+          ALFA_GATE7_RUNTIME_ID=debian ALFA_GATE7_ASSET="$GITHUB_WORKSPACE/.github/workflows/forensic-apk-zipalign.yml" ./gradlew :app:assembleDebug -x :app:prepareGate7LaunchContract
+      - name: Capture exact native ELF and ZIP alignment evidence
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+          unzip -q "$APK" 'lib/**/*.so' -d "$TMP"
+          READELF="$ANDROID_HOME/ndk/28.0.13004108/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          mapfile -t LIBS < <(find "$TMP/lib" -type f -name '*.so' | sort)
+          test "${#LIBS[@]}" -gt 0
+          for so in "${LIBS[@]}"; do
+            echo "=== ELF_CHECK=$so ==="
+            "$READELF" -h "$so" | grep -E 'Class:.*ELF64|Machine:.*AArch64|Type:'
+            TYPE=$("$READELF" -h "$so" | awk '$1 == "Type:" {print $2}')
+            mapfile -t LOAD_ALIGNS < <("$READELF" -lW "$so" | awk '$1 == "LOAD" {print $NF}')
+            for align in "${LOAD_ALIGNS[@]}"; do
+              echo "ELF_LOAD_ALIGN=$align"
+              ALIGN_DEC=$(printf '%s\n' "$align" | awk '{if ($1 ~ /^0x/) printf "%d", strtonum($1); else printf "%d", $1}')
+              test "$ALIGN_DEC" -ge 16384
+            done
+            echo "ELF_TYPE=$TYPE"
+          done
+          unzip -lv "$APK" | grep 'lib/arm64-v8a/.*\.so'
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
+          echo 'EXACT_APK_NATIVE_ELF_AND_ZIPALIGN=PASS'
