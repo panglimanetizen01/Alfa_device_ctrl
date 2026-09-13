@@ -91,12 +91,19 @@ jobs:
             echo 'RUNTIME_ARCHIVE=BLOCKED_TRAVERSAL'
             exit 1
           fi
-          grep -E '(^|/)bin/sh$' .build/runtime/file-list.txt
-          rm -rf .build/runtime/rootfs
-          mkdir -p .build/runtime/rootfs
           case '${{ matrix.runtime }}' in
-            kali) tar -xJf "$archive" -C .build/runtime/rootfs ;;
-            *) tar -xzf "$archive" -C .build/runtime/rootfs ;;
+            kali)
+              grep -E '(^|/)usr/bin/sh$' .build/runtime/file-list.txt
+              rm -rf .build/runtime/rootfs
+              mkdir -p .build/runtime/rootfs
+              tar -xJf "$archive" -C .build/runtime/rootfs --strip-components=1 --no-same-owner --no-same-permissions --exclude='kali-arm64/dev/*'
+              ;;
+            *)
+              grep -E '(^|/)bin/sh$' .build/runtime/file-list.txt
+              rm -rf .build/runtime/rootfs
+              mkdir -p .build/runtime/rootfs
+              tar -xzf "$archive" -C .build/runtime/rootfs --no-same-owner --no-same-permissions
+              ;;
           esac
           test -x .build/runtime/rootfs/bin/sh
           file .build/runtime/rootfs/bin/sh
