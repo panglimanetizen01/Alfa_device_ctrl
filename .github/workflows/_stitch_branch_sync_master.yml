@@ -1,0 +1,36 @@
+name: Stitch branch sync
+
+on:
+  push:
+    branches: [work/stitch-native-implementation]
+
+permissions:
+  contents: write
+
+jobs:
+  sync-master:
+    if: ${{ !contains(github.event.head_commit.message, 'sync master into Stitch branch') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge current master and resolve known add/add conflict
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin master
+          if git merge origin/master --no-commit --no-ff; then
+            :
+          else
+            conflicts="$(git diff --name-only --diff-filter=U)"
+            test "$conflicts" = 'app/src/main/java/com/alfa/device_ctrl/StitchV1StateModel.java'
+            git checkout --ours -- app/src/main/java/com/alfa/device_ctrl/StitchV1StateModel.java
+            git add app/src/main/java/com/alfa/device_ctrl/StitchV1StateModel.java
+          fi
+          git commit -m 'chore(ci): sync master into Stitch branch'
+          git push origin HEAD:work/stitch-native-implementation
