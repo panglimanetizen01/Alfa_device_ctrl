@@ -14,7 +14,7 @@ import org.junit.Test;
 
 public final class StitchV1ArtifactBoundaryTest {
     private static final String EXPECTED_SHA256 = "7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d";
-    private static final File ARTIFACT = new File("../../stitch/stitch_alfa_device_control_v1.0.0.zip");
+    private static final File ARTIFACT = new File("../stitch/stitch_alfa_device_control_v1.0.0.zip");
 
     @Test public void canonicalZipIsPresentAndHasExpectedHash() throws Exception {
         assertTrue("canonical Stitch ZIP must be tracked in the repository", ARTIFACT.isFile());
