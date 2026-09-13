@@ -1,0 +1,146 @@
+name: Non-Debian Runtime Forensic
+
+on:
+  push:
+    branches: [work/stitch-native-implementation]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    name: ${{ matrix.runtime }} ARM64 runtime
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: ubuntu
+            family: Ubuntu
+            version: 24.04.4
+            url: https://cdimages.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz
+            sha256: 04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2
+            package_manager: apt
+          - runtime: alpine
+            family: Alpine
+            version: 3.24.1
+            url: https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/aarch64/alpine-minirootfs-3.24.1-aarch64.tar.gz
+            sha256: f55a90f69052c5bd6f92cb09a8f47065970830b194c917a006fb94028e721259
+            package_manager: apk
+          - runtime: kali
+            family: Kali Linux
+            version: current
+            url: https://kali.download/nethunter-images/current/rootfs/kali-nethunter-rootfs-minimal-arm64.tar.xz
+            sha256: d6403a5da175df325611d23af4b92330856059c45454eced7f4cdf3ca6df2e4e
+            package_manager: apt
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 1
+          ref: ${{ github.sha }}
+
+      - name: Verify runner architecture
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = aarch64
+          echo "RUNTIME_HOST_ARCH=$(uname -m)"
+
+      - name: Install forensic host dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential libtalloc-dev file curl xz-utils
+
+      - name: Build pinned native PRoot
+        env:
+          PROOT_COMMIT: 7266fb3e8516535682f5a9c8f3a7e70f6506eddb
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/termux/proot.git .build/proot
+          git -C .build/proot fetch --depth=1 origin "$PROOT_COMMIT"
+          git -C .build/proot checkout --detach "$PROOT_COMMIT"
+          make -C .build/proot/src
+          test -x .build/proot/src/proot
+          .build/proot/src/proot -V
+          file .build/proot/src/proot
+
+      - name: Download and verify canonical ${{ matrix.runtime }} rootfs
+        run: |
+          set -euo pipefail
+          mkdir -p .build/runtime
+          archive=.build/runtime/${{ matrix.runtime }}.rootfs
+          curl --fail --location --retry 3 --retry-all-errors --output "$archive" '${{ matrix.url }}'
+          printf '%s  %s\n' '${{ matrix.sha256 }}' "$archive" | sha256sum -c -
+          echo "ROOTFS_SHA256=${{ matrix.sha256 }}"
+
+      - name: Forensic-check rootfs archive and extract
+        run: |
+          set -euo pipefail
+          archive=.build/runtime/${{ matrix.runtime }}.rootfs
+          case '${{ matrix.runtime }}' in
+            kali) tar -tJf "$archive" > .build/runtime/file-list.txt ;;
+            *) tar -tzf "$archive" > .build/runtime/file-list.txt ;;
+          esac
+          if grep -E '(^/|(^|/)\.\./|(^|/)\.\.$)' .build/runtime/file-list.txt; then
+            echo 'RUNTIME_ARCHIVE=BLOCKED_TRAVERSAL'
+            exit 1
+          fi
+          grep -E '(^|/)bin/sh$' .build/runtime/file-list.txt
+          rm -rf .build/runtime/rootfs
+          mkdir -p .build/runtime/rootfs
+          case '${{ matrix.runtime }}' in
+            kali) tar -xJf "$archive" -C .build/runtime/rootfs ;;
+            *) tar -xzf "$archive" -C .build/runtime/rootfs ;;
+          esac
+          test -x .build/runtime/rootfs/bin/sh
+          file .build/runtime/rootfs/bin/sh
+          echo 'RUNTIME_ROOTFS=PASS'
+
+      - name: Execute interactive shell, package manager and network evidence
+        run: |
+          set -euo pipefail
+          proot=.build/proot/src/proot
+          root=.build/runtime/rootfs
+          "$proot" -R "$root" /bin/sh -c '
+            set -eu
+            echo "RUNTIME_ID=${{ matrix.runtime }}"
+            echo "RUNTIME_FAMILY=${{ matrix.family }}"
+            echo "RUNTIME_VERSION=${{ matrix.version }}"
+            echo "GUEST_ARCH=$(uname -m)"
+            echo "GUEST_UID=$(id -u)"
+            test "$(id -u)" = 0
+            test -x /bin/sh
+            case "${{ matrix.package_manager }}" in
+              apt) command -v apt-get >/dev/null; apt-get --version | head -1 ;;
+              apk) command -v apk >/dev/null; apk --version ;;
+            esac
+            echo "DNS_CONFIG=$(tr "\\n" " " </etc/resolv.conf)"
+            test -s /etc/resolv.conf
+            test -r /proc/net/route
+            grep -q "Iface" /proc/net/route
+            echo "ROUTE_TABLE=PASS"
+            test -x /host-rootfs/usr/bin/curl
+            /host-rootfs/usr/bin/curl --fail --silent --show-error --max-time 10 https://example.com >/tmp/alfa-runtime-network-proof.txt
+            test -s /tmp/alfa-runtime-network-proof.txt
+            echo "NETWORK_SOCKET_HTTP=PASS"
+            echo "SHELL_INTERACTIVE_ENTRYPOINT=PASS"
+          '
+
+      - name: Emit runtime evidence
+        run: |
+          set -euo pipefail
+          cat > .build/runtime-evidence.txt <<EOF
+RUNTIME_ID=${{ matrix.runtime }}
+RUNTIME_FAMILY=${{ matrix.family }}
+RUNTIME_VERSION=${{ matrix.version }}
+RUNTIME_ARCH=aarch64
+PROOT_COMMIT=7266fb3e8516535682f5a9c8f3a7e70f6506eddb
+ROOTFS_SHA256=${{ matrix.sha256 }}
+DEBIAN_TOUCHED=false
+EOF
+          cat .build/runtime-evidence.txt
