@@ -13,7 +13,7 @@ test -s "$BLACKLIST"
 legacy_header='ALFA:'':CTRL'
 legacy_os='ALFA'' OS'
 legacy_os_id='ALFA''_OS'
-legacy_session='ALFA PTY  •  INTERACTIVE SESSION'
+legacy_session='ALFA PTY  •' '  INTERACTIVE SESSION'
 legacy_badge='● ALFA:'':CTRL'
 grep -Fx "$legacy_header" "$BLACKLIST"
 grep -Fx "$legacy_os" "$BLACKLIST"
