@@ -97,8 +97,10 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareGate7LaunchContract')
 }
 
-tasks.named('testDebugUnitTest').configure {
-    dependsOn tasks.named('prepareProotLoader')
+tasks.configureEach {
+    if (name == 'testDebugUnitTest') {
+        dependsOn tasks.named('prepareProotLoader')
+    }
 }
 
 dependencies {
