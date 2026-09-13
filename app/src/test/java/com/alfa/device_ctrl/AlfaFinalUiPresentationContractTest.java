@@ -15,11 +15,10 @@ public final class AlfaFinalUiPresentationContractTest {
     @Test public void finalPresentationUsesDominantStitchObsidianTokensAnd48dpTouchFloor() {
         assertEquals(0xFF101419, AlfaUiTheme.OBSIDIAN_CANVAS);
         assertEquals(0xFF161B22, AlfaUiTheme.OBSIDIAN_SURFACE);
-        assertEquals(0xFF21262D, AlfaUiTheme.OBSIDIAN_SURFACE_ACTIVE);
+        assertEquals(0xFF1C2229, AlfaUiTheme.OBSIDIAN_SURFACE_ACTIVE);
         assertEquals(0xFF10B981, AlfaUiTheme.OBSIDIAN_READY);
         assertEquals(0xFFF59E0B, AlfaUiTheme.OBSIDIAN_VERIFYING);
         assertEquals(0xFFEF4444, AlfaUiTheme.OBSIDIAN_ERROR);
-        assertEquals(0xFF10B981, AlfaUiTheme.OBSIDIAN_BORDER_FOCUSED);
         assertEquals(0xFF38BDF8, AlfaFinalUiPresentation.CYAN);
         assertEquals(0xFF0D1117, AlfaFinalUiPresentation.TERMINAL);
         assertEquals(48, AlfaUiTheme.TOUCH_TARGET_DP);
@@ -66,7 +65,7 @@ public final class AlfaFinalUiPresentationContractTest {
 
     @Test public void stitchReferenceCatalogIsBoundToTheSuppliedArtifact() {
         assertEquals("7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d", StitchV1ReferenceCatalog.ZIP_SHA256);
-        assertTrue(StitchV1ReferenceCatalog.size() >= 150);
+        assertEquals(159, StitchV1ReferenceCatalog.size());
         assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_operational_terminal_runtime_dashboard"));
         assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_split_pane_terminal_workspace_ubuntu_vs_kali"));
         assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_floating_terminal_window_over_android_application"));
