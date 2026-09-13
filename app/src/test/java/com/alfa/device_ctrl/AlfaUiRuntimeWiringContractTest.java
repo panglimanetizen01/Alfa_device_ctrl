@@ -13,7 +13,7 @@ import org.junit.Test;
 public final class AlfaUiRuntimeWiringContractTest {
     @Test public void applicationLifecycleUsesNativeFinalShellNotReferenceExplorer() throws Exception {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
-        String text = Files.readString(source, StandardCharsets.UTF_8);
+        String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
         assertTrue(text.contains("AlfaFinalUiPresentation.apply(activity)"));
         assertFalse(text.contains("StitchV1ReferenceConsole.installEntry(activity)"));
     }
