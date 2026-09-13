@@ -86,6 +86,7 @@ public final class StitchV1StateModel {
 
     private static Domain domainOf(String s) {
         if (s.contains("operational_terminal_runtime_dashboard")) return Domain.TERMINAL;
+        if (s.contains("audit_log")) return Domain.AUDIT;
         if (s.contains("security") || s.contains("seccomp") || s.contains("shizuku") ||
                 s.contains("su_escalation") || s.contains("ptrace") || s.contains("harden_bind") ||
                 s.contains("syscall_trap")) return Domain.SECURITY;
