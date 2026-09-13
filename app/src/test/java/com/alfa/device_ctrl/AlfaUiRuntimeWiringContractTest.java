@@ -11,10 +11,11 @@ import java.nio.file.Paths;
 import org.junit.Test;
 
 public final class AlfaUiRuntimeWiringContractTest {
-    @Test public void applicationLifecycleUsesNativeFinalShellNotReferenceExplorer() throws Exception {
+    @Test public void applicationLifecycleUsesCanonicalStitchShellNotRetiredPresenter() throws Exception {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
-        assertTrue(text.contains("AlfaFinalUiPresentation.apply(activity)"));
+        assertFalse(text.contains("AlfaFinalUiPresentation.apply(activity)"));
+        assertTrue(text.contains("AlfaFinalUiHooks.apply(activity)"));
         assertFalse(text.contains("StitchV1ReferenceConsole.installEntry(activity)"));
     }
 }
