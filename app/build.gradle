@@ -37,9 +37,13 @@ android {
     }
 }
 
+def prootLoaderOutput = file("$buildDir/generated/jniLibs/arm64-v8a/libproot-loader.so")
+
 tasks.register('prepareProotLoader', Exec) {
+    inputs.file(file("$rootDir/tools/build_proot_loader.sh"))
+    outputs.file(prootLoaderOutput)
     workingDir rootProject.projectDir
-    environment 'PROOT_LOADER_OUT', file("$buildDir/generated/jniLibs/arm64-v8a/libproot-loader.so").absolutePath
+    environment 'PROOT_LOADER_OUT', prootLoaderOutput.absolutePath
     commandLine 'bash', 'tools/build_proot_loader.sh'
 }
 
@@ -93,7 +97,7 @@ tasks.named('preBuild').configure {
     dependsOn tasks.named('prepareGate7LaunchContract')
 }
 
-tasks.withType(Test).configureEach {
+tasks.named('testDebugUnitTest').configure {
     dependsOn tasks.named('prepareProotLoader')
 }
 
