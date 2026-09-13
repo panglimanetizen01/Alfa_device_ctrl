@@ -63,6 +63,26 @@ public final class AlfaFinalUiPresentationContractTest {
         assertFalse("Stitch shell must not render a fake placeholder state panel", ui.contains("State panel:"));
     }
 
+    @Test public void finalShellRestylesTheNewlyBuiltNativeHierarchy() throws Exception {
+        Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
+        String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+        int build = text.indexOf("content.addView(ui.build(), new FrameLayout.LayoutParams(-1, -1));");
+        int theme = text.indexOf("AlfaUiTheme.apply(activity);", build);
+        assertTrue("final shell must be added before its new hierarchy is themed", build >= 0);
+        assertTrue("newly created Stitch hierarchy must be styled after insertion", theme > build);
+    }
+
+    @Test public void finalShellButtonsUseExplicitStitchControlBackground() throws Exception {
+        Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
+        String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+        int start = text.indexOf("private Button button(String label, int color, View.OnClickListener listener)");
+        int end = text.indexOf("private void addNav", start);
+        assertTrue("native button factory must exist", start >= 0);
+        assertTrue("native button factory boundary must exist", end > start);
+        String factory = text.substring(start, end);
+        assertTrue("final shell buttons must use the explicit Stitch control drawable", factory.contains("setBackground(controlBackground"));
+    }
+
     @Test public void stitchReferenceCatalogIsBoundToTheSuppliedArtifact() {
         assertEquals("7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d", StitchV1ReferenceCatalog.ZIP_SHA256);
         assertEquals(159, StitchV1ReferenceCatalog.size());
