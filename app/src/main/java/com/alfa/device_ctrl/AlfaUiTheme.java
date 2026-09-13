@@ -59,7 +59,7 @@ public final class AlfaUiTheme {
     }
     public static boolean isLegacyPalette(int color) { return color == LEGACY_PRIMARY || color == LEGACY_MUTED || color == LEGACY_ERROR; }
     public static void apply(Activity activity) {
-        View root = activity.findViewById(android.R.id.content); if (root == null) return; root.setBackgroundColor(OBSIDIAN_CANVAS); float density = activity.getResources().getDisplayMetrics().density; applyTree(root, density); root.post(() -> adaptRuntimeDashboard(root, density));
+        View root = activity.findViewById(android.R.id.content); if (root == null) return; root.setBackgroundColor(OBSIDIAN_CANVAS); float density = activity.getResources().getDisplayMetrics().density; applyTree(root, density); root.post(() -> { applyTree(root, density); adaptRuntimeDashboard(root, density); });
     }
     private static void applyTree(View view, float density) {
         if (view == null || view.getClass().getName().contains("TerminalView")) return; int min = Math.round(TOUCH_TARGET_DP * density); if (view.isClickable() || view instanceof Button) { view.setMinimumHeight(Math.max(view.getMinimumHeight(), min)); view.setMinimumWidth(Math.max(view.getMinimumWidth(), min)); }
