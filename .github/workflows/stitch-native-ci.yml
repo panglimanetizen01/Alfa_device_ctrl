@@ -16,6 +16,9 @@ jobs:
     name: Stitch native unit/build/provenance
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      ALFA_SOURCE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      ALFA_GATE7_RUNTIME_ID: debian
     steps:
       - name: Checkout exact source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -48,23 +51,79 @@ jobs:
           sha256sum stitch/stitch_alfa_device_control_v1.0.0.zip | grep -F '7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d'
           python3 tools/stitch_v1_forensic.py stitch/stitch_alfa_device_control_v1.0.0.zip
 
+      - name: Prepare current-run Gate 7 launch provenance
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          export ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-ci-shared"
+          export TMPDIR="$RUNNER_TEMP/alfa-ci-private"
+          OUT="$RUNNER_TEMP/runtime-pipeline.out"
+          bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          cat "$OUT"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
+          test -n "$RUN_ID"
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
+          bash tools/apk_readiness_provenance.sh "$RUN_ID" "$ALFA_GATE7_RUNTIME_ID" stitch-native-ci
+          test -s "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'gate_status=PASS' "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'bootstrap_status=PASS' "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'authorization_status=AUTHORIZED' "$RUN_DIR/gate6/bootstrap.txt"
+          OUT7="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT7" RUNTIME_ID="$ALFA_GATE7_RUNTIME_ID" bash tools/prepare_gate7_android_asset.sh "$RUN_ID"
+          test -s "$OUT7"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT7"
+          grep -Fx 'gate_status=READY' "$OUT7"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT7"
+          grep -Fx "pipeline_run_id=$RUN_ID" "$OUT7"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT7"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          echo "ALFA_GATE7_ASSET=$OUT7" >> "$GITHUB_ENV"
+          echo 'CURRENT_RUN_GATE7=PASS'
+
       - name: Run focused Stitch contract tests
         run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.StitchV1NativeSurfaceContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --no-daemon --stacktrace
 
       - name: Run full unit tests and debug APK build
-        run: ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
+        run: |
+          set -euo pipefail
+          test -s "$ALFA_GATE7_ASSET"
+          ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk
 
       - name: Verify Stitch native source contracts
         run: |
           set -euo pipefail
           grep -Fq 'SESSION MULTIPLEXER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
-          grep -Fq 'APPEARANCE PRESETS' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
-          grep -Fq 'STORAGE / VFS POLICY' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'APPEARANCE // TEMA & TAMPILAN' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'STORAGE // VFS POLICY' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'DIAGNOSTIC ENGINE' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'NOT_EXPOSED_BY_CANONICAL_MANAGER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'SAF_REQUIRED' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'AlfaUiTheme.TOUCH_TARGET_DP' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'runRuntimeCommand' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           echo 'STITCH_NATIVE_SOURCE_CONTRACT=PASS'
+
+      - name: Verify packaged APK provenance and runtime payload
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          unzip -l "$APK" | grep -F 'assets/gate7-launch.properties'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot-loader.so'
+          unzip -l "$APK" | grep -F 'lib/arm64-v8a/libproot.so'
+          TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+          unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
+          diff -u "$ALFA_GATE7_ASSET" "$TMP/gate7-launch.properties"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$TMP/gate7-launch.properties"
+          grep -Fx "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" "$TMP/gate7-launch.properties"
+          grep -Fx 'launch_status=AUTHORIZED' "$TMP/gate7-launch.properties"
+          APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
+          test "${#APK_SHA256}" -eq 64
+          echo "APK_SHA256=$APK_SHA256"
+          echo "APK_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
+          echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
 
       - name: Upload debug APK and forensic manifest
         uses: actions/upload-artifact@v4
