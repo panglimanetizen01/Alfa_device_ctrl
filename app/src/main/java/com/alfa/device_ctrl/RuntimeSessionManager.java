@@ -1,5 +1,8 @@
 package com.alfa.device_ctrl;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -91,8 +94,26 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
 
     @Override public synchronized void onSessionFinished(TerminalSession finishedSession) { int status = finishedSession.getExitStatus(); if (session == finishedSession) { OperationEvidence.write(contract, "FINISHED", Integer.toString(status), finishedSession.getPid()); session = null; promptReady = false; RuntimeKeepAliveService.stop(AlfaApplication.getInstance(), this); } Listener current = listener; if (current != null) current.onSessionFinished(status); }
     @Override public void onTitleChanged(TerminalSession changedSession) { }
-    @Override public void onCopyTextToClipboard(TerminalSession session, String text) { }
-    @Override public void onPasteTextFromClipboard(TerminalSession session) { }
+    @Override public void onCopyTextToClipboard(TerminalSession session, String text) {
+        ClipboardManager clipboard = clipboardManager();
+        if (clipboard == null) return;
+        TerminalClipboardBridge.copy(new TerminalClipboardBridge.ClipboardPort() {
+            @Override public void setText(String value) { clipboard.setPrimaryClip(ClipData.newPlainText("Alfa terminal", value)); }
+            @Override public String getText() { return clipboard.hasPrimaryClip() && clipboard.getPrimaryClip() != null ? clipboard.getPrimaryClip().getItemAt(0).coerceToText(AlfaApplication.getInstance()).toString() : null; }
+        }, text);
+    }
+    @Override public void onPasteTextFromClipboard(TerminalSession session) {
+        ClipboardManager clipboard = clipboardManager();
+        if (clipboard == null || session == null || session.getEmulator() == null) return;
+        TerminalClipboardBridge.paste(new TerminalClipboardBridge.ClipboardPort() {
+            @Override public void setText(String value) { clipboard.setPrimaryClip(ClipData.newPlainText("Alfa terminal", value)); }
+            @Override public String getText() { return clipboard.hasPrimaryClip() && clipboard.getPrimaryClip() != null ? clipboard.getPrimaryClip().getItemAt(0).coerceToText(AlfaApplication.getInstance()).toString() : null; }
+        }, text -> session.getEmulator().paste(text));
+    }
+    private ClipboardManager clipboardManager() {
+        Context context = AlfaApplication.getInstance();
+        return context == null ? null : (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+    }
     @Override public void onBell(TerminalSession session) { }
     @Override public void onColorsChanged(TerminalSession session) { }
     @Override public void onTerminalCursorStateChange(boolean state) { }
