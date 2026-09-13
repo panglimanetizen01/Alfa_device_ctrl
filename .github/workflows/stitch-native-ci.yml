@@ -34,6 +34,13 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Prepare canonical Android NDK
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.0.13004108"
+          test -x "$ANDROID_HOME/ndk/28.0.13004108/ndk-build"
+          echo "ANDROID_NDK=28.0.13004108"
+
       - name: Verify canonical Stitch artifact
         run: |
           set -euo pipefail
