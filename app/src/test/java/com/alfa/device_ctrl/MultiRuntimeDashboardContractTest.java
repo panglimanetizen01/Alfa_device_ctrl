@@ -19,10 +19,11 @@ public final class MultiRuntimeDashboardContractTest {
         assertTrue(RuntimeRegistry.get("kali") != null);
     }
 
-    @Test public void runtimeDashboardUsesScrollableContainer() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java")), StandardCharsets.UTF_8);
-        assertTrue(source.contains("ScrollView scroll"));
-        assertTrue(source.contains("scroll.addView(list"));
+    @Test public void runtimeDashboardUsesCanonicalScrollableContainer() throws Exception {
+        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/MainActivity.java")), StandardCharsets.UTF_8);
+        assertTrue(source.contains("runtimeDashboard = column(Color.BLACK)"));
+        assertTrue(source.contains("runtimeScroll.addView(runtimeDashboard"));
         assertTrue(source.contains("LINUX RUNTIMES"));
+        assertTrue(source.contains("showRuntimeDashboard()"));
     }
 }
