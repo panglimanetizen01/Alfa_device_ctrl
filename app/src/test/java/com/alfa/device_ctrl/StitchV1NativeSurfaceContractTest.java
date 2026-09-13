@@ -1,5 +1,6 @@
 package com.alfa.device_ctrl;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -42,5 +43,16 @@ public final class StitchV1NativeSurfaceContractTest {
         assertTrue(source.contains("AlfaUiTheme.READY"));
         assertTrue(source.contains("AlfaUiTheme.WARNING"));
         assertTrue(source.contains("AlfaUiTheme.ERROR"));
+    }
+
+    @Test public void stitchActionControlsAreWiredToRealResponses() throws Exception {
+        String source = read("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
+        assertTrue(source.contains("syncBroadcast(a,m)"));
+        assertTrue(source.contains("runRuntimeCommand(\"printf 'ALFA_SYNC_BROADCAST_CHECK\\\\n'\""));
+        assertTrue(source.contains("setOnClickListener(v->openExisting.run())"));
+        assertTrue(source.contains("Filter session lanes"));
+        assertFalse(source.contains("button(a,\"SYNC BROADCAST\",AlfaUiTheme.CYAN,null)"));
+        assertFalse(source.contains("button(a,\"−\",AlfaUiTheme.TEXT,null)"));
+        assertFalse(source.contains("button(a,\"+\",AlfaUiTheme.TEXT,null)"));
     }
 }
