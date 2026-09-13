@@ -237,8 +237,12 @@ jobs:
               *) echo "UNEXPECTED_ELF_TYPE=$TYPE"; exit 1 ;;
             esac
           done
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
-          echo "APK_NATIVE_ELF_AND_16KB_ALIGNMENT=PASS"
+          # app/build.gradle intentionally uses legacy JNI packaging so libproot.so is extracted to ApplicationInfo.nativeLibraryDir.
+          # In this packaging mode the .so entries are compressed; Android's 16 KB requirement is enforced at the ELF level above,
+          # while the APK container itself must remain standard ZIP 4-byte aligned.
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          echo "APK_NATIVE_ELF_ALIGNMENT_PASS=16KB"
+          echo "APK_ZIP_ALIGNMENT_PASS=4BYTE"
 
       - name: Verify package identity manifest ABI launcher and digest
         run: |
