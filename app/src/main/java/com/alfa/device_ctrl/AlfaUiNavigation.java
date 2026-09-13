@@ -1,8 +1,23 @@
 package com.alfa.device_ctrl;
 
-/** Small deterministic navigation state machine for the single-activity Stitch shell. */
+/** Deterministic navigation state machine for the single-activity Stitch operational shell. */
 public final class AlfaUiNavigation {
-    public enum Screen { TERMINAL, RUNTIME, NETWORK, LANES, DIAGNOSTICS, SETTINGS }
+    public enum Screen {
+        TERMINAL,
+        RUNTIME,
+        NETWORK,
+        LANES,
+        DIAGNOSTICS,
+        STORAGE,
+        SECURITY,
+        AUDIT,
+        PROJECT,
+        SESSIONS,
+        SPLIT,
+        FLOATING,
+        APPEARANCE,
+        SETTINGS
+    }
 
     private AlfaUiNavigation() { }
 
