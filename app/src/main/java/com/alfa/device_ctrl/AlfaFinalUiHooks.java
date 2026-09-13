@@ -3,6 +3,7 @@ package com.alfa.device_ctrl;
 import android.app.Activity;
 import android.graphics.Typeface;
 import android.os.Build;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -10,10 +11,9 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import java.io.File;
 import java.util.List;
 
-/** Final-shell navigation bindings that expose evidence-backed secondary panels. */
+/** Final-shell navigation bindings for evidence-backed Stitch operational states. */
 public final class AlfaFinalUiHooks {
     private static final int TAG_ID = 0xA1FA002;
     private AlfaFinalUiHooks() { }
@@ -21,86 +21,88 @@ public final class AlfaFinalUiHooks {
     public static void apply(Activity activity) {
         View root = activity.findViewById(android.R.id.content);
         if (!(root instanceof ViewGroup) || root.getTag(TAG_ID) != null) return;
-        Button network = findButton((ViewGroup) root, "Alfa RF");
-        Button diagnostics = findButton((ViewGroup) root, "Diagnostics");
-        if (network != null) network.setOnClickListener(v -> showOverlay(activity, AlfaNetworkPanel.build(activity)));
-        if (diagnostics != null) diagnostics.setOnClickListener(v -> showOverlay(activity, diagnostics(activity)));
+        addStitchLauncher(activity, (ViewGroup) root);
         root.setTag(TAG_ID, Boolean.TRUE);
     }
 
-    private static View diagnostics(Activity activity) {
-        LinearLayout panel = new LinearLayout(activity);
-        panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setBackgroundColor(AlfaUiTheme.CANVAS);
-        panel.setPadding(dp(activity, 12), dp(activity, 8), dp(activity, 12), 0);
-        TextView title = text(activity, "DIAGNOSTICS  •  EVIDENCE CONSOLE", AlfaUiTheme.CYAN, 14, true);
-        panel.addView(title, new LinearLayout.LayoutParams(-1, dp(activity, 52)));
-        TextView body = text(activity, collectRuntimeEvidence(activity), AlfaUiTheme.TEXT, 11, true);
-        ScrollView scroll = new ScrollView(activity); scroll.addView(body); panel.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        return panel;
-    }
-
-    private static String collectRuntimeEvidence(Activity activity) {
-        StringBuilder out = new StringBuilder("RUNTIME REGISTRY\n");
-        File vault = new File(activity.getFilesDir(), "runtime-vault");
-        File engine = new File(activity.getApplicationInfo().nativeLibraryDir, "libproot.so");
-        List<RuntimeProfile> profiles = RuntimeRegistry.all();
-        for (RuntimeProfile profile : profiles) {
-            File runtime = new File(new File(vault, "runtimes"), profile.id());
-            File ready = new File(runtime, "READY.evidence");
-            File rootfs = new File(runtime, "rootfs");
-            RuntimeUiState.Status state = RuntimeUiState.resolve(profile.id(), runtime, ready, engine, rootfs);
-            out.append(profile.id()).append(" status=").append(RuntimeUiState.label(state)).append('\n');
-            out.append("  runtime_dir=").append(runtime.exists()).append(" ready_evidence=").append(ready.exists()).append(" rootfs=").append(rootfs.exists()).append('\n');
-        }
-        out.append("native_libproot=").append(engine.exists()).append('\n');
-        out.append("\nNETWORK: use Alfa RF for live ConnectivityManager/LinkProperties evidence.\n");
-        out.append("NO MOCK TELEMETRY: unavailable privileged data is not synthesized.\n");
-        return out.toString();
-    }
-
-    private static void showOverlay(Activity activity, View panel) {
-        ViewGroup content = (ViewGroup) activity.findViewById(android.R.id.content);
-        if (content == null) return;
-        FrameOverlay.show(activity, content, panel);
-    }
-
-    private static Button findButton(ViewGroup root, String text) {
-        View view = findText(root, text); return view instanceof Button ? (Button) view : null;
-    }
-    private static View findText(View root, String text) {
-        if (root instanceof TextView && text.contentEquals(((TextView) root).getText())) return root;
-        if (root instanceof ViewGroup) { ViewGroup group = (ViewGroup) root; for (int i = 0; i < group.getChildCount(); i++) { View result = findText(group.getChildAt(i), text); if (result != null) return result; } }
-        return null;
-    }
-    private static TextView text(Activity a, String value, int color, int size, boolean mono) { TextView t = new TextView(a); t.setText(value); t.setTextColor(color); t.setTextSize(size); if (mono) t.setTypeface(Typeface.MONOSPACE); return t; }
-    private static int dp(Activity a, int value) { return Math.round(value * a.getResources().getDisplayMetrics().density); }
-
-    private static final class FrameOverlay {
-        private static final int BACK_TAG = 0xA1FA0B0;
-
-        static void show(Activity activity, ViewGroup content, View panel) {
-            android.widget.FrameLayout overlay = new android.widget.FrameLayout(activity);
-            overlay.setBackgroundColor(AlfaUiTheme.CANVAS);
-            overlay.setTag(BACK_TAG);
-            overlay.addView(panel, new android.widget.FrameLayout.LayoutParams(-1, -1));
-            final android.window.OnBackInvokedCallback[] callback = new android.window.OnBackInvokedCallback[1];
-            Runnable close = () -> {
-                content.removeView(overlay);
-                if (Build.VERSION.SDK_INT >= 33 && callback[0] != null) activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(callback[0]);
-            };
-            Button closeButton = new Button(activity);
-            closeButton.setText("BACK");
-            closeButton.setTextColor(AlfaUiTheme.CYAN);
-            closeButton.setMinHeight(dp(activity, 48));
-            closeButton.setOnClickListener(v -> close.run());
-            android.widget.FrameLayout.LayoutParams closeParams = new android.widget.FrameLayout.LayoutParams(dp(activity, 76), dp(activity, 48), android.view.Gravity.TOP | android.view.Gravity.END);
-            overlay.addView(closeButton, closeParams);
-            content.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
-            if (Build.VERSION.SDK_INT >= 33) {
-                callback[0] = close::run;
-                activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY, callback[0]);
-            }
+    private static void addStitchLauncher(Activity activity, ViewGroup content) {
+        Button launcher = new Button(activity);
+        launcher.setText("STITCH");
+        launcher.setTextColor(AlfaUiTheme.CYAN);
+        launcher.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        launcher.setMinWidth(dp(activity, 72));
+        launcher.setMinHeight(dp(activity, 48));
+        launcher.setContentDescription("Buka seluruh panel operasional Stitch v1");
+        launcher.setOnClickListener(v -> showDomainMenu(activity, content));
+        if (content instanceof android.widget.FrameLayout) {
+            android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(dp(activity, 82), dp(activity, 48), Gravity.TOP | Gravity.END);
+            params.setMargins(0, dp(activity, 8), dp(activity, 8), 0);
+            content.addView(launcher, params);
+        } else {
+            content.addView(launcher, new ViewGroup.LayoutParams(dp(activity, 82), dp(activity, 48)));
         }
     }
+
+    private static void showDomainMenu(Activity activity, ViewGroup content) {
+        LinearLayout menu = new LinearLayout(activity);
+        menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setBackgroundColor(AlfaUiTheme.CANVAS);
+        menu.setPadding(dp(activity, 12), dp(activity, 8), dp(activity, 12), dp(activity, 12));
+        TextView title = text(activity, "STITCH V1 • OPERATIONAL STATES", AlfaUiTheme.CYAN, 14, true);
+        menu.addView(title, new LinearLayout.LayoutParams(-1, dp(activity, 52)));
+        String[] names = {"NETWORK", "SECURITY", "STORAGE", "AUDIT", "PROJECT", "SESSIONS", "SPLIT", "FLOATING", "APPEARANCE", "SETTINGS", "DIAGNOSTICS"};
+        AlfaUiNavigation.Screen[] screens = {AlfaUiNavigation.Screen.NETWORK, AlfaUiNavigation.Screen.SECURITY, AlfaUiNavigation.Screen.STORAGE, AlfaUiNavigation.Screen.AUDIT, AlfaUiNavigation.Screen.PROJECT, AlfaUiNavigation.Screen.SESSIONS, AlfaUiNavigation.Screen.SPLIT, AlfaUiNavigation.Screen.FLOATING, AlfaUiNavigation.Screen.APPEARANCE, AlfaUiNavigation.Screen.SETTINGS, AlfaUiNavigation.Screen.DIAGNOSTICS};
+        for (int i = 0; i < names.length; i++) {
+            final AlfaUiNavigation.Screen screen = screens[i];
+            Button button = new Button(activity);
+            button.setText(names[i]);
+            button.setTextColor(AlfaUiTheme.TEXT);
+            button.setMinHeight(dp(activity, 48));
+            button.setOnClickListener(v -> showPanel(activity, content, screen));
+            menu.addView(button, new LinearLayout.LayoutParams(-1, dp(activity, 48)));
+        }
+        showOverlay(activity, content, menu);
+    }
+
+    private static void showPanel(Activity activity, ViewGroup content, AlfaUiNavigation.Screen screen) {
+        View panel = AlfaStitchOperationalPanels.build(activity, screen, findSessionManager(activity), () -> showPanel(activity, content, AlfaUiNavigation.Screen.APPEARANCE), () -> { });
+        showOverlay(activity, content, panel);
+    }
+
+    private static RuntimeSessionManager findSessionManager(Activity activity) {
+        try {
+            java.lang.reflect.Field field = MainActivity.class.getDeclaredField("sessionManager");
+            field.setAccessible(true);
+            return (RuntimeSessionManager) field.get(activity);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static void showOverlay(Activity activity, ViewGroup content, View panel) {
+        android.widget.FrameLayout overlay = new android.widget.FrameLayout(activity);
+        overlay.setBackgroundColor(AlfaUiTheme.CANVAS);
+        final android.window.OnBackInvokedCallback[] callback = new android.window.OnBackInvokedCallback[1];
+        Runnable close = () -> {
+            content.removeView(overlay);
+            if (Build.VERSION.SDK_INT >= 33 && callback[0] != null) activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(callback[0]);
+        };
+        overlay.addView(panel, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        Button closeButton = new Button(activity);
+        closeButton.setText("BACK");
+        closeButton.setTextColor(AlfaUiTheme.CYAN);
+        closeButton.setMinHeight(dp(activity, 48));
+        closeButton.setOnClickListener(v -> close.run());
+        android.widget.FrameLayout.LayoutParams closeParams = new android.widget.FrameLayout.LayoutParams(dp(activity, 76), dp(activity, 48), Gravity.TOP | Gravity.END);
+        closeParams.setMargins(0, dp(activity, 8), dp(activity, 8), 0);
+        overlay.addView(closeButton, closeParams);
+        content.addView(overlay, new android.widget.FrameLayout.LayoutParams(-1, -1));
+        if (Build.VERSION.SDK_INT >= 33) {
+            callback[0] = close::run;
+            activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY, callback[0]);
+        }
+    }
+
+    private static TextView text(Activity activity, String value, int color, int size, boolean mono) { TextView t = new TextView(activity); t.setText(value); t.setTextColor(color); t.setTextSize(size); if (mono) t.setTypeface(Typeface.MONOSPACE); return t; }
+    private static int dp(Activity activity, int value) { return Math.round(value * activity.getResources().getDisplayMetrics().density); }
 }
