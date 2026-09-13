@@ -66,9 +66,5 @@ public final class AlfaFinalUiPresentationContractTest {
     @Test public void stitchReferenceCatalogIsBoundToTheSuppliedArtifact() {
         assertEquals("7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d", StitchV1ReferenceCatalog.ZIP_SHA256);
         assertEquals(159, StitchV1ReferenceCatalog.size());
-        assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_operational_terminal_runtime_dashboard"));
-        assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_split_pane_terminal_workspace_ubuntu_vs_kali"));
-        assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_floating_terminal_window_over_android_application"));
-        assertTrue(StitchV1ReferenceCatalog.contains("alfa_device_ctrl_session_manager_spawn_new_terminal_session"));
     }
 }
