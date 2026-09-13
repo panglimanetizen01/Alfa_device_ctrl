@@ -52,7 +52,8 @@ public final class AlfaFinalUiHooks {
         catalog.setTextColor(AlfaUiTheme.READY);
         catalog.setMinHeight(dp(activity, 48));
         catalog.setContentDescription("Open all 159 Stitch states");
-        catalog.setOnClickListener(v -> showOverlay(activity, content, StitchV1StatePanel.build(activity, screen -> showPanel(activity, content, screen))));
+        RuntimeSessionManager manager = findSessionManager(activity);
+        catalog.setOnClickListener(v -> showOverlay(activity, content, StitchV1StatePanel.build(activity, manager, screen -> showPanel(activity, content, screen))));
         menu.addView(catalog, new LinearLayout.LayoutParams(-1, dp(activity, 48)));
         String[] names = {"NETWORK", "SECURITY", "STORAGE", "AUDIT", "PROJECT", "SESSIONS", "SPLIT", "FLOATING", "APPEARANCE", "SETTINGS", "DIAGNOSTICS"};
         AlfaUiNavigation.Screen[] screens = {AlfaUiNavigation.Screen.NETWORK, AlfaUiNavigation.Screen.SECURITY, AlfaUiNavigation.Screen.STORAGE, AlfaUiNavigation.Screen.AUDIT, AlfaUiNavigation.Screen.PROJECT, AlfaUiNavigation.Screen.SESSIONS, AlfaUiNavigation.Screen.SPLIT, AlfaUiNavigation.Screen.FLOATING, AlfaUiNavigation.Screen.APPEARANCE, AlfaUiNavigation.Screen.SETTINGS, AlfaUiNavigation.Screen.DIAGNOSTICS};
