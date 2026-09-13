@@ -46,6 +46,7 @@ public final class StitchV1StateModel {
     }
 
     private static Domain domainOf(String s) {
+        if (s.contains("operational_terminal_runtime_dashboard")) return Domain.TERMINAL;
         if (s.contains("security") || s.contains("seccomp") || s.contains("shizuku") || s.contains("su_escalation") || s.contains("ptrace") || s.contains("harden_bind")) return Domain.SECURITY;
         if (s.contains("network") || s.contains("socket") || s.contains("tunnel") || s.contains("matrix") || s.contains("dns")) return Domain.NETWORK;
         if (s.contains("mount") || s.contains("override") || s.contains("sensitive_files") || s.contains("policy") || s.contains("filesystem_bind")) return Domain.STORAGE_POLICY;
