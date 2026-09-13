@@ -57,6 +57,6 @@ public final class AlfaFinalUiPresentationContractTest {
             assertTrue("navigation missing Stitch domain " + domain, nav.contains(domain));
             assertTrue("presentation missing Stitch domain " + domain, ui.contains(domain));
         }
-        assertFalse("Stitch shell must not render a fake placeholder state panel", ui.contains("State panel: " + target.name()));
+        assertFalse("Stitch shell must not render a fake placeholder state panel", ui.contains("State panel:"));
     }
 }
