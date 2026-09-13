@@ -18,7 +18,7 @@ blacklist_path = Path(sys.argv[2])
 blacklist = [line.rstrip("\n") for line in blacklist_path.read_text("utf-8").splitlines() if line and not line.startswith("#")]
 if not blacklist:
     raise SystemExit("EMPTY_EXPLICIT_BLACKLIST")
-if any("*" in item or "?" in item or re in item for item in ("*", "?", "") for re in ()):
+if any("*" in item or "?" in item for item in blacklist):
     raise SystemExit("WILDCARD_BLACKLIST_FORBIDDEN")
 
 required = [
