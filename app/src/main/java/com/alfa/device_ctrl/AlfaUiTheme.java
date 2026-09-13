@@ -16,7 +16,7 @@ import android.widget.TextView;
 public final class AlfaUiTheme {
     public static final int OBSIDIAN_CANVAS = 0xFF101419;
     public static final int OBSIDIAN_SURFACE = 0xFF161B22;
-    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF1C2229;
+    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF21262D;
     public static final int OBSIDIAN_BORDER = 0xFF22272E;
     public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF374151;
     public static final int OBSIDIAN_TEXT = 0xFFF0F6FC;
