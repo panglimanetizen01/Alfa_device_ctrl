@@ -108,6 +108,14 @@ tasks.configureEach {
     }
 }
 
+tasks.named('mergeDebugAssets').configure {
+    dependsOn tasks.named('prepareGate7LaunchContract')
+}
+
+tasks.named('mergeReleaseAssets').configure {
+    dependsOn tasks.named('prepareGate7LaunchContract')
+}
+
 dependencies {
     implementation project(":terminal-view")
     implementation 'org.tukaani:xz:1.12'
