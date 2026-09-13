@@ -16,9 +16,9 @@ import android.widget.TextView;
 public final class AlfaUiTheme {
     public static final int OBSIDIAN_CANVAS = 0xFF101419;
     public static final int OBSIDIAN_SURFACE = 0xFF161B22;
-    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF1C2229;
+    public static final int OBSIDIAN_SURFACE_ACTIVE = 0xFF21262D;
     public static final int OBSIDIAN_BORDER = 0xFF22272E;
-    public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF374151;
+    public static final int OBSIDIAN_BORDER_FOCUSED = 0xFF10B981;
     public static final int OBSIDIAN_TEXT = 0xFFF0F6FC;
     public static final int OBSIDIAN_TEXT_MUTED = 0xFF8B949E;
     public static final int OBSIDIAN_READY = 0xFF10B981;
@@ -46,7 +46,7 @@ public final class AlfaUiTheme {
     private static final int LEGACY_CANVAS = 0xFF131315;
     private static final int LEGACY_SURFACE = 0xFF201F21;
     private static final int LEGACY_SURFACE_HIGH = 0xFF2A2A2C;
-    private static final int RADIUS_DP = 6;
+    private static final int RADIUS_DP = 4;
     private AlfaUiTheme() { }
     public static int statusColor(String status) {
         if (status == null) return OBSIDIAN_UNKNOWN;
