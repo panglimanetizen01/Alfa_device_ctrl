@@ -35,7 +35,7 @@ public final class AlfaFinalUiPresentationContractTest {
 
     @Test public void terminalHeaderContainsNoLegacyActionButtons() throws Exception {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
-        String text = Files.readString(source, StandardCharsets.UTF_8);
+        String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
         int start = text.indexOf("private View terminalHeader() {");
         int end = text.indexOf("\n    private View accessoryBar()", start);
         assertTrue("terminalHeader method must exist", start >= 0);
@@ -45,5 +45,18 @@ public final class AlfaFinalUiPresentationContractTest {
         assertFalse("terminal header must not render fullscreen action", header.contains("addHeaderAction(bar, \"↗\""));
         assertFalse("terminal header must not render split action", header.contains("addHeaderAction(bar, \"□\""));
         assertFalse("terminal header must not render kill action", header.contains("addHeaderAction(bar, \"×\""));
+    }
+
+    @Test public void nativePresentationExposesAllMajorStitchOperationalDomains() throws Exception {
+        Path navigation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaUiNavigation.java");
+        Path presentation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
+        String nav = new String(Files.readAllBytes(navigation), StandardCharsets.UTF_8);
+        String ui = new String(Files.readAllBytes(presentation), StandardCharsets.UTF_8);
+        String[] domains = {"STORAGE", "SECURITY", "AUDIT", "PROJECT", "SESSIONS", "SPLIT", "FLOATING", "APPEARANCE", "SETTINGS", "NETWORK"};
+        for (String domain : domains) {
+            assertTrue("navigation missing Stitch domain " + domain, nav.contains(domain));
+            assertTrue("presentation missing Stitch domain " + domain, ui.contains(domain));
+        }
+        assertFalse("Stitch shell must not render a fake placeholder state panel", ui.contains("State panel: " + target.name()));
     }
 }
