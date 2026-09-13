@@ -11,7 +11,10 @@ import org.junit.Test;
 
 public final class RuntimeInstallerNetworkContractTest {
     @Test public void resolverUsesActiveAndroidNetworkDns() throws Exception {
-        File source = new File("app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java");
+        File working = new File(System.getProperty("user.dir"));
+        File source = new File(working, "app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java");
+        if (!source.isFile() && working.getParentFile() != null) source = new File(working.getParentFile(), "app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java");
+        assertTrue("RuntimeInstaller source fixture must exist", source.isFile());
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         assertFalse(text.contains("nameserver 1.1.1.1"));
         assertFalse(text.contains("nameserver 8.8.8.8"));
