@@ -4,6 +4,7 @@
 - Canonical reference catalog: 159 states
 - UI boundary: `AlfaFinalUiPresentation`
 - Operational adapter boundary: `AlfaStitchOperationalPanels`
+- Operational navigator: `AlfaFinalUiHooks`
 - Runtime/session execution remains owned by `RuntimeSessionManager`
 - Network evidence remains read-only and evidence-backed by `AlfaNetworkPanel`
 - Split-pane and multi-session states do not fabricate a second PTY
