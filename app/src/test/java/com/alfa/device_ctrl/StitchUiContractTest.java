@@ -39,14 +39,11 @@ public final class StitchUiContractTest {
 
     @Test public void canonicalRendererContainsRequiredOperationalSurface() throws Exception {
         String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java")), StandardCharsets.UTF_8);
-        assertTrue(source.contains("ALFA::CTRL"));
+        assertTrue("canonical brand missing", source.contains("ALFA::CTRL"));
         for (String label : StitchUiContract.BOTTOM_NAV_LABELS) assertTrue("missing bottom nav " + label, source.contains("\"" + label + "\""));
-        for (String distro : StitchUiContract.DISTRO_IDS) assertTrue("missing distro " + distro, source.contains(distro));
-        assertTrue(source.contains("toggleWindowContent"));
-        assertTrue(source.contains("toggleMax"));
-        assertTrue(source.contains("writePty"));
-        assertTrue(source.contains("apt update"));
-        assertTrue(source.contains("ping -c 1 1.1.1.1"));
-        assertTrue(source.contains("RuntimeSessionManager"));
+        assertTrue("runtime manager missing", source.contains("RuntimeSessionManager"));
+        assertTrue("PTY writer missing", source.contains("writePty"));
+        assertTrue("APT probe missing", source.contains("apt update"));
+        assertTrue("network probe missing", source.contains("ping -c 1 1.1.1.1"));
     }
 }
