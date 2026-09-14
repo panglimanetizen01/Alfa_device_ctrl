@@ -1,22 +1,16 @@
 package com.alfa.device_ctrl;
 
 import android.app.Activity;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -26,491 +20,54 @@ import com.termux.view.TerminalView;
 
 import java.io.File;
 import java.net.URL;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-/** Native Stitch v1 dashboard. Visible operational actions map to the canonical runtime/session engine. */
+/** Canonical Stitch v1 DUT surface: native windows + real runtime PTY. */
 public final class StitchOperationalActivity extends Activity implements RuntimeSessionManager.Listener {
-    private static final int BG = Color.rgb(16, 20, 25);
-    private static final int SURFACE_LOW = Color.rgb(24, 28, 33);
-    private static final int SURFACE = Color.rgb(28, 32, 37);
-    private static final int SURFACE_HIGH = Color.rgb(38, 42, 48);
-    private static final int TEXT = Color.rgb(224, 226, 234);
-    private static final int MUTED = Color.rgb(187, 202, 191);
-    private static final int PRIMARY = Color.rgb(78, 222, 163);
-    private static final int SECONDARY = Color.rgb(76, 215, 246);
-    private static final int WARNING = Color.rgb(255, 185, 95);
-    private static final int ERROR = Color.rgb(255, 180, 171);
+    private static final int BG = Color.rgb(16,20,25), SURFACE = Color.rgb(28,32,37), HIGH = Color.rgb(38,42,48);
+    private static final int TEXT = Color.rgb(224,226,234), MUTED = Color.rgb(187,202,191), GREEN = Color.rgb(78,222,163), CYAN = Color.rgb(76,215,246), RED = Color.rgb(255,180,171);
     private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    private static final int REQUEST_GATE6_IMPORT = 702;
-
-    private final Handler main = new Handler(Looper.getMainLooper());
-    private TerminalView terminalView;
-    private RuntimeSessionManager sessionManager;
-    private RuntimeProfile selectedRuntime;
-    private TextView systemState;
-    private TextView telemetryCpu;
-    private TextView telemetryMem;
-    private TextView telemetryStorage;
-    private TextView telemetryNet;
-    private TextView sessionState;
-    private TextView terminalTitle;
-    private TextView terminalOutput;
-    private TextView statusBanner;
-    private EditText commandInput;
-    private LinearLayout runtimeList;
-    private ScrollView scroll;
-    private View telemetryAnchor;
-    private View terminalAnchor;
-    private View runtimeAnchor;
-    private View executionAnchor;
-    private boolean uiActive;
-    private String installingRuntimeId;
-
-    @Override protected void onCreate(Bundle state) {
-        super.onCreate(state);
-        selectedRuntime = RuntimeSelection.profile(getPreferences(MODE_PRIVATE).getString("runtime_id", RuntimeSelection.DEFAULT_RUNTIME_ID));
-        if (selectedRuntime == null) selectedRuntime = RuntimeSelection.profile(RuntimeSelection.DEFAULT_RUNTIME_ID);
-        Window window = getWindow();
-        window.setStatusBarColor(BG);
-        window.setNavigationBarColor(Color.rgb(10, 14, 19));
-        setContentView(buildUi());
-        uiActive = true;
-        refreshRuntimes();
-    }
-
-    @Override protected void onStart() {
-        super.onStart();
-        uiActive = true;
-        if (sessionManager != null) sessionManager.rebindListener(this);
-        refreshRuntimes();
-    }
-
-    @Override protected void onStop() {
-        uiActive = false;
-        if (sessionManager != null) sessionManager.stop();
-        super.onStop();
-    }
-
-    @Override protected void onDestroy() {
-        uiActive = false;
-        main.removeCallbacksAndMessages(null);
-        if (sessionManager != null) sessionManager.stop();
-        super.onDestroy();
-    }
-
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_GATE6_IMPORT && resultCode == RESULT_OK) startSession();
-    }
-
-    private View buildUi() {
-        LinearLayout root = column(BG);
-        root.addView(header(), new LinearLayout.LayoutParams(-1, dp(96)));
-        root.addView(navigation(), new LinearLayout.LayoutParams(-1, dp(48)));
-        scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        LinearLayout content = column(BG);
-        content.setPadding(dp(12), dp(10), dp(12), dp(16));
-        telemetryAnchor = telemetryStrip();
-        content.addView(telemetryAnchor);
-        content.addView(space(10));
-        terminalAnchor = terminalSurface();
-        content.addView(terminalAnchor, new LinearLayout.LayoutParams(-1, dp(420)));
-        content.addView(space(10));
-        runtimeAnchor = runtimeSurface();
-        content.addView(runtimeAnchor);
-        content.addView(space(10));
-        executionAnchor = executionLanes();
-        content.addView(executionAnchor);
-        content.addView(space(10));
-        content.addView(statusPanel());
-        scroll.addView(content);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(shortcuts(), new LinearLayout.LayoutParams(-1, dp(58)));
-        return root;
-    }
-
-    private View header() {
-        LinearLayout header = column(BG);
-        header.setPadding(dp(16), dp(8), dp(12), 0);
-        LinearLayout line = row(BG);
-        line.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout title = column(BG);
-        title.addView(text(StitchUiContract.BRAND, PRIMARY, 12, true));
-        title.addView(text(StitchUiContract.SUBTITLE, MUTED, 12, false));
-        line.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
-        LinearLayout online = row(SURFACE_HIGH);
-        online.setGravity(Gravity.CENTER_VERTICAL);
-        online.setPadding(dp(10), 0, dp(10), 0);
-        online.addView(text("●", PRIMARY, 10, true));
-        systemState = text(StitchUiContract.SYSTEM_ONLINE, PRIMARY, 10, true);
-        online.addView(systemState);
-        line.addView(online, new LinearLayout.LayoutParams(-2, dp(34)));
-        line.addView(action("⚙", MUTED, v -> showSettings()), new LinearLayout.LayoutParams(dp(48), dp(44)));
-        header.addView(line);
-        return header;
-    }
-
-    private View navigation() {
-        HorizontalScrollView hsv = new HorizontalScrollView(this);
-        hsv.setHorizontalScrollBarEnabled(false);
-        LinearLayout nav = row(BG);
-        nav.setPadding(dp(8), 0, dp(8), 0);
-        addNav(nav, StitchUiContract.NAV_LABELS[0], v -> scrollTo(terminalAnchor));
-        addNav(nav, StitchUiContract.NAV_LABELS[1], v -> scrollTo(runtimeAnchor));
-        addNav(nav, StitchUiContract.NAV_LABELS[2], v -> { scrollTo(telemetryAnchor); refreshTelemetry(); });
-        addNav(nav, StitchUiContract.NAV_LABELS[3], v -> showSecurity());
-        addNav(nav, StitchUiContract.NAV_LABELS[4], v -> showSettings());
-        hsv.addView(nav);
-        return hsv;
-    }
-
-    private View telemetryStrip() {
-        LinearLayout card = column(SURFACE_LOW);
-        card.setPadding(dp(10), dp(8), dp(10), dp(8));
-        LinearLayout head = row(SURFACE_LOW);
-        head.addView(text("TELEMETRY", PRIMARY, 10, true), new LinearLayout.LayoutParams(0, dp(24), 1));
-        head.addView(text("HOST: aarch64", MUTED, 10, false));
-        card.addView(head);
-        LinearLayout metrics = row(SURFACE_LOW);
-        telemetryCpu = metric(metrics, "CPU", "--", PRIMARY);
-        telemetryMem = metric(metrics, "MEM", "--", SECONDARY);
-        telemetryStorage = metric(metrics, "STORAGE", "--", WARNING);
-        telemetryNet = metric(metrics, "NET", "OFFLINE", PRIMARY);
-        card.addView(metrics, new LinearLayout.LayoutParams(-1, dp(62)));
-        return card;
-    }
-
-    private TextView metric(LinearLayout parent, String name, String value, int valueColor) {
-        LinearLayout box = column(SURFACE);
-        box.setPadding(dp(7), dp(5), dp(7), dp(4));
-        box.addView(text(name, MUTED, 9, true));
-        TextView v = text(value, valueColor, 11, true);
-        box.addView(v);
-        parent.addView(box, new LinearLayout.LayoutParams(0, dp(56), 1));
-        if (parent.getChildCount() < 7) parent.addView(spaceH(3), new LinearLayout.LayoutParams(dp(3), dp(1)));
-        return v;
-    }
-
-    private View terminalSurface() {
-        LinearLayout panel = column(Color.rgb(10, 14, 19));
-        panel.setBackground(round(Color.rgb(10, 14, 19), dp(10), Color.rgb(60, 72, 67)));
-        LinearLayout bar = row(SURFACE_HIGH);
-        bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(10), 0, dp(6), 0);
-        terminalTitle = text("SESSION 01  //  " + selectedRuntime.displayName(), PRIMARY, 10, true);
-        bar.addView(terminalTitle, new LinearLayout.LayoutParams(0, dp(44), 1));
-        sessionState = text("SESSION OFFLINE", MUTED, 9, true);
-        bar.addView(sessionState, new LinearLayout.LayoutParams(-2, dp(44)));
-        bar.addView(action("RESTART", PRIMARY, v -> restartSession()), new LinearLayout.LayoutParams(dp(78), dp(44)));
-        bar.addView(action("CLEAR", MUTED, v -> clearTerminal()), new LinearLayout.LayoutParams(dp(64), dp(44)));
-        bar.addView(action("×", ERROR, v -> stopSession()), new LinearLayout.LayoutParams(dp(44), dp(44)));
-        panel.addView(bar);
-
-        FrameLayout terminalFrame = new FrameLayout(this);
-        terminalView = new TerminalView(this, null);
-        terminalFrame.addView(terminalView, new FrameLayout.LayoutParams(-1, -1));
-        terminalOutput = text("Waiting for a verified runtime session…", MUTED, 11, false);
-        terminalOutput.setTypeface(Typeface.MONOSPACE);
-        terminalOutput.setPadding(dp(12), dp(12), dp(12), dp(12));
-        terminalFrame.addView(terminalOutput, new FrameLayout.LayoutParams(-1, -1));
-        panel.addView(terminalFrame, new LinearLayout.LayoutParams(-1, 0, 1));
-
-        LinearLayout command = row(SURFACE);
-        command.setPadding(dp(8), dp(5), dp(8), dp(5));
-        commandInput = new EditText(this);
-        commandInput.setSingleLine(true);
-        commandInput.setHint("guest command …");
-        commandInput.setHintTextColor(MUTED);
-        commandInput.setTextColor(TEXT);
-        commandInput.setTextSize(11);
-        commandInput.setTypeface(Typeface.MONOSPACE);
-        commandInput.setBackground(round(SURFACE_LOW, dp(5), Color.rgb(60, 72, 67)));
-        command.addView(commandInput, new LinearLayout.LayoutParams(0, dp(46), 1));
-        command.addView(action("RUN ▶", PRIMARY, v -> runCommand()), new LinearLayout.LayoutParams(dp(82), dp(46)));
-        panel.addView(command);
-        return panel;
-    }
-
-    private View runtimeSurface() {
-        LinearLayout panel = column(SURFACE_LOW);
-        panel.setPadding(dp(10), dp(8), dp(10), dp(8));
-        LinearLayout head = row(SURFACE_LOW);
-        head.addView(text("LINUX RUNTIMES", PRIMARY, 11, true), new LinearLayout.LayoutParams(0, dp(32), 1));
-        head.addView(action("SELECT", PRIMARY, v -> selectRuntime()), new LinearLayout.LayoutParams(dp(72), dp(40)));
-        panel.addView(head);
-        runtimeList = column(SURFACE_LOW);
-        panel.addView(runtimeList);
-        return panel;
-    }
-
-    private View executionLanes() {
-        LinearLayout panel = column(SURFACE_LOW);
-        panel.setPadding(dp(10), dp(8), dp(10), dp(8));
-        LinearLayout head = row(SURFACE_LOW);
-        head.addView(text("EXECUTION LANES", PRIMARY, 11, true), new LinearLayout.LayoutParams(0, dp(34), 1));
-        head.addView(text("SESSION → PTY → RUNTIME", MUTED, 9, true));
-        panel.addView(head);
-        TextView lane = text("LANE 01  Android Activity\nLANE 02  RuntimeSessionManager\nLANE 03  PRoot + rootfs\nLANE 04  Interactive PTY", TEXT, 10, true);
-        lane.setPadding(dp(10), dp(8), dp(10), dp(8));
-        lane.setBackground(round(SURFACE, dp(7), Color.rgb(60, 72, 67)));
-        panel.addView(lane, new LinearLayout.LayoutParams(-1, dp(86)));
-        panel.addView(action("RUN RUNTIME TOOL PROBE", SECONDARY, v -> runLaneProbe()), new LinearLayout.LayoutParams(-1, dp(48)));
-        return panel;
-    }
-
-    private View statusPanel() {
-        statusBanner = text("STATE\nStitch presentation is connected to runtime/session contracts.", MUTED, 10, false);
-        statusBanner.setTypeface(Typeface.MONOSPACE);
-        statusBanner.setPadding(dp(12), dp(10), dp(12), dp(10));
-        statusBanner.setBackground(round(SURFACE, dp(8), Color.rgb(60, 72, 67)));
-        return statusBanner;
-    }
-
-    private View shortcuts() {
-        LinearLayout bar = row(BG);
-        bar.setPadding(dp(8), dp(5), dp(8), dp(5));
-        addShortcut(bar, "ESC", new byte[]{27});
-        addShortcut(bar, "TAB", new byte[]{9});
-        addShortcut(bar, "CTRL", null);
-        addShortcut(bar, "↑", new byte[]{27, '[', 'A'});
-        addShortcut(bar, "↓", new byte[]{27, '[', 'B'});
-        addShortcut(bar, "COPY", null);
-        return bar;
-    }
-
-    private void addNav(LinearLayout nav, String label, View.OnClickListener listener) {
-        Button b = action(label, MUTED, listener);
-        b.setAllCaps(true);
-        nav.addView(b, new LinearLayout.LayoutParams(dp(112), dp(44)));
-    }
-
-    private void addShortcut(LinearLayout parent, String label, byte[] bytes) {
-        Button b = action(label, MUTED, v -> {
-            if ("COPY".equals(label)) copyTerminal();
-            else if (bytes != null) send(bytes);
-            else showStatus("SHORTCUT\n" + label + "\nModifier is available on the PTY surface.");
-        });
-        parent.addView(b, new LinearLayout.LayoutParams(0, dp(48), 1));
-    }
-
-    private void refreshRuntimes() {
-        if (runtimeList == null) return;
-        runtimeList.removeAllViews();
-        List<RuntimeProfile> profiles = RuntimeRegistry.all();
-        for (RuntimeProfile profile : profiles) {
-            File runtime = new File(new File(getFilesDir(), "runtime-vault/runtimes"), profile.id());
-            RuntimeUiState.Status resolved = RuntimeUiState.resolve(profile.id(), runtime, new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"));
-            final RuntimeUiState.Status cardState = profile.id().equals(installingRuntimeId) ? RuntimeUiState.Status.VERIFYING : resolved;
-            LinearLayout card = row(SURFACE);
-            card.setPadding(dp(10), dp(3), dp(4), dp(3));
-            TextView name = text(profile.displayName() + "\n" + profile.id() + "  " + profile.version(), TEXT, 10, true);
-            card.addView(name, new LinearLayout.LayoutParams(0, dp(58), 1));
-            card.addView(text(RuntimeUiState.label(cardState), cardState == RuntimeUiState.Status.READY ? PRIMARY : MUTED, 9, true), new LinearLayout.LayoutParams(dp(70), dp(58)));
-            card.addView(action("CHECK", MUTED, v -> checkRuntime(profile)), new LinearLayout.LayoutParams(dp(64), dp(46)));
-            Button openOrInstall = action(cardState == RuntimeUiState.Status.READY ? "OPEN" : "INSTALL", PRIMARY, v -> {
-                selectedRuntime = profile;
-                getPreferences(MODE_PRIVATE).edit().putString("runtime_id", profile.id()).apply();
-                terminalTitle.setText("SESSION 01  //  " + profile.displayName());
-                if (cardState == RuntimeUiState.Status.READY) startSession(); else installRuntime(profile);
-            });
-            card.addView(openOrInstall, new LinearLayout.LayoutParams(dp(70), dp(46)));
-            if (profile.id().equals(selectedRuntime.id())) card.setBackground(round(Color.rgb(31, 48, 43), dp(7), Color.rgb(78, 120, 103)));
-            runtimeList.addView(card);
-            runtimeList.addView(space(4));
-        }
-    }
-
-    private void checkRuntime(RuntimeProfile profile) {
-        File runtime = new File(new File(getFilesDir(), "runtime-vault/runtimes"), profile.id());
-        RuntimeUiState.Status state = RuntimeUiState.resolve(profile.id(), runtime, new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"));
-        showStatus("CHECK\n" + profile.displayName() + "\nSTATUS=" + RuntimeUiState.label(state) + "\nROOTFS=" + (new File(runtime, "rootfs").isDirectory() ? "PRESENT" : "MISSING"));
-        refreshRuntimes();
-    }
-
-    private void refreshTelemetry() {
-        if (!sessionReady()) {
-            telemetryCpu.setText("--"); telemetryMem.setText("--"); telemetryStorage.setText("--"); telemetryNet.setText("OFFLINE");
-            showStatus("MONITOR\nWAITING\nStart a verified runtime session first.");
-            return;
-        }
-        telemetryNet.setText("LIVE");
-        sessionManager.runRuntimeCommand("mt=$(awk '/MemTotal:/{print $2}' /proc/meminfo); ma=$(awk '/MemAvailable:/{print $2}' /proc/meminfo); used=$((mt-ma)); mp=0; [ $mt -gt 0 ] && mp=$((used*100/mt)); df=$(df -P / | awk 'NR==2{gsub(/%/,\"\",$5);print $5}'); printf 'MEM=%s%%\\nSTORAGE=%s%%\\n' $mp ${df:-0}", (output, code) -> postUi(() -> {
-            if (code != 0) { showStatus("MONITOR\nBLOCKED\n" + output); return; }
-            for (String line : output.split("\\n")) {
-                if (line.startsWith("MEM=")) telemetryMem.setText(line.substring(4));
-                if (line.startsWith("STORAGE=")) telemetryStorage.setText(line.substring(9));
-            }
-            telemetryCpu.setText("LIVE");
-        }));
-    }
-
-    private void installRuntime(RuntimeProfile profile) {
-        if (!uiActive || (sessionManager != null && sessionManager.isRunning())) { showStatus("INSTALL\nBLOCKED\nStop the active session first."); return; }
-        installingRuntimeId = profile.id();
-        refreshRuntimes();
-        showStatus("INSTALL\n" + profile.displayName() + "\nVerifying checksum and extracting atomically…");
-        new Thread(() -> {
-            RuntimeInstaller.Result result;
-            try {
-                File vault = new File(getFilesDir(), "runtime-vault");
-                File nativeDir = new File(getApplicationInfo().nativeLibraryDir);
-                result = new RuntimeInstaller(vault, message -> postUi(() -> showStatus("INSTALL\n" + message)), new File(nativeDir, "libproot.so"), nativeDir)
-                        .install(profile, null, PROOT_SHA256, new URL(profile.rootfsUrl()), profile.rootfsSha256(), profile.rootfsGzip());
-            } catch (Exception e) {
-                result = RuntimeInstaller.Result.fail(profile.id(), e.getClass().getSimpleName() + ":" + e.getMessage(), null);
-            }
-            RuntimeInstaller.Result done = result;
-            postUi(() -> {
-                installingRuntimeId = null;
-                refreshRuntimes();
-                showStatus(done.success ? "INSTALL\nREADY\n" + done.runtimeId : "INSTALL\nFAILED\n" + done.message);
-            });
-        }, "stitch-runtime-installer").start();
-    }
-
-    private void startSession() {
-        if (!uiActive) return;
-        if (sessionManager != null && sessionManager.isRunning()) { sessionManager.attachTo(terminalView); return; }
-        RuntimeProfile profile = selectedRuntime;
-        File runtime = new File(new File(getFilesDir(), "runtime-vault"), "runtimes/" + profile.id());
-        File ready = new File(runtime, "READY.evidence");
-        File launch = new File(new File(getFilesDir(), "runtime-vault"), "gate7-launch.properties");
-        if (!Gate6LaunchContract.verify(launch, profile.id())) {
-            showStatus("GATE 6 → GATE 7\nImport current runtime bootstrap for " + profile.displayName() + ".");
-            Intent intent = new Intent(this, Gate6ImportActivity.class);
-            intent.putExtra("runtime_id", profile.id());
-            startActivityForResult(intent, REQUEST_GATE6_IMPORT);
-            return;
-        }
-        File cwd = new File(getFilesDir(), "session-cwd");
-        if (!ready.isFile() || (!cwd.exists() && !cwd.mkdirs())) { showStatus("SESSION\nBLOCKED\nruntime-ready.v1 or session cwd is unavailable."); return; }
-        try {
-            InteractiveSessionContract contract = new InteractiveSessionContract("session-" + shortId(), "request-" + shortId(), "run-" + shortId(), profile.id(), ready,
-                    new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"), cwd,
-                    new String[]{"HOME=/root", "TERM=xterm-256color", "PS1=alfa:" + profile.id() + ":\\w\\$ ", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PROOT_TMP_DIR=" + new File(runtime, "proot_tmp").getAbsolutePath()});
-            sessionManager = new RuntimeSessionManager(contract, this);
-            if (!sessionManager.start(80, 24, 8, 16)) { showStatus("SESSION\nBLOCKED\nRuntime authorization failed."); return; }
-            sessionManager.attachTo(terminalView);
-            terminalOutput.setVisibility(View.GONE);
-            sessionState.setText("READY");
-            terminalTitle.setText("SESSION 01  //  " + profile.displayName());
-            systemState.setText("SYSTEM ONLINE");
-            refreshTelemetry();
-        } catch (RuntimeException e) {
-            showStatus("SESSION\nBLOCKED\n" + e.getClass().getSimpleName() + ":" + e.getMessage());
-        }
-    }
-
-    private void restartSession() {
-        if (sessionManager == null || !sessionManager.isRunning()) { startSession(); return; }
-        sessionManager.stop();
-        sessionState.setText("RESTARTING");
-        main.postDelayed(this::startSession, 300L);
-    }
-
-    private void stopSession() {
-        if (sessionManager != null && sessionManager.isRunning()) {
-            sessionManager.stop();
-            sessionState.setText("OFFLINE");
-            terminalOutput.setVisibility(View.VISIBLE);
-            terminalOutput.setText("Session stopped. Select OPEN on a verified runtime to start again.");
-        } else showStatus("SESSION\nNo active session.");
-    }
-
-    private void clearTerminal() {
-        if (!sessionReady()) { showStatus("CLEAR\nBLOCKED\nNo active PTY session."); return; }
-        sessionManager.runRuntimeCommand("clear", (output, code) -> postUi(() -> showStatus("CLEAR\nEXIT=" + code)));
-    }
-
-    private void runCommand() {
-        String command = commandInput == null ? "" : commandInput.getText().toString().trim();
-        if (command.isEmpty()) return;
-        if (!sessionReady()) { showStatus("COMMAND\nBLOCKED\nVerified runtime session required."); return; }
-        sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> showStatus("COMMAND\nEXIT=" + code + "\n" + output)));
-    }
-
-    private void runLaneProbe() {
-        if (!sessionReady()) { showStatus("EXECUTION LANES\nBLOCKED\nRuntime PTY prompt is not ready."); return; }
-        sessionManager.runRuntimeCommand("printf 'LANES_EVIDENCE=PASS\\n'; command -v sh; command -v ps; command -v env", (output, code) -> postUi(() -> showStatus("EXECUTION LANES\nEXIT=" + code + "\n" + output)));
-    }
-
-    private boolean sessionReady() { return sessionManager != null && sessionManager.isRunning() && sessionManager.isPromptReady(); }
-
-    private void send(byte[] bytes) {
-        TerminalSession session = sessionManager == null ? null : sessionManager.currentSession();
-        if (session == null || !session.isRunning()) { showStatus("INPUT\nBLOCKED\nNo active PTY."); return; }
-        session.write(bytes, 0, bytes.length);
-    }
-
-    private void copyTerminal() {
-        if (terminalView == null || terminalView.mEmulator == null || terminalView.mEmulator.getScreen() == null) { showStatus("COPY\nBLOCKED\nTerminal transcript is unavailable."); return; }
-        ClipboardManager manager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-        if (manager == null) { showStatus("COPY\nBLOCKED\nClipboard service unavailable."); return; }
-        String value = terminalView.mEmulator.getScreen().getTranscriptTextWithFullLinesJoined();
-        manager.setPrimaryClip(ClipData.newPlainText("Alfa terminal", value));
-        showStatus("COPY\nPASS\n" + value.length() + " chars");
-    }
-
-    private void selectRuntime() {
-        if (sessionManager != null && sessionManager.isRunning()) { showStatus("RUNTIMES\nStop the active session before switching runtime."); return; }
-        List<RuntimeProfile> profiles = RuntimeRegistry.all();
-        String[] names = new String[profiles.size()];
-        int selected = 0;
-        for (int i = 0; i < profiles.size(); i++) { names[i] = profiles.get(i).displayName(); if (profiles.get(i).id().equals(selectedRuntime.id())) selected = i; }
-        new android.app.AlertDialog.Builder(this).setTitle("Select runtime").setSingleChoiceItems(names, selected, (dialog, which) -> {
-            selectedRuntime = profiles.get(which);
-            getPreferences(MODE_PRIVATE).edit().putString("runtime_id", selectedRuntime.id()).apply();
-            terminalTitle.setText("SESSION 01  //  " + selectedRuntime.displayName());
-            dialog.dismiss();
-            refreshRuntimes();
-            showStatus("RUNTIMES\nSELECTED\n" + selectedRuntime.displayName());
-        }).setNegativeButton("CANCEL", null).show();
-    }
-
-    private void showSecurity() {
-        showStatus("SECURITY\nPRoot is a rootless runtime compatibility layer, not a host security sandbox.\nBinary/rootfs integrity is checked by the canonical installer.");
-    }
-
-    private void showSettings() {
-        LinearLayout box = column(SURFACE);
-        box.setPadding(dp(14), dp(8), dp(14), dp(8));
-        box.addView(text("STITCH OPERATIONAL SETTINGS", PRIMARY, 11, true));
-        box.addView(text("Runtime: " + selectedRuntime.displayName(), TEXT, 10, true));
-        box.addView(text("Registry: 4 supported distros", MUTED, 10, false));
-        box.addView(action("REFRESH RUNTIMES", MUTED, v -> { refreshRuntimes(); showStatus("SETTINGS\nRuntime registry refreshed."); }), new LinearLayout.LayoutParams(-1, dp(46)));
-        box.addView(action("MONITOR", SECONDARY, v -> refreshTelemetry()), new LinearLayout.LayoutParams(-1, dp(46)));
-        new android.app.AlertDialog.Builder(this).setTitle("SETTINGS").setView(box).setPositiveButton("DONE", null).show();
-    }
-
-    private void scrollTo(View target) {
-        if (scroll != null && target != null) scroll.post(() -> scroll.smoothScrollTo(0, target.getTop()));
-    }
-
-    private void showStatus(String value) {
-        if (statusBanner != null) { statusBanner.setVisibility(View.VISIBLE); statusBanner.setText(value); }
-    }
-
-    private void postUi(Runnable r) { if (uiActive && !isFinishing() && !isDestroyed()) runOnUiThread(r); }
-    private String shortId() { return UUID.randomUUID().toString().replace("-", "").substring(0, 12); }
-    private Button action(String value, int color, View.OnClickListener listener) {
-        Button b = new Button(this);
-        b.setText(value); b.setTextColor(color); b.setTextSize(10); b.setAllCaps(false); b.setMinHeight(0); b.setMinWidth(0);
-        b.setPadding(dp(5), 0, dp(5), 0); b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-        b.setBackground(round(SURFACE_HIGH, dp(6), Color.rgb(60, 72, 67))); b.setStateListAnimator(null); b.setOnClickListener(listener); return b;
-    }
-    private TextView text(String value, int color, int size, boolean bold) {
-        TextView t = new TextView(this); t.setText(value); t.setTextColor(color); t.setTextSize(size); t.setGravity(Gravity.CENTER_VERTICAL); if (bold) t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); return t;
-    }
-    private LinearLayout row(int color) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setBackgroundColor(color); return l; }
-    private LinearLayout column(int color) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setBackgroundColor(color); return l; }
-    private GradientDrawable round(int color, int radius, int strokeColor) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(radius); d.setStroke(dp(1), strokeColor); return d; }
-    private View space(int h) { View v = new View(this); v.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(h))); return v; }
-    private View spaceH(int w) { View v = new View(this); v.setLayoutParams(new LinearLayout.LayoutParams(dp(w), 1)); return v; }
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
-
-    @Override public void onState(String state) { postUi(() -> { sessionState.setText(state); systemState.setText(("READY".equals(state) || "RUNNING".equals(state)) ? "SYSTEM ONLINE" : "SYSTEM WAITING"); terminalOutput.setVisibility(("READY".equals(state) || "RUNNING".equals(state)) ? View.GONE : View.VISIBLE); refreshRuntimes(); }); }
-    @Override public void onTextChanged() { postUi(() -> { if (terminalView != null) terminalView.invalidate(); }); }
-    @Override public void onSessionFinished(int exitStatus) { postUi(() -> { sessionState.setText("FINISHED"); terminalOutput.setVisibility(View.VISIBLE); terminalOutput.setText("exit_status=" + exitStatus); refreshRuntimes(); }); }
+    private static final int GATE6 = 702;
+    private RuntimeProfile selectedRuntime; private RuntimeSessionManager sessionManager; private TerminalView terminal;
+    private TextView systemState, sessionState, terminalState, telemetry, status; private LinearLayout nodePage, lanePage, diagPage; private boolean active;
+    @Override protected void onCreate(Bundle state){super.onCreate(state);selectedRuntime=RuntimeSelection.profile(getPreferences(MODE_PRIVATE).getString("runtime_id",RuntimeSelection.DEFAULT_RUNTIME_ID));if(selectedRuntime==null)selectedRuntime=RuntimeSelection.profile(RuntimeSelection.DEFAULT_RUNTIME_ID);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(Color.rgb(10,14,19));setContentView(build());active=true;refreshNodes();}
+    @Override protected void onStart(){super.onStart();active=true;if(sessionManager!=null)sessionManager.rebindListener(this);refreshNodes();}
+    @Override protected void onStop(){active=false;if(sessionManager!=null)sessionManager.stop();super.onStop();}
+    @Override protected void onDestroy(){active=false;if(sessionManager!=null)sessionManager.stop();super.onDestroy();}
+    @Override protected void onActivityResult(int r,int c,Intent d){super.onActivityResult(r,c,d);if(r==GATE6&&c==RESULT_OK)startSession();}
+    private View build(){LinearLayout root=col(BG);root.addView(header(),new LinearLayout.LayoutParams(-1,dp(76)));root.addView(topStatus(),new LinearLayout.LayoutParams(-1,dp(38)));FrameLayout pages=new FrameLayout(this);pages.addView(buildNodes());pages.addView(buildLanes());pages.addView(buildDiagnostics());root.addView(pages,new LinearLayout.LayoutParams(-1,0,1));root.addView(bottomNav(),new LinearLayout.LayoutParams(-1,dp(58)));return root;}
+    private View header(){LinearLayout r=row(BG);r.setPadding(dp(14),dp(8),dp(10),0);LinearLayout t=col(BG);t.addView(txt("ALFA::CTRL",GREEN,18,true));t.addView(txt("Linux Runtime Control",MUTED,11,false));r.addView(t,new LinearLayout.LayoutParams(0,dp(66),1));LinearLayout s=row(HIGH);s.setGravity(Gravity.CENTER);s.addView(txt("● ",GREEN,10,true));systemState=txt("SYSTEM ONLINE",GREEN,10,true);s.addView(systemState);r.addView(s,new LinearLayout.LayoutParams(dp(128),dp(34)));return r;}
+    private View topStatus(){LinearLayout r=row(SURFACE);r.setPadding(dp(12),0,dp(12),0);sessionState=txt("PTY: OFFLINE",MUTED,10,true);r.addView(sessionState,new LinearLayout.LayoutParams(0,dp(38),1));r.addView(txt("4 RUNTIMES  //  NATIVE  //  NO WEBVIEW",MUTED,9,true));return r;}
+    private View buildNodes(){nodePage=col(BG);nodePage.addView(window("NODES // LINUX RUNTIMES",runtimeWindowContent()));nodePage.addView(sp(8));nodePage.addView(window("NODE PROVENANCE",provenanceContent()));return nodePage;}
+    private View buildLanes(){lanePage=col(BG);lanePage.setVisibility(View.GONE);lanePage.addView(window("LANE 01 // INTERACTIVE PTY",terminalWindowContent()),new LinearLayout.LayoutParams(-1,0,1));lanePage.addView(sp(8));lanePage.addView(window("LANE 02 // EXECUTION",executionContent()));return lanePage;}
+    private View buildDiagnostics(){diagPage=col(BG);diagPage.setVisibility(View.GONE);diagPage.addView(window("DIAGNOSTICS // LIVE EVIDENCE",diagnosticContent()));diagPage.addView(sp(8));diagPage.addView(window("STATE MACHINE",stateContent()));return diagPage;}
+    private View window(String title,View content){LinearLayout w=col(SURFACE);w.setBackground(round(SURFACE,8,Color.rgb(60,72,67)));LinearLayout bar=row(HIGH);bar.setGravity(Gravity.CENTER_VERTICAL);bar.setPadding(dp(8),0,dp(5),0);bar.addView(txt(title,GREEN,10,true),new LinearLayout.LayoutParams(0,dp(40),1));Button min=btn("—",MUTED,null);min.setOnClickListener(v->toggleWindowContent(content,min));Button max=btn("□",CYAN,null);max.setOnClickListener(v->toggleMax(w,content,max));Button close=btn("×",RED,v->w.setVisibility(View.GONE));bar.addView(min,new LinearLayout.LayoutParams(dp(40),dp(40)));bar.addView(max,new LinearLayout.LayoutParams(dp(40),dp(40)));bar.addView(close,new LinearLayout.LayoutParams(dp(40),dp(40)));w.addView(bar);w.addView(content,new LinearLayout.LayoutParams(-1,0,1));return w;}
+    private void toggleWindowContent(View content,Button button){boolean hidden=content.getVisibility()!=View.VISIBLE;content.setVisibility(hidden?View.VISIBLE:View.GONE);button.setText(hidden?"—":"+");}
+    private void toggleMax(LinearLayout w,View content,Button button){boolean max="RESTORE".equals(button.getText().toString());LinearLayout.LayoutParams p=(LinearLayout.LayoutParams)w.getLayoutParams();if(max){p.height=dp(220);p.weight=0;button.setText("□");}else{p.height=0;p.weight=1;button.setText("RESTORE");}w.setLayoutParams(p);content.setVisibility(View.VISIBLE);}
+    private View runtimeWindowContent(){LinearLayout box=col(SURFACE);ScrollView scroll=new ScrollView(this);LinearLayout list=col(SURFACE);scroll.addView(list);box.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));return box;}
+    private View provenanceContent(){LinearLayout b=col(SURFACE);b.setPadding(dp(10),dp(8),dp(10),dp(8));b.addView(txt("Debian is the proven baseline: runtime-ready.v1 → PRoot → rootfs → interactive PTY.",TEXT,10,true));b.addView(txt("Ubuntu / Alpine / Kali use the same RuntimeRegistry + RuntimeInstaller + InteractiveSessionContract path.",MUTED,10,false));return b;}
+    private View terminalWindowContent(){LinearLayout b=col(Color.rgb(10,14,19));LinearLayout head=row(HIGH);head.setGravity(Gravity.CENTER_VERTICAL);terminalState=txt("SESSION 01 // "+selectedRuntime.displayName(),GREEN,10,true);head.addView(terminalState,new LinearLayout.LayoutParams(0,dp(40),1));head.addView(btn("RESTART",GREEN,v->restart()),new LinearLayout.LayoutParams(dp(82),dp(40)));head.addView(btn("STOP",RED,v->stop()),new LinearLayout.LayoutParams(dp(64),dp(40)));b.addView(head);FrameLayout f=new FrameLayout(this);terminal=new TerminalView(this,null);terminal.setTerminalViewClient(new AlfaTerminalViewClient());f.addView(terminal,new FrameLayout.LayoutParams(-1,-1));TextView empty=txt("PTY output appears here after OPEN on a READY runtime.",MUTED,11,false);empty.setGravity(Gravity.CENTER);f.addView(empty,new FrameLayout.LayoutParams(-1,-1));f.setTag(empty);b.addView(f,new LinearLayout.LayoutParams(-1,0,1));LinearLayout actions=row(SURFACE);EditText input=new EditText(this);input.setSingleLine(true);input.setHint("command → PTY");input.setTextColor(TEXT);input.setHintTextColor(MUTED);input.setTypeface(Typeface.MONOSPACE);input.setTextSize(11);actions.addView(input,new LinearLayout.LayoutParams(0,dp(46),1));actions.addView(btn("SEND",GREEN,v->writePty(input.getText().toString())),new LinearLayout.LayoutParams(dp(72),dp(46)));actions.addView(btn("APT UPDATE",CYAN,v->writePty("apt update")),new LinearLayout.LayoutParams(dp(104),dp(46)));b.addView(actions);return b;}
+    private View executionContent(){LinearLayout b=col(SURFACE);b.setPadding(dp(10),dp(8),dp(10),dp(8));b.addView(txt("Android Activity → RuntimeSessionManager → PTY → PRoot → rootfs",TEXT,10,true));b.addView(btn("RUN PING",CYAN,v->writePty("ping -c 1 1.1.1.1")),new LinearLayout.LayoutParams(-1,dp(46)));b.addView(btn("RUN UTS PROBE",GREEN,v->writePty("uname -a && id && pwd")),new LinearLayout.LayoutParams(-1,dp(46)));return b;}
+    private View diagnosticContent(){LinearLayout b=col(SURFACE);b.setPadding(dp(10),dp(8),dp(10),dp(8));telemetry=txt("CPU=--  MEM=--  STORAGE=--  NET=--",MUTED,11,true);b.addView(telemetry);status=txt("Evidence channel idle.",MUTED,10,false);status.setTypeface(Typeface.MONOSPACE);b.addView(status);b.addView(btn("REFRESH LIVE TELEMETRY",CYAN,v->refreshTelemetry()),new LinearLayout.LayoutParams(-1,dp(46)));b.addView(btn("CHECK RUNTIME",GREEN,v->refreshNodes()),new LinearLayout.LayoutParams(-1,dp(46)));return b;}
+    private View stateContent(){LinearLayout b=col(SURFACE);b.setPadding(dp(10),dp(8),dp(10),dp(8));b.addView(txt("READY ⇒ OPEN only. INSTALL is structurally absent while READY.",GREEN,10,true));b.addView(txt("NOT_READY ⇒ INSTALL. READY ⇒ OPEN.",MUTED,10,false));return b;}
+    private View bottomNav(){LinearLayout r=row(HIGH);r.setPadding(dp(8),dp(5),dp(8),dp(5));r.addView(btn("NODES",GREEN,v->showPage(nodePage)),new LinearLayout.LayoutParams(0,dp(48),1));r.addView(btn("LANES",CYAN,v->showPage(lanePage)),new LinearLayout.LayoutParams(0,dp(48),1));r.addView(btn("DIAGNOSTICS",MUTED,v->showPage(diagPage)),new LinearLayout.LayoutParams(0,dp(48),1));return r;}
+    private void showPage(View page){nodePage.setVisibility(page==nodePage?View.VISIBLE:View.GONE);lanePage.setVisibility(page==lanePage?View.VISIBLE:View.GONE);diagPage.setVisibility(page==diagPage?View.VISIBLE:View.GONE);}
+    private void refreshNodes(){if(nodePage==null)return;LinearLayout win=(LinearLayout)nodePage.getChildAt(0);ScrollView scroll=(ScrollView)win.getChildAt(1);LinearLayout list=(LinearLayout)scroll.getChildAt(0);list.removeAllViews();for(RuntimeProfile p:RuntimeRegistry.all())list.addView(runtimeCard(p),new LinearLayout.LayoutParams(-1,dp(58)));}
+    private View runtimeCard(RuntimeProfile p){RuntimeUiState.Status s=runtimeStatus(p);StitchV1RuntimeStateMachine.State state=StitchV1RuntimeStateMachine.from(s);LinearLayout c=row(SURFACE);c.setGravity(Gravity.CENTER_VERTICAL);c.setPadding(dp(8),0,dp(4),0);c.addView(txt(p.displayName()+"\n"+p.id()+"  "+p.version(),TEXT,10,true),new LinearLayout.LayoutParams(0,dp(54),1));c.addView(txt(RuntimeUiState.label(s),s==RuntimeUiState.Status.READY?GREEN:MUTED,9,true),new LinearLayout.LayoutParams(dp(78),dp(54)));c.addView(btn("CHECK",MUTED,v->check(p)),new LinearLayout.LayoutParams(dp(62),dp(46)));if(StitchV1RuntimeStateMachine.showOpen(state))c.addView(btn("OPEN",GREEN,v->{selectedRuntime=p;startSession();}),new LinearLayout.LayoutParams(dp(66),dp(46)));else if(StitchV1RuntimeStateMachine.showInstall(state)){Button install=btn("INSTALL",GREEN,v->{selectedRuntime=p;install(p);});install.setEnabled(state!=StitchV1RuntimeStateMachine.State.VERIFYING);c.addView(install,new LinearLayout.LayoutParams(dp(72),dp(46)));}return c;}
+    private RuntimeUiState.Status runtimeStatus(RuntimeProfile p){File root=new File(new File(getFilesDir(),"runtime-vault/runtimes"),p.id());return RuntimeUiState.resolve(p.id(),root,new File(root,"READY.evidence"),new File(getApplicationInfo().nativeLibraryDir,"libproot.so"),new File(root,"rootfs"));}
+    private void check(RuntimeProfile p){RuntimeUiState.Status s=runtimeStatus(p);showStatus("CHECK "+p.id()+" = "+RuntimeUiState.label(s));refreshNodes();}
+    private void startSession(){if(!active)return;if(sessionManager!=null&&sessionManager.isRunning()){sessionManager.attachTo(terminal);return;}File runtime=new File(new File(getFilesDir(),"runtime-vault"),"runtimes/"+selectedRuntime.id());File ready=new File(runtime,"READY.evidence");File launch=new File(new File(getFilesDir(),"runtime-vault"),"gate7-launch.properties");if(!Gate6LaunchContract.verify(launch,selectedRuntime.id())){Intent i=new Intent(this,Gate6ImportActivity.class);i.putExtra("runtime_id",selectedRuntime.id());startActivityForResult(i,GATE6);return;}File cwd=new File(getFilesDir(),"session-cwd");if(!ready.isFile()||(!cwd.exists()&&!cwd.mkdirs())){showStatus("RUNTIME READY EVIDENCE MISSING");return;}try{InteractiveSessionContract contract=new InteractiveSessionContract("session-"+id(),"request-"+id(),"run-"+id(),selectedRuntime.id(),ready,new File(getApplicationInfo().nativeLibraryDir,"libproot.so"),new File(runtime,"rootfs"),cwd,new String[]{"HOME=/root","TERM=xterm-256color","PS1=alfa:"+selectedRuntime.id()+":\\w\\$ ","PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","PROOT_TMP_DIR="+new File(runtime,"proot_tmp").getAbsolutePath()});sessionManager=new RuntimeSessionManager(contract,this);if(!sessionManager.start(80,24,8,16)){showStatus("PTY START BLOCKED");return;}sessionManager.attachTo(terminal);hideTerminalOverlay();showStatus("PTY READY // "+selectedRuntime.displayName());}catch(RuntimeException e){showStatus("PTY START ERROR // "+e.getClass().getSimpleName()+":"+e.getMessage());}}
+    private void hideTerminalOverlay(){if(terminal!=null&&terminal.getParent() instanceof FrameLayout){FrameLayout f=(FrameLayout)terminal.getParent();Object tag=f.getTag();if(tag instanceof View)((View)tag).setVisibility(View.GONE);}}
+    private void restart(){stop();new android.os.Handler().postDelayed(this::startSession,250);} private void stop(){if(sessionManager!=null)sessionManager.stop();if(sessionState!=null)sessionState.setText("PTY: OFFLINE");}
+    private void writePty(String command){if(command==null||command.trim().isEmpty())return;TerminalSession s=sessionManager==null?null:sessionManager.currentSession();if(s==null||!s.isRunning()){showStatus("PTY NOT READY");return;}byte[] bytes=(command+"\n").getBytes(StandardCharsets.UTF_8);s.write(bytes,0,bytes.length);showStatus("PTY WRITE // "+command);}
+    private void refreshTelemetry(){if(sessionManager==null||!sessionManager.isPromptReady()){showStatus("TELEMETRY BLOCKED // PTY NOT READY");return;}sessionManager.runRuntimeCommand("awk '/MemTotal:/{print \"MEM=\"$2}' /proc/meminfo; df -P / | awk 'NR==2{print \"STORAGE=\"$5}'",(out,code)->runOnUiThread(()->{telemetry.setText("EXIT="+code+"\\n"+out);status.setText(out);}));}
+    private void showStatus(String s){if(status!=null)status.setText(s);if(diagPage!=null)showPage(diagPage);}
+    @Override public void onState(String s){runOnUiThread(()->{sessionState.setText("PTY: "+s);systemState.setText(("READY".equals(s)||"RUNNING".equals(s))?"SYSTEM ONLINE":"SYSTEM WAITING");});}
+    @Override public void onTextChanged(){runOnUiThread(()->{if(terminal!=null)terminal.invalidate();});}
+    @Override public void onSessionFinished(int code){runOnUiThread(()->sessionState.setText("PTY: FINISHED "+code));}
+    private TextView txt(String s,int c,int z,boolean bold){TextView t=new TextView(this);t.setText(s);t.setTextColor(c);t.setTextSize(z);t.setGravity(Gravity.CENTER_VERTICAL);if(bold)t.setTypeface(Typeface.MONOSPACE,Typeface.BOLD);return t;}
+    private Button btn(String s,int c,View.OnClickListener l){Button b=new Button(this);b.setText(s);b.setTextColor(c);b.setTextSize(10);b.setMinHeight(0);b.setMinWidth(0);b.setPadding(dp(4),0,dp(4),0);b.setTypeface(Typeface.MONOSPACE,Typeface.BOLD);b.setStateListAnimator(null);b.setBackground(round(HIGH,6,Color.rgb(60,72,67)));if(l!=null)b.setOnClickListener(l);return b;}
+    private LinearLayout row(int c){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.HORIZONTAL);l.setBackgroundColor(c);return l;}private LinearLayout col(int c){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setBackgroundColor(c);return l;}private View sp(int h){View v=new View(this);v.setLayoutParams(new LinearLayout.LayoutParams(-1,dp(h)));return v;}private int dp(int v){return Math.round(v*getResources().getDisplayMetrics().density);}private GradientDrawable round(int c,int r,int stroke){GradientDrawable d=new GradientDrawable();d.setColor(c);d.setCornerRadius(dp(r));d.setStroke(dp(1),stroke);return d;}private String id(){return UUID.randomUUID().toString().replace("-","").substring(0,12);}
+    private void install(RuntimeProfile p){showStatus("INSTALL "+p.displayName()+" // verifying...");new Thread(()->{RuntimeInstaller.Result r;try{File vault=new File(getFilesDir(),"runtime-vault");File nativeDir=new File(getApplicationInfo().nativeLibraryDir);r=new RuntimeInstaller(vault,m->runOnUiThread(()->showStatus("INSTALL // "+m)),new File(nativeDir,"libproot.so"),nativeDir).install(p,null,PROOT_SHA256,new URL(p.rootfsUrl()),p.rootfsSha256(),p.rootfsGzip());}catch(Exception e){r=RuntimeInstaller.Result.fail(p.id(),e.getClass().getSimpleName()+":"+e.getMessage(),null);}RuntimeInstaller.Result done=r;runOnUiThread(()->{showStatus(done.success?"INSTALL READY // "+done.runtimeId:"INSTALL FAILED // "+done.message);refreshNodes();});},"stitch-install").start();}
 }
