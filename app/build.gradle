@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def localDebugKeystore = file("debug.keystore")
+
 android {
     namespace 'com.alfa.device_ctrl'
     compileSdk 36
@@ -21,9 +23,23 @@ android {
         }
     }
 
+    if (localDebugKeystore.isFile()) {
+        signingConfigs {
+            debug {
+                storeFile localDebugKeystore
+                storePassword System.getenv("DEBUG_KEYSTORE_PASSWORD") ?: "android123"
+                keyAlias System.getenv("DEBUG_KEY_ALIAS") ?: "alfa_debug"
+                keyPassword System.getenv("DEBUG_KEY_PASSWORD") ?: "android123"
+            }
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
+            if (localDebugKeystore.isFile()) {
+                signingConfig signingConfigs.debug
+            }
         }
     }
 

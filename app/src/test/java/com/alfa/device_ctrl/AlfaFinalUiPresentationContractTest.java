@@ -33,34 +33,27 @@ public final class AlfaFinalUiPresentationContractTest {
         assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.5f));
     }
 
-    @Test public void terminalHeaderContainsNoLegacyActionButtons() throws Exception {
-        Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
-        String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
-        int start = text.indexOf("private View terminalHeader() {");
-        int end = text.indexOf("private View accessoryBar()", start);
-        assertTrue("terminalHeader method must exist", start >= 0);
-        assertTrue("terminalHeader method boundary must exist", end > start);
-        String header = text.substring(start, end);
-        assertFalse("terminal header must not render minimize action", header.contains("addHeaderAction(bar, \"—\""));
-        assertFalse("terminal header must not render fullscreen action", header.contains("addHeaderAction(bar, \"↗\""));
-        assertFalse("terminal header must not render split action", header.contains("addHeaderAction(bar, \"□\""));
-        assertFalse("terminal header must not render kill action", header.contains("addHeaderAction(bar, \"×\""));
+    @Test public void retiredPresentationIsInertAndNotWiredIntoApplication() throws Exception {
+        Path application = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
+        Path presentation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
+        String app = new String(Files.readAllBytes(application), StandardCharsets.UTF_8);
+        String ui = new String(Files.readAllBytes(presentation), StandardCharsets.UTF_8);
+        assertFalse("retired presenter must not be applied by lifecycle", app.contains("AlfaFinalUiPresentation.apply(activity)"));
+        assertFalse("retired presenter must not contain a rendered header implementation", ui.contains("terminalHeader()"));
+        assertFalse("retired presenter must not contain a rendered navigation implementation", ui.contains("bottomNavigation()"));
+        assertTrue("retired presenter must remain an explicit compatibility type", ui.contains("@Deprecated"));
     }
 
     @Test public void nativePresentationExposesAllMajorStitchOperationalDomains() throws Exception {
         Path navigation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaUiNavigation.java");
-        Path presentation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
         Path panels = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
         String nav = new String(Files.readAllBytes(navigation), StandardCharsets.UTF_8);
-        String ui = new String(Files.readAllBytes(presentation), StandardCharsets.UTF_8);
         String panel = new String(Files.readAllBytes(panels), StandardCharsets.UTF_8);
         String[] domains = {"STORAGE", "SECURITY", "AUDIT", "PROJECT", "SESSIONS", "SPLIT", "FLOATING", "APPEARANCE", "SETTINGS", "NETWORK"};
         for (String domain : domains) {
             assertTrue("navigation missing Stitch domain " + domain, nav.contains(domain));
-            assertTrue("presentation missing Stitch domain " + domain, ui.contains(domain));
             assertTrue("operational panel missing Stitch domain " + domain, panel.contains(domain));
         }
-        assertFalse("Stitch shell must not render a fake placeholder state panel", ui.contains("State panel:"));
     }
 
     @Test public void replacementHierarchyGetsASecondStitchThemePass() throws Exception {

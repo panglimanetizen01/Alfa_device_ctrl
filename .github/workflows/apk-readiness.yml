@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - fix/sterile-stitch-apk-boundary
   pull_request:
     branches:
       - master
@@ -12,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   apk-readiness:
@@ -37,16 +39,60 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
-      - name: Reject retired legacy UI residue from source
+      - name: Diagnose Debug Keystore Secret Boundary
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          if git grep -nE 'ALFA_OS|alfa_os' -- . \
-            ':(exclude).github/workflows/apk-readiness.yml' \
-            ':(exclude)app/src/test/java/com/alfa/device_ctrl/LegacyUiResidueContractTest.java'; then
-            echo "RETIRED_LEGACY_UI_RESIDUE_FOUND_IN_SOURCE"
-            exit 1
-          fi
-          echo "SOURCE_LEGACY_UI_RESIDUE=ZERO"
+          python3 - <<'PY'
+          import base64, hashlib, os, re
+          raw = os.environb.get(b"DEBUG_KEYSTORE_BASE64", b"")
+          print(f"SECRET_PRESENT={'YES' if raw else 'NO'}")
+          print(f"SECRET_BYTES={len(raw)}")
+          print(f"SECRET_SHA256={hashlib.sha256(raw).hexdigest()}")
+          print(f"CR_BYTES={raw.count(b"\\r")}")
+          print(f"LF_BYTES={raw.count(b"\\n")}")
+          print(f"NON_BASE64_BYTES={len(re.sub(rb"[A-Za-z0-9+/=]", b"", raw))}")
+          print(f"LENGTH_MOD_4={len(raw) % 4}")
+          print(f"FIRST_PADDING_OFFSET={raw.find(b"=")}")
+          try:
+              decoded = base64.b64decode(raw, validate=True)
+              print("STRICT_BASE64_DECODE=PASS")
+              print(f"DECODED_BYTES={len(decoded)}")
+              print(f"DECODED_SHA256={hashlib.sha256(decoded).hexdigest()}")
+          except Exception as exc:
+              print("STRICT_BASE64_DECODE=FAIL")
+              print(f"STRICT_BASE64_ERROR={type(exc).__name__}")
+          PY
+
+      - name: TDD source UI boundary contract
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_stitch_ui_boundary.sh
+
+      - name: Verify explicit legacy UI blacklist in source
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          blacklist = [x for x in Path('tools/ci/stitch-legacy-ui-blacklist.txt').read_text('utf-8').splitlines() if x and not x.startswith('#')]
+          if not blacklist or any('*' in x or '?' in x for x in blacklist):
+              raise SystemExit('INVALID_EXPLICIT_BLACKLIST')
+          excluded = {Path('tools/ci/stitch-legacy-ui-blacklist.txt'), Path('stitch/stitch_alfa_device_control_v1.0.0.zip')}
+          extensions = {'.java','.kt','.xml','.json','.properties','.txt','.md','.gradle','.groovy','.sh','.py'}
+          hits=[]
+          for p in Path('.').rglob('*'):
+              if not p.is_file() or '.git' in p.parts or p in excluded or p.suffix.lower() not in extensions:
+                  continue
+              try: text=p.read_text('utf-8')
+              except UnicodeDecodeError: continue
+              for literal in blacklist:
+                  if literal in text: hits.append((str(p),literal))
+          if hits:
+              for p,l in hits: print(f'SOURCE_LEGACY_UI_RESIDUE file={p} literal={l}')
+              raise SystemExit('SOURCE_LEGACY_UI_RESIDUE=FAIL')
+          print('SOURCE_LEGACY_UI_RESIDUE=ZERO')
+          PY
 
       - name: Forensic clean stale APK build outputs
         run: |
@@ -154,13 +200,18 @@ jobs:
           done
           echo "LIBTERMUX_SHA256=$(sha256sum "$LIB" | awk '{print $1}')"
 
-      - name: Unit tests and APK build
+      - name: Unit tests and sterile APK build
         run: |
           set -euo pipefail
           test -s "$ALFA_GATE7_ASSET"
           test "$ALFA_GATE7_RUNTIME_ID" = "debian"
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify final APK launcher manifest
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_stitch_launcher_apk.sh app/build/outputs/apk/debug/app-debug.apk "$ANDROID_HOME/build-tools/35.0.0/aapt2"
 
       - name: Verify final UI to terminal execution contract
         run: |
@@ -171,22 +222,13 @@ jobs:
           grep -Fq 'SessionUiState.resolve(event).name()' app/src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java
           grep -Fq 'RuntimeStartupCoordinator.onActivityResumed(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
           grep -Fq 'RuntimeStartupPolicy.shouldAutoStart' app/src/main/java/com/alfa/device_ctrl/RuntimeStartupCoordinator.java
+          ! grep -Fq 'AlfaFinalUiPresentation.apply(activity)' app/src/main/java/com/alfa/device_ctrl/AlfaApplication.java
           echo "FINAL_UI_TO_TERMINAL_EXECUTION_CONTRACT=PASS"
 
-      - name: Reject retired legacy UI residue from built APK
+      - name: Deep-scan APK against explicit legacy blacklist and Stitch UI contract
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/debug/app-debug.apk
-          AAPT2="$ANDROID_HOME/build-tools/35.0.0/aapt2"
-          if "$AAPT2" dump resources "$APK" | grep -Eiq 'ALFA_OS|alfa_os'; then
-            echo "RETIRED_LEGACY_UI_RESIDUE_FOUND_IN_APK"
-            exit 1
-          fi
-          if unzip -p "$APK" resources.arsc 2>/dev/null | strings | grep -Eiq 'ALFA_OS|alfa_os'; then
-            echo "RETIRED_LEGACY_UI_BINARY_RESIDUE_FOUND_IN_APK"
-            exit 1
-          fi
-          echo "APK_LEGACY_UI_RESIDUE=ZERO"
+          bash tools/ci/verify_stitch_apk.sh app/build/outputs/apk/debug/app-debug.apk tools/ci/stitch-legacy-ui-blacklist.txt
 
       - name: Verify packaged runtime startup contract and provenance
         run: |
@@ -237,62 +279,94 @@ jobs:
               *) echo "UNEXPECTED_ELF_TYPE=$TYPE"; exit 1 ;;
             esac
           done
-          # app/build.gradle intentionally uses legacy JNI packaging so libproot.so is extracted to ApplicationInfo.nativeLibraryDir.
-          # In this packaging mode the .so entries are compressed; Android's 16 KB requirement is enforced at the ELF level above,
-          # while the APK container itself must remain standard ZIP 4-byte aligned.
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
           echo "APK_NATIVE_ELF_ALIGNMENT_PASS=16KB"
-          echo "APK_ZIP_ALIGNMENT_PASS=4BYTE"
+          echo "APK_ZIP_ALIGNMENT_PASS=16KB"
 
-      - name: Verify package identity manifest ABI launcher and digest
+      - name: Package exactly one canonical APK and provenance manifest
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
-          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt2"
-          "$AAPT" dump packagename "$APK" | grep -Fx 'com.alfa.device_ctrl'
-          BADGING=$("$AAPT" dump badging "$APK")
-          printf '%s\n' "$BADGING" | grep -F "versionCode='1'"
-          printf '%s\n' "$BADGING" | grep -F "versionName='0.1.0'"
-          printf '%s\n' "$BADGING" | grep -F "native-code: 'arm64-v8a'"
-          printf '%s\n' "$BADGING" | grep -F "launchable-activity: name='com.alfa.device_ctrl.MainActivity'"
-          DEX_TEXT=$(for dex in $(unzip -Z1 "$APK" | grep -E '^classes[0-9]*\.dex$'); do unzip -p "$APK" "$dex"; done | strings)
-          printf '%s\n' "$DEX_TEXT" | grep -F 'ALFA DEVICE CTRL'
+          FINAL="$ALFA_PIPELINE_RUN_DIR/alfa-device-ctrl-stitch-${ALFA_SOURCE_COMMIT}.apk"
+          cp "$APK" "$FINAL"
           APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')
-          test "${#APK_SHA256}" -eq 64
-          echo "APK_SHA256=$APK_SHA256"
-          echo "APK_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
-          echo "APK_GATE7_PIPELINE_RUN_ID=$ALFA_PIPELINE_RUN_ID"
-          printf '%s\n' \
-            'schema_version=apk-artifact-provenance.v1' \
-            "artifact_name=alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}" \
-            'apk_path=app/build/outputs/apk/debug/app-debug.apk' \
-            "apk_sha256=$APK_SHA256" \
-            "source_commit=$ALFA_SOURCE_COMMIT" \
-            "pipeline_run_id=$ALFA_PIPELINE_RUN_ID" \
-            'package_name=com.alfa.device_ctrl' \
-            'version_code=1' \
-            'version_name=0.1.0' \
-            'abi=arm64-v8a' \
-            'gate7_asset=assets/gate7-launch.properties' \
-            "gate7_pipeline_run_id=$ALFA_PIPELINE_RUN_ID" \
-            > "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt"
-          test -s "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt"
-          cp "$APK" "$ALFA_PIPELINE_RUN_DIR/alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}.apk"
-          sha256sum "$ALFA_PIPELINE_RUN_DIR/alfa-device-ctrl-debug-${ALFA_SOURCE_COMMIT}.apk" | grep -F "$APK_SHA256"
-          echo "APK_IMMUTABLE_PROVENANCE=PASS"
+          STITCH_SHA256=$(sha256sum stitch/stitch_alfa_device_control_v1.0.0.zip | awk '{print $1}')
+          BLACKLIST_SHA256=$(sha256sum tools/ci/stitch-legacy-ui-blacklist.txt | awk '{print $1}')
+          cat > "$ALFA_PIPELINE_RUN_DIR/apk-artifact-provenance.txt" <<EOF
+          schema_version=apk-artifact-provenance.v2
+          artifact_name=alfa-device-ctrl-stitch-${ALFA_SOURCE_COMMIT}.apk
+          apk_path=alfa-device-ctrl-stitch-${ALFA_SOURCE_COMMIT}.apk
+          apk_sha256=$APK_SHA256
+          source_commit=$ALFA_SOURCE_COMMIT
+          pipeline_run_id=$ALFA_PIPELINE_RUN_ID
+          stitch_reference=stitch/stitch_alfa_device_control_v1.0.0.zip
+          stitch_reference_sha256=$STITCH_SHA256
+          legacy_ui_blacklist=tools/ci/stitch-legacy-ui-blacklist.txt
+          legacy_ui_blacklist_sha256=$BLACKLIST_SHA256
+          package_name=com.alfa.device_ctrl
+          version_code=1
+          version_name=0.1.0
+          abi=arm64-v8a
+          build_variant=debug-deployable
+          artifact_policy=ONE_APK_PLUS_ONE_PROVENANCE_MANIFEST
+          EOF
+          test "$(find "$ALFA_PIPELINE_RUN_DIR" -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 1
+          test "$(find "$ALFA_PIPELINE_RUN_DIR" -maxdepth 1 -type f -name 'apk-artifact-provenance.txt' | wc -l)" -eq 1
+          echo "CANONICAL_APK_SHA256=$APK_SHA256"
+          echo "CANONICAL_ARTIFACT_SHAPE=ONE_APK_PLUS_ONE_MANIFEST"
 
-      - name: Upload verified APK and provenance evidence
+      - name: Upload only canonical APK and provenance manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: alfa-device-ctrl-debug-${{ env.ALFA_SOURCE_COMMIT }}
+          name: alfa-device-ctrl-stitch-${{ env.ALFA_SOURCE_COMMIT }}
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/alfa-device-ctrl-debug-${{ env.ALFA_SOURCE_COMMIT }}.apk
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate4/environment_contract.txt
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/requests/apk-readiness.txt
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/decisions/apk-readiness.txt
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate5/authorizations/apk-readiness.txt
-            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/gate6/bootstrap.txt
+            artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/alfa-device-ctrl-stitch-${{ env.ALFA_SOURCE_COMMIT }}.apk
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/apk-artifact-provenance.txt
           if-no-files-found: error
           retention-days: 14
+
+  independent-artifact-verification:
+    name: Independent post-upload artifact verification
+    needs: apk-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout verifier scripts
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Download only the uploaded deployment artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: alfa-device-ctrl-stitch-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: artifact
+
+      - name: Verify artifact contains exactly one APK and one provenance manifest
+        run: |
+          set -euo pipefail
+          mapfile -t APKS < <(find artifact -type f -name '*.apk' | sort)
+          mapfile -t MANIFESTS < <(find artifact -type f -name 'apk-artifact-provenance.txt' | sort)
+          test "${#APKS[@]}" -eq 1
+          test "${#MANIFESTS[@]}" -eq 1
+          find artifact -type f ! -name '*.apk' ! -name 'apk-artifact-provenance.txt' -print -quit | grep -q . && exit 1 || true
+          APK="${APKS[0]}"
+          MANIFEST="${MANIFESTS[0]}"
+          EXPECTED=$(sed -n 's/^apk_sha256=//p' "$MANIFEST")
+          ACTUAL=$(sha256sum "$APK" | awk '{print $1}')
+          test "$EXPECTED" = "$ACTUAL"
+          grep -Fx 'artifact_policy=ONE_APK_PLUS_ONE_PROVENANCE_MANIFEST' "$MANIFEST"
+          grep -Fx 'schema_version=apk-artifact-provenance.v2' "$MANIFEST"
+          echo "POST_UPLOAD_SHA256_MATCH=PASS"
+          echo "POST_UPLOAD_ARTIFACT_SHAPE=PASS"
+
+      - name: Verify launcher manifest in uploaded APK
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_stitch_launcher_apk.sh "$(find artifact -type f -name '*.apk' -print -quit)" "$ANDROID_HOME/build-tools/35.0.0/aapt2"
+
+      - name: Run offline binary forensic verifier
+        run: |
+          set -euo pipefail
+          bash tools/ci/verify_stitch_apk.sh "$(find "$GITHUB_WORKSPACE/artifact" -type f -name '*.apk' -print -quit)" tools/ci/stitch-legacy-ui-blacklist.txt

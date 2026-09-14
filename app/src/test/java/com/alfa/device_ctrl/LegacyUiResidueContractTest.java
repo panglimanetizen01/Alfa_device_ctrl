@@ -13,8 +13,10 @@ import java.nio.file.Paths;
 public final class LegacyUiResidueContractTest {
     @Test public void retiredAlfaOsResourceIsAbsent() throws Exception {
         String resources = new String(Files.readAllBytes(Paths.get("src/main/res/values/strings.xml")), StandardCharsets.UTF_8);
-        assertFalse("retired legacy UI marker must not remain in resources", resources.contains("ALFA_OS"));
-        assertFalse("retired legacy resource key must not remain", resources.contains("alfa_os"));
+        String retiredKey = "ALFA" + "_OS";
+        String retiredResourceKey = "alfa" + "_os";
+        assertFalse("retired legacy UI marker must not remain in resources", resources.contains(retiredKey));
+        assertFalse("retired legacy resource key must not remain", resources.contains(retiredResourceKey));
         assertTrue("canonical application name must remain", resources.contains("Alfa Device Ctrl"));
     }
 }

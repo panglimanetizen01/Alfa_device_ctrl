@@ -10,7 +10,7 @@
 The ZIP is an implementation input: its UI states, interaction flows, design tokens, runtime architecture specification, storage model, and security/network vocabulary are reconciled into Alfa's canonical code. Its HTML is not executed as production UI, and its sample runtime/security claims are not treated as evidence. Native Android Views remain the implementation substrate while RuntimeRegistry, RuntimeSessionManager, storage bridges, and evidence contracts remain authoritative for behavior.
 
 ### Implement directly
-1. Terminal-first workstation shell: ALFA::CTRL header, PTY/session metadata, terminal viewport, accessory keys, bottom navigation and responsive operator surfaces.
+1. Terminal-first workstation shell: canonical `ALFA DEVICE CTRL` header, PTY/session metadata, terminal viewport, accessory keys, bottom navigation and responsive operator surfaces. The retired legacy product label is not part of the canonical binary surface.
 2. Runtime manager: runtime registry cards, evidence-backed READY/VERIFYING/FAILED state, INSTALL/OPEN actions mapped to existing runtime engine.
 3. PTY accessory behavior: ESC, TAB, CTRL latch, ALT, SIGINT, pipe/slash/minus, arrows, COPY and PASTE.
 4. Appearance settings: persisted font size, line height, cursor style and canonical Obsidian/Amber/High Contrast terminal presets, with font-family fallback when reference font binaries are absent.
