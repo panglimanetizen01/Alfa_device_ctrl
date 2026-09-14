@@ -13,10 +13,11 @@ import org.junit.Test;
 /** Deterministic presentation contract for the Stitch v1 operational dashboard. */
 public final class StitchUiContractTest {
     @Test public void operationalIdentityAndNavigationMatchStitch() {
-        assertEquals("ALFA DEVICE CTRL", StitchUiContract.BRAND);
+        assertEquals("ALFA::CTRL", StitchUiContract.BRAND);
         assertEquals("Linux Runtime Control", StitchUiContract.SUBTITLE);
         assertEquals("SYSTEM ONLINE", StitchUiContract.SYSTEM_ONLINE);
         assertArrayEquals(new String[]{"TERMINAL", "RUNTIMES", "MONITOR", "SECURITY", "SETTINGS"}, StitchUiContract.NAV_LABELS);
+        assertArrayEquals(new String[]{"NODES", "LANES", "DIAGNOSTICS"}, StitchUiContract.BOTTOM_NAV_LABELS);
     }
 
     @Test public void telemetryStripHasFourLiveSlots() {
@@ -36,15 +37,16 @@ public final class StitchUiContractTest {
         assertTrue(StitchUiContract.TERMINAL_ACTIONS.contains("COMMAND"));
     }
 
-    @Test public void nativeRendererContainsEveryRequiredOperationalAction() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java")), StandardCharsets.UTF_8);
-        for (String label : StitchUiContract.RUNTIME_ACTIONS) assertTrue("missing runtime action " + label, source.contains("\"" + label + "\""));
-        assertTrue(source.contains("RESTART"));
-        assertTrue(source.contains("CLEAR"));
-        assertTrue(source.contains("RUN ▶"));
-        assertTrue(source.contains("RUN RUNTIME TOOL PROBE"));
-        assertTrue(source.contains("scrollTo(terminalAnchor)"));
-        assertTrue(source.contains("scrollTo(runtimeAnchor)"));
-        assertTrue(source.contains("refreshTelemetry()"));
+    @Test public void canonicalRendererContainsRequiredOperationalSurface() throws Exception {
+        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java")), StandardCharsets.UTF_8);
+        assertTrue(source.contains("ALFA::CTRL"));
+        for (String label : StitchUiContract.BOTTOM_NAV_LABELS) assertTrue("missing bottom nav " + label, source.contains("\"" + label + "\""));
+        for (String distro : StitchUiContract.DISTRO_IDS) assertTrue("missing distro " + distro, source.contains(distro));
+        assertTrue(source.contains("toggleWindowContent"));
+        assertTrue(source.contains("toggleMax"));
+        assertTrue(source.contains("writePty"));
+        assertTrue(source.contains("apt update"));
+        assertTrue(source.contains("ping -c 1 1.1.1.1"));
+        assertTrue(source.contains("RuntimeSessionManager"));
     }
 }
