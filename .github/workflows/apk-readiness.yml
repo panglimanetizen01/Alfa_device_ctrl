@@ -39,6 +39,17 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
+      - name: Decode Debug Keystore
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$DEBUG_KEYSTORE_BASE64"
+          printf "%s" "$DEBUG_KEYSTORE_BASE64" | base64 --decode > app/debug.keystore
+          test -s app/debug.keystore
+          chmod 600 app/debug.keystore
+          echo "DEBUG_KEYSTORE_DECODE=PASS"
+
       - name: TDD source UI boundary contract
         run: |
           set -euo pipefail
