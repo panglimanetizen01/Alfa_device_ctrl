@@ -25,16 +25,12 @@ import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Real Stitch v1 operational presentation. The view is driven by the existing runtime/session
- * contracts; it is not a screenshot or a mock terminal surface.
- */
+/** Real Stitch v1 operational presentation driven by the existing runtime/session contracts. */
 public final class StitchOperationalActivity extends Activity implements RuntimeSessionManager.Listener {
     private static final int BG = Color.rgb(16, 20, 25);
     private static final int SURFACE_LOW = Color.rgb(24, 28, 33);
     private static final int SURFACE = Color.rgb(28, 32, 37);
     private static final int SURFACE_HIGH = Color.rgb(38, 42, 48);
-    private static final int SURFACE_HIGHEST = Color.rgb(49, 53, 59);
     private static final int TEXT = Color.rgb(224, 226, 234);
     private static final int MUTED = Color.rgb(187, 202, 191);
     private static final int PRIMARY = Color.rgb(78, 222, 163);
@@ -73,9 +69,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     }
 
     @Override protected void onStart() { super.onStart(); uiActive = true; if (sessionManager != null) sessionManager.rebindListener(this); refreshRuntimes(); }
-
     @Override protected void onStop() { uiActive = false; if (sessionManager != null) sessionManager.stop(); super.onStop(); }
-
     @Override protected void onDestroy() { uiActive = false; if (sessionManager != null) sessionManager.stop(); super.onDestroy(); }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -110,17 +104,14 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout line = row(BG);
         line.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout title = column(BG);
-        TextView brand = text("ALFA DEVICE CTRL", PRIMARY, 12, true);
-        TextView subtitle = text("Linux Runtime Control", MUTED, 12, false);
-        title.addView(brand); title.addView(subtitle);
+        title.addView(text("ALFA DEVICE CTRL", PRIMARY, 12, true));
+        title.addView(text("Linux Runtime Control", MUTED, 12, false));
         line.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
         LinearLayout online = row(SURFACE_HIGH);
         online.setGravity(Gravity.CENTER_VERTICAL);
         online.setPadding(dp(10), 0, dp(10), 0);
-        TextView dot = text("●", PRIMARY, 10, true);
-        online.addView(dot);
+        online.addView(text("●", PRIMARY, 10, true));
         systemState = text("SYSTEM ONLINE", PRIMARY, 10, true);
-        systemState.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         online.addView(systemState);
         line.addView(online, new LinearLayout.LayoutParams(-2, dp(34)));
         line.addView(action("⚙", MUTED, v -> showStatus("SETTINGS\nStitch presentation v1\nRuntime state is sourced from RuntimeSessionManager.")), new LinearLayout.LayoutParams(dp(48), dp(44)));
@@ -133,11 +124,11 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         hsv.setHorizontalScrollBarEnabled(false);
         LinearLayout nav = row(BG);
         nav.setPadding(dp(8), 0, dp(8), 0);
-        addNav(nav, "TERMINAL", true, v -> scrollToTerminal());
-        addNav(nav, "RUNTIMES", false, v -> showStatus("RUNTIMES\nSelect a verified runtime below."));
-        addNav(nav, "MONITOR", false, v -> refreshTelemetry());
-        addNav(nav, "SECURITY", false, v -> showStatus("SECURITY\nRuntime is rootless Android-side; PRoot is not a host security sandbox."));
-        addNav(nav, "SETTINGS", false, v -> showStatus("SETTINGS\nStitch operational presentation\nNo network dependency for rendering."));
+        addNav(nav, StitchUiContract.NAV_LABELS[0], true, v -> scrollToTerminal());
+        addNav(nav, StitchUiContract.NAV_LABELS[1], false, v -> showStatus("RUNTIMES\nSelect a verified runtime below."));
+        addNav(nav, StitchUiContract.NAV_LABELS[2], false, v -> refreshTelemetry());
+        addNav(nav, StitchUiContract.NAV_LABELS[3], false, v -> showStatus("SECURITY\nRuntime is rootless Android-side; PRoot is not a host security sandbox."));
+        addNav(nav, StitchUiContract.NAV_LABELS[4], false, v -> showStatus("SETTINGS\nStitch operational presentation\nNo network dependency for rendering."));
         hsv.addView(nav);
         return hsv;
     }
@@ -146,8 +137,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout card = column(SURFACE_LOW);
         card.setPadding(dp(10), dp(8), dp(10), dp(8));
         LinearLayout head = row(SURFACE_LOW);
-        TextView label = text("TELEMETRY", PRIMARY, 10, true);
-        head.addView(label, new LinearLayout.LayoutParams(0, dp(24), 1));
+        head.addView(text("TELEMETRY", PRIMARY, 10, true), new LinearLayout.LayoutParams(0, dp(24), 1));
         head.addView(text("HOST: aarch64", MUTED, 10, false));
         card.addView(head);
         LinearLayout metrics = row(SURFACE_LOW);
@@ -162,10 +152,10 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     private TextView metric(LinearLayout parent, String name, String value, int valueColor) {
         LinearLayout box = column(SURFACE);
         box.setPadding(dp(7), dp(5), dp(7), dp(4));
-        TextView n = text(name, MUTED, 9, true);
+        box.addView(text(name, MUTED, 9, true));
         TextView v = text(value, valueColor, 11, true);
         v.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
-        box.addView(n); box.addView(v);
+        box.addView(v);
         parent.addView(box, new LinearLayout.LayoutParams(0, dp(56), 1));
         if (parent.getChildCount() < 4) parent.addView(spaceH(3), new LinearLayout.LayoutParams(dp(3), dp(1)));
         return v;
@@ -257,18 +247,16 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         runtimeList.removeAllViews();
         List<RuntimeProfile> profiles = RuntimeRegistry.all();
         for (RuntimeProfile profile : profiles) {
-            File vault = new File(getFilesDir(), "runtime-vault");
-            File runtime = new File(new File(vault, "runtimes"), profile.id());
-            RuntimeUiState.Status state = RuntimeUiState.resolve(profile.id(), runtime, new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"));
-            if (profile.id().equals(installingRuntimeId)) state = RuntimeUiState.Status.VERIFYING;
+            File runtime = new File(new File(getFilesDir(), "runtime-vault/runtimes"), profile.id());
+            RuntimeUiState.Status resolved = RuntimeUiState.resolve(profile.id(), runtime, new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"));
+            final RuntimeUiState.Status cardState = profile.id().equals(installingRuntimeId) ? RuntimeUiState.Status.VERIFYING : resolved;
             LinearLayout card = row(SURFACE);
             card.setPadding(dp(10), dp(3), dp(4), dp(3));
             TextView name = text(profile.displayName() + "\n" + profile.id(), TEXT, 10, true);
             card.addView(name, new LinearLayout.LayoutParams(0, dp(52), 1));
-            card.addView(text(RuntimeUiState.label(state), state == RuntimeUiState.Status.READY ? PRIMARY : MUTED, 9, true), new LinearLayout.LayoutParams(dp(74), dp(52)));
-            Button verify = action("VERIFY", MUTED, v -> refreshRuntimes());
-            card.addView(verify, new LinearLayout.LayoutParams(dp(66), dp(46)));
-            Button open = action(state == RuntimeUiState.Status.READY ? "OPEN" : "INSTALL", PRIMARY, v -> { selectedRuntime = profile; if (state == RuntimeUiState.Status.READY) startSession(); else installRuntime(); });
+            card.addView(text(RuntimeUiState.label(cardState), cardState == RuntimeUiState.Status.READY ? PRIMARY : MUTED, 9, true), new LinearLayout.LayoutParams(dp(74), dp(52)));
+            card.addView(action("VERIFY", MUTED, v -> refreshRuntimes()), new LinearLayout.LayoutParams(dp(66), dp(46)));
+            Button open = action(cardState == RuntimeUiState.Status.READY ? "OPEN" : "INSTALL", PRIMARY, v -> { selectedRuntime = profile; if (cardState == RuntimeUiState.Status.READY) startSession(); else installRuntime(); });
             card.addView(open, new LinearLayout.LayoutParams(dp(70), dp(46)));
             if (profile.id().equals(selectedRuntime.id())) card.setBackground(round(Color.rgb(31, 48, 43), dp(7), Color.rgb(78, 120, 103)));
             runtimeList.addView(card);
@@ -335,41 +323,29 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     }
 
     private void stopSession() { if (sessionManager != null && sessionManager.isRunning()) sessionManager.stop(); else showStatus("SESSION\nNo active session."); }
-
-    private void restartSession() { stopSession(); postUiDelayed(this::startSession, 300); }
-
     private void runCommand() {
         String command = commandInput == null ? "" : commandInput.getText().toString().trim();
         if (command.isEmpty()) return;
         if (!sessionReady()) { showStatus("COMMAND\nBLOCKED\nVerified runtime session required."); return; }
         sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> showStatus("COMMAND\nEXIT=" + code + "\n" + output)));
     }
-
     private boolean sessionReady() { return sessionManager != null && sessionManager.isRunning() && sessionManager.isPromptReady(); }
-
     private void send(byte[] bytes) {
         TerminalSession session = sessionManager == null ? null : sessionManager.currentSession();
         if (session == null || !session.isRunning()) { showStatus("INPUT\nBLOCKED\nNo active PTY."); return; }
         session.write(bytes, 0, bytes.length);
     }
-
     private void selectRuntime() {
         if (sessionManager != null && sessionManager.isRunning()) { showStatus("RUNTIMES\nStop the active session before switching runtime."); return; }
         List<RuntimeProfile> profiles = RuntimeRegistry.all();
-        String[] names = new String[profiles.size()];
-        int selected = 0;
+        String[] names = new String[profiles.size()]; int selected = 0;
         for (int i = 0; i < profiles.size(); i++) { names[i] = profiles.get(i).displayName(); if (profiles.get(i).id().equals(selectedRuntime.id())) selected = i; }
         new android.app.AlertDialog.Builder(this).setTitle("Select runtime").setSingleChoiceItems(names, selected, (dialog, which) -> { selectedRuntime = profiles.get(which); getPreferences(MODE_PRIVATE).edit().putString("runtime_id", selectedRuntime.id()).apply(); dialog.dismiss(); refreshRuntimes(); terminalTitle.setText("TTY1  //  " + selectedRuntime.displayName()); }).setNegativeButton("Cancel", null).show();
     }
-
     private void scrollToTerminal() { }
-
-    private void showStatus(String text) { if (statusBanner != null) { statusBanner.setVisibility(View.VISIBLE); statusBanner.setText(text); } }
-
+    private void showStatus(String value) { if (statusBanner != null) { statusBanner.setVisibility(View.VISIBLE); statusBanner.setText(value); } }
     private void postUi(Runnable r) { if (uiActive && !isFinishing() && !isDestroyed()) runOnUiThread(r); }
-    private void postUiDelayed(Runnable r, long delay) { if (uiActive) runOnUiThreadDelayed(r, delay); }
     private String shortId() { return UUID.randomUUID().toString().replace("-", "").substring(0, 12); }
-
     private Button action(String value, int color, View.OnClickListener listener) { Button b = new Button(this); b.setText(value); b.setTextColor(color); b.setTextSize(10); b.setAllCaps(false); b.setMinHeight(0); b.setMinWidth(0); b.setPadding(dp(5), 0, dp(5), 0); b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); b.setBackground(round(SURFACE_HIGH, dp(6), Color.rgb(60, 72, 67))); b.setStateListAnimator(null); b.setOnClickListener(listener); return b; }
     private TextView text(String value, int color, int size, boolean bold) { TextView t = new TextView(this); t.setText(value); t.setTextColor(color); t.setTextSize(size); t.setGravity(Gravity.CENTER_VERTICAL); if (bold) t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); return t; }
     private LinearLayout row(int color) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setBackgroundColor(color); return l; }
