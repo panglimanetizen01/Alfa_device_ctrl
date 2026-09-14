@@ -21,35 +21,47 @@ case "$LAUNCH_LINE" in
 esac
 
 XMLTREE="$($AAPT2 dump xmltree "$APK" --file AndroidManifest.xml)"
-ACTIVITY_BLOCK="$(printf '%s\n' "$XMLTREE" | awk '
-  /E: activity / {
-    if (block != "") print block
-    block=$0 "\n"
-    next
-  }
-  block != "" { block=block $0 "\n" }
-  END { if (block != "") print block }
-')"
+export XMLTREE
+python3 - <<'PY'
+import os
+import re
 
-STITCH_BLOCK="$(printf '%s\n' "$ACTIVITY_BLOCK" | awk '
-  /android:name.*com\.alfa\.device_ctrl\.StitchOperationalActivity/ { print block; found=1; next }
-  found { print; if ($0 ~ /^    E: activity /) exit }
-  { block=block $0 "\n" }
-')"
+xml = os.environ["XMLTREE"]
+lines = xml.splitlines()
+blocks = []
+current = []
+for line in lines:
+    if re.match(r"^\s*E: activity(?: |$)", line):
+        if current:
+            blocks.append("\n".join(current))
+        current = [line]
+    elif current:
+        current.append(line)
+if current:
+    blocks.append("\n".join(current))
 
-if ! printf '%s\n' "$STITCH_BLOCK" | grep -Eq 'android:exported.*(0xffffffff|true)'; then
-  echo "STITCH_EXPORTED=FAIL"
-  echo "$STITCH_BLOCK"
-  exit 1
-fi
+needle = "com.alfa.device_ctrl.StitchOperationalActivity"
+stitch = next((b for b in blocks if needle in b), None)
+if stitch is None:
+    print("STITCH_ACTIVITY_IN_FINAL_MANIFEST=FAIL")
+    raise SystemExit(1)
 
-printf '%s\n' "$XMLTREE" | grep -Fq 'android:name="android.intent.action.MAIN"' || {
-  echo "MAIN_ACTION=FAIL"; exit 1;
-}
-printf '%s\n' "$XMLTREE" | grep -Fq 'android:name="android.intent.category.LAUNCHER"' || {
-  echo "LAUNCHER_CATEGORY=FAIL"; exit 1;
-}
+if not re.search(r"android:exported.*(?:0xffffffff|true)", stitch):
+    print("STITCH_EXPORTED=FAIL")
+    print(stitch)
+    raise SystemExit(1)
+
+if "android.intent.action.MAIN" not in stitch:
+    print("STITCH_MAIN_ACTION=FAIL")
+    raise SystemExit(1)
+
+if "android.intent.category.LAUNCHER" not in stitch:
+    print("STITCH_LAUNCHER_CATEGORY=FAIL")
+    raise SystemExit(1)
+
+print("STITCH_ACTIVITY_IN_FINAL_MANIFEST=PASS")
+print("STITCH_EXPORTED=PASS")
+print("STITCH_MAIN_LAUNCHER_MANIFEST=PASS")
+PY
 
 echo "STITCH_LAUNCHER=PASS"
-echo "STITCH_EXPORTED=PASS"
-echo "STITCH_MAIN_LAUNCHER_MANIFEST=PASS"
