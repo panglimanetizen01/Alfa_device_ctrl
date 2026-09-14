@@ -14,10 +14,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-
 import com.termux.terminal.TerminalSession;
 import com.termux.view.TerminalView;
-
 import java.io.File;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -25,12 +23,10 @@ import java.util.UUID;
 
 /** Canonical Stitch v1 DUT surface: native windows + real runtime PTY. */
 public final class StitchOperationalActivity extends Activity implements RuntimeSessionManager.Listener {
-    private static final int BG = Color.rgb(16,20,25), SURFACE = Color.rgb(28,32,37), HIGH = Color.rgb(38,42,48);
-    private static final int TEXT = Color.rgb(224,226,234), MUTED = Color.rgb(187,202,191), GREEN = Color.rgb(78,222,163), CYAN = Color.rgb(76,215,246), RED = Color.rgb(255,180,171);
-    private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    private static final int GATE6 = 702;
-    private RuntimeProfile selectedRuntime; private RuntimeSessionManager sessionManager; private TerminalView terminal;
-    private TextView systemState, sessionState, terminalState, telemetry, status; private LinearLayout nodePage, lanePage, diagPage; private boolean active;
+    private static final int BG=Color.rgb(16,20,25),SURFACE=Color.rgb(28,32,37),HIGH=Color.rgb(38,42,48);
+    private static final int TEXT=Color.rgb(224,226,234),MUTED=Color.rgb(187,202,191),GREEN=Color.rgb(78,222,163),CYAN=Color.rgb(76,215,246),RED=Color.rgb(255,180,171);
+    private static final String PROOT_SHA256="c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38"; private static final int GATE6=702;
+    private RuntimeProfile selectedRuntime; private RuntimeSessionManager sessionManager; private TerminalView terminal; private TextView systemState,sessionState,terminalState,telemetry,status; private LinearLayout nodePage,lanePage,diagPage; private boolean active;
     @Override protected void onCreate(Bundle state){super.onCreate(state);selectedRuntime=RuntimeSelection.profile(getPreferences(MODE_PRIVATE).getString("runtime_id",RuntimeSelection.DEFAULT_RUNTIME_ID));if(selectedRuntime==null)selectedRuntime=RuntimeSelection.profile(RuntimeSelection.DEFAULT_RUNTIME_ID);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(Color.rgb(10,14,19));setContentView(build());active=true;refreshNodes();}
     @Override protected void onStart(){super.onStart();active=true;if(sessionManager!=null)sessionManager.rebindListener(this);refreshNodes();}
     @Override protected void onStop(){active=false;if(sessionManager!=null)sessionManager.stop();super.onStop();}
@@ -58,6 +54,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     private RuntimeUiState.Status runtimeStatus(RuntimeProfile p){File root=new File(new File(getFilesDir(),"runtime-vault/runtimes"),p.id());return RuntimeUiState.resolve(p.id(),root,new File(root,"READY.evidence"),new File(getApplicationInfo().nativeLibraryDir,"libproot.so"),new File(root,"rootfs"));}
     private void check(RuntimeProfile p){RuntimeUiState.Status s=runtimeStatus(p);showStatus("CHECK "+p.id()+" = "+RuntimeUiState.label(s));refreshNodes();}
     private void startSession(){if(!active)return;if(sessionManager!=null&&sessionManager.isRunning()){sessionManager.attachTo(terminal);return;}File runtime=new File(new File(getFilesDir(),"runtime-vault"),"runtimes/"+selectedRuntime.id());File ready=new File(runtime,"READY.evidence");File launch=new File(new File(getFilesDir(),"runtime-vault"),"gate7-launch.properties");if(!Gate6LaunchContract.verify(launch,selectedRuntime.id())){Intent i=new Intent(this,Gate6ImportActivity.class);i.putExtra("runtime_id",selectedRuntime.id());startActivityForResult(i,GATE6);return;}File cwd=new File(getFilesDir(),"session-cwd");if(!ready.isFile()||(!cwd.exists()&&!cwd.mkdirs())){showStatus("RUNTIME READY EVIDENCE MISSING");return;}try{InteractiveSessionContract contract=new InteractiveSessionContract("session-"+id(),"request-"+id(),"run-"+id(),selectedRuntime.id(),ready,new File(getApplicationInfo().nativeLibraryDir,"libproot.so"),new File(runtime,"rootfs"),cwd,new String[]{"HOME=/root","TERM=xterm-256color","PS1=alfa:"+selectedRuntime.id()+":\\w\\$ ","PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","PROOT_TMP_DIR="+new File(runtime,"proot_tmp").getAbsolutePath()});sessionManager=new RuntimeSessionManager(contract,this);if(!sessionManager.start(80,24,8,16)){showStatus("PTY START BLOCKED");return;}sessionManager.attachTo(terminal);hideTerminalOverlay();showStatus("PTY READY // "+selectedRuntime.displayName());}catch(RuntimeException e){showStatus("PTY START ERROR // "+e.getClass().getSimpleName()+":"+e.getMessage());}}
+    private void installRuntime(){install(selectedRuntime);}
     private void hideTerminalOverlay(){if(terminal!=null&&terminal.getParent() instanceof FrameLayout){FrameLayout f=(FrameLayout)terminal.getParent();Object tag=f.getTag();if(tag instanceof View)((View)tag).setVisibility(View.GONE);}}
     private void restart(){stop();new android.os.Handler().postDelayed(this::startSession,250);} private void stop(){if(sessionManager!=null)sessionManager.stop();if(sessionState!=null)sessionState.setText("PTY: OFFLINE");}
     private void writePty(String command){if(command==null||command.trim().isEmpty())return;TerminalSession s=sessionManager==null?null:sessionManager.currentSession();if(s==null||!s.isRunning()){showStatus("PTY NOT READY");return;}byte[] bytes=(command+"\n").getBytes(StandardCharsets.UTF_8);s.write(bytes,0,bytes.length);showStatus("PTY WRITE // "+command);}
