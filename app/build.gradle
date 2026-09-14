@@ -21,9 +21,19 @@ android {
         }
     }
 
+    signingConfigs {
+        debug {
+            storeFile file("debug.keystore")
+            storePassword System.getenv("DEBUG_KEYSTORE_PASSWORD") ?: "android123"
+            keyAlias System.getenv("DEBUG_KEY_ALIAS") ?: "alfa_debug"
+            keyPassword System.getenv("DEBUG_KEY_PASSWORD") ?: "android123"
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
+            signingConfig signingConfigs.debug
         }
     }
 
