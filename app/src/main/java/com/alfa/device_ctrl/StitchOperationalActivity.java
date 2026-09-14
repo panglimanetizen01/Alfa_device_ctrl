@@ -1,11 +1,15 @@
 package com.alfa.device_ctrl;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -25,7 +29,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.UUID;
 
-/** Real Stitch v1 operational presentation driven by the existing runtime/session contracts. */
+/** Native Stitch v1 dashboard. Visible operational actions map to the canonical runtime/session engine. */
 public final class StitchOperationalActivity extends Activity implements RuntimeSessionManager.Listener {
     private static final int BG = Color.rgb(16, 20, 25);
     private static final int SURFACE_LOW = Color.rgb(24, 28, 33);
@@ -35,10 +39,12 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     private static final int MUTED = Color.rgb(187, 202, 191);
     private static final int PRIMARY = Color.rgb(78, 222, 163);
     private static final int SECONDARY = Color.rgb(76, 215, 246);
+    private static final int WARNING = Color.rgb(255, 185, 95);
     private static final int ERROR = Color.rgb(255, 180, 171);
     private static final String PROOT_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
     private static final int REQUEST_GATE6_IMPORT = 702;
 
+    private final Handler main = new Handler(Looper.getMainLooper());
     private TerminalView terminalView;
     private RuntimeSessionManager sessionManager;
     private RuntimeProfile selectedRuntime;
@@ -53,6 +59,11 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     private TextView statusBanner;
     private EditText commandInput;
     private LinearLayout runtimeList;
+    private ScrollView scroll;
+    private View telemetryAnchor;
+    private View terminalAnchor;
+    private View runtimeAnchor;
+    private View executionAnchor;
     private boolean uiActive;
     private String installingRuntimeId;
 
@@ -68,9 +79,25 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         refreshRuntimes();
     }
 
-    @Override protected void onStart() { super.onStart(); uiActive = true; if (sessionManager != null) sessionManager.rebindListener(this); refreshRuntimes(); }
-    @Override protected void onStop() { uiActive = false; if (sessionManager != null) sessionManager.stop(); super.onStop(); }
-    @Override protected void onDestroy() { uiActive = false; if (sessionManager != null) sessionManager.stop(); super.onDestroy(); }
+    @Override protected void onStart() {
+        super.onStart();
+        uiActive = true;
+        if (sessionManager != null) sessionManager.rebindListener(this);
+        refreshRuntimes();
+    }
+
+    @Override protected void onStop() {
+        uiActive = false;
+        if (sessionManager != null) sessionManager.stop();
+        super.onStop();
+    }
+
+    @Override protected void onDestroy() {
+        uiActive = false;
+        main.removeCallbacksAndMessages(null);
+        if (sessionManager != null) sessionManager.stop();
+        super.onDestroy();
+    }
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -81,15 +108,21 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout root = column(BG);
         root.addView(header(), new LinearLayout.LayoutParams(-1, dp(96)));
         root.addView(navigation(), new LinearLayout.LayoutParams(-1, dp(48)));
-        ScrollView scroll = new ScrollView(this);
+        scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         LinearLayout content = column(BG);
         content.setPadding(dp(12), dp(10), dp(12), dp(16));
-        content.addView(telemetryStrip());
+        telemetryAnchor = telemetryStrip();
+        content.addView(telemetryAnchor);
         content.addView(space(10));
-        content.addView(terminalSurface(), new LinearLayout.LayoutParams(-1, dp(420)));
+        terminalAnchor = terminalSurface();
+        content.addView(terminalAnchor, new LinearLayout.LayoutParams(-1, dp(420)));
         content.addView(space(10));
-        content.addView(runtimeSurface());
+        runtimeAnchor = runtimeSurface();
+        content.addView(runtimeAnchor);
+        content.addView(space(10));
+        executionAnchor = executionLanes();
+        content.addView(executionAnchor);
         content.addView(space(10));
         content.addView(statusPanel());
         scroll.addView(content);
@@ -104,17 +137,17 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout line = row(BG);
         line.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout title = column(BG);
-        title.addView(text("ALFA DEVICE CTRL", PRIMARY, 12, true));
-        title.addView(text("Linux Runtime Control", MUTED, 12, false));
+        title.addView(text(StitchUiContract.BRAND, PRIMARY, 12, true));
+        title.addView(text(StitchUiContract.SUBTITLE, MUTED, 12, false));
         line.addView(title, new LinearLayout.LayoutParams(0, dp(52), 1));
         LinearLayout online = row(SURFACE_HIGH);
         online.setGravity(Gravity.CENTER_VERTICAL);
         online.setPadding(dp(10), 0, dp(10), 0);
         online.addView(text("●", PRIMARY, 10, true));
-        systemState = text("SYSTEM ONLINE", PRIMARY, 10, true);
+        systemState = text(StitchUiContract.SYSTEM_ONLINE, PRIMARY, 10, true);
         online.addView(systemState);
         line.addView(online, new LinearLayout.LayoutParams(-2, dp(34)));
-        line.addView(action("⚙", MUTED, v -> showStatus("SETTINGS\nStitch presentation v1\nRuntime state is sourced from RuntimeSessionManager.")), new LinearLayout.LayoutParams(dp(48), dp(44)));
+        line.addView(action("⚙", MUTED, v -> showSettings()), new LinearLayout.LayoutParams(dp(48), dp(44)));
         header.addView(line);
         return header;
     }
@@ -124,11 +157,11 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         hsv.setHorizontalScrollBarEnabled(false);
         LinearLayout nav = row(BG);
         nav.setPadding(dp(8), 0, dp(8), 0);
-        addNav(nav, StitchUiContract.NAV_LABELS[0], true, v -> scrollToTerminal());
-        addNav(nav, StitchUiContract.NAV_LABELS[1], false, v -> showStatus("RUNTIMES\nSelect a verified runtime below."));
-        addNav(nav, StitchUiContract.NAV_LABELS[2], false, v -> refreshTelemetry());
-        addNav(nav, StitchUiContract.NAV_LABELS[3], false, v -> showStatus("SECURITY\nRuntime is rootless Android-side; PRoot is not a host security sandbox."));
-        addNav(nav, StitchUiContract.NAV_LABELS[4], false, v -> showStatus("SETTINGS\nStitch operational presentation\nNo network dependency for rendering."));
+        addNav(nav, StitchUiContract.NAV_LABELS[0], v -> scrollTo(terminalAnchor));
+        addNav(nav, StitchUiContract.NAV_LABELS[1], v -> scrollTo(runtimeAnchor));
+        addNav(nav, StitchUiContract.NAV_LABELS[2], v -> { scrollTo(telemetryAnchor); refreshTelemetry(); });
+        addNav(nav, StitchUiContract.NAV_LABELS[3], v -> showSecurity());
+        addNav(nav, StitchUiContract.NAV_LABELS[4], v -> showSettings());
         hsv.addView(nav);
         return hsv;
     }
@@ -143,7 +176,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout metrics = row(SURFACE_LOW);
         telemetryCpu = metric(metrics, "CPU", "--", PRIMARY);
         telemetryMem = metric(metrics, "MEM", "--", SECONDARY);
-        telemetryStorage = metric(metrics, "STORAGE", "--", Color.rgb(255, 185, 95));
+        telemetryStorage = metric(metrics, "STORAGE", "--", WARNING);
         telemetryNet = metric(metrics, "NET", "OFFLINE", PRIMARY);
         card.addView(metrics, new LinearLayout.LayoutParams(-1, dp(62)));
         return card;
@@ -154,10 +187,9 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         box.setPadding(dp(7), dp(5), dp(7), dp(4));
         box.addView(text(name, MUTED, 9, true));
         TextView v = text(value, valueColor, 11, true);
-        v.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         box.addView(v);
         parent.addView(box, new LinearLayout.LayoutParams(0, dp(56), 1));
-        if (parent.getChildCount() < 4) parent.addView(spaceH(3), new LinearLayout.LayoutParams(dp(3), dp(1)));
+        if (parent.getChildCount() < 7) parent.addView(spaceH(3), new LinearLayout.LayoutParams(dp(3), dp(1)));
         return v;
     }
 
@@ -167,10 +199,12 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout bar = row(SURFACE_HIGH);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(10), 0, dp(6), 0);
-        terminalTitle = text("TTY1  //  " + selectedRuntime.displayName(), PRIMARY, 10, true);
+        terminalTitle = text("SESSION 01  //  " + selectedRuntime.displayName(), PRIMARY, 10, true);
         bar.addView(terminalTitle, new LinearLayout.LayoutParams(0, dp(44), 1));
         sessionState = text("SESSION OFFLINE", MUTED, 9, true);
         bar.addView(sessionState, new LinearLayout.LayoutParams(-2, dp(44)));
+        bar.addView(action("RESTART", PRIMARY, v -> restartSession()), new LinearLayout.LayoutParams(dp(78), dp(44)));
+        bar.addView(action("CLEAR", MUTED, v -> clearTerminal()), new LinearLayout.LayoutParams(dp(64), dp(44)));
         bar.addView(action("×", ERROR, v -> stopSession()), new LinearLayout.LayoutParams(dp(44), dp(44)));
         panel.addView(bar);
 
@@ -187,7 +221,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         command.setPadding(dp(8), dp(5), dp(8), dp(5));
         commandInput = new EditText(this);
         commandInput.setSingleLine(true);
-        commandInput.setHint("inject guest command or script …");
+        commandInput.setHint("guest command …");
         commandInput.setHintTextColor(MUTED);
         commandInput.setTextColor(TEXT);
         commandInput.setTextSize(11);
@@ -203,16 +237,31 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         LinearLayout panel = column(SURFACE_LOW);
         panel.setPadding(dp(10), dp(8), dp(10), dp(8));
         LinearLayout head = row(SURFACE_LOW);
-        head.addView(text("RUNTIMES", PRIMARY, 11, true), new LinearLayout.LayoutParams(0, dp(32), 1));
-        head.addView(action("+", PRIMARY, v -> selectRuntime()), new LinearLayout.LayoutParams(dp(44), dp(40)));
+        head.addView(text("LINUX RUNTIMES", PRIMARY, 11, true), new LinearLayout.LayoutParams(0, dp(32), 1));
+        head.addView(action("SELECT", PRIMARY, v -> selectRuntime()), new LinearLayout.LayoutParams(dp(72), dp(40)));
         panel.addView(head);
         runtimeList = column(SURFACE_LOW);
         panel.addView(runtimeList);
         return panel;
     }
 
+    private View executionLanes() {
+        LinearLayout panel = column(SURFACE_LOW);
+        panel.setPadding(dp(10), dp(8), dp(10), dp(8));
+        LinearLayout head = row(SURFACE_LOW);
+        head.addView(text("EXECUTION LANES", PRIMARY, 11, true), new LinearLayout.LayoutParams(0, dp(34), 1));
+        head.addView(text("SESSION → PTY → RUNTIME", MUTED, 9, true));
+        panel.addView(head);
+        TextView lane = text("LANE 01  Android Activity\nLANE 02  RuntimeSessionManager\nLANE 03  PRoot + rootfs\nLANE 04  Interactive PTY", TEXT, 10, true);
+        lane.setPadding(dp(10), dp(8), dp(10), dp(8));
+        lane.setBackground(round(SURFACE, dp(7), Color.rgb(60, 72, 67)));
+        panel.addView(lane, new LinearLayout.LayoutParams(-1, dp(86)));
+        panel.addView(action("RUN RUNTIME TOOL PROBE", SECONDARY, v -> runLaneProbe()), new LinearLayout.LayoutParams(-1, dp(48)));
+        return panel;
+    }
+
     private View statusPanel() {
-        statusBanner = text("STATE\nPresentation is connected to runtime/session contracts.", MUTED, 10, false);
+        statusBanner = text("STATE\nStitch presentation is connected to runtime/session contracts.", MUTED, 10, false);
         statusBanner.setTypeface(Typeface.MONOSPACE);
         statusBanner.setPadding(dp(12), dp(10), dp(12), dp(10));
         statusBanner.setBackground(round(SURFACE, dp(8), Color.rgb(60, 72, 67)));
@@ -231,14 +280,18 @@ public final class StitchOperationalActivity extends Activity implements Runtime
         return bar;
     }
 
-    private void addNav(LinearLayout nav, String label, boolean active, View.OnClickListener listener) {
-        Button b = action(label, active ? PRIMARY : MUTED, listener);
+    private void addNav(LinearLayout nav, String label, View.OnClickListener listener) {
+        Button b = action(label, MUTED, listener);
         b.setAllCaps(true);
         nav.addView(b, new LinearLayout.LayoutParams(dp(112), dp(44)));
     }
 
     private void addShortcut(LinearLayout parent, String label, byte[] bytes) {
-        Button b = action(label, MUTED, v -> { if (bytes != null) send(bytes); else showStatus("SHORTCUT=" + label); });
+        Button b = action(label, MUTED, v -> {
+            if ("COPY".equals(label)) copyTerminal();
+            else if (bytes != null) send(bytes);
+            else showStatus("SHORTCUT\n" + label + "\nModifier is available on the PTY surface.");
+        });
         parent.addView(b, new LinearLayout.LayoutParams(0, dp(48), 1));
     }
 
@@ -252,32 +305,51 @@ public final class StitchOperationalActivity extends Activity implements Runtime
             final RuntimeUiState.Status cardState = profile.id().equals(installingRuntimeId) ? RuntimeUiState.Status.VERIFYING : resolved;
             LinearLayout card = row(SURFACE);
             card.setPadding(dp(10), dp(3), dp(4), dp(3));
-            TextView name = text(profile.displayName() + "\n" + profile.id(), TEXT, 10, true);
-            card.addView(name, new LinearLayout.LayoutParams(0, dp(52), 1));
-            card.addView(text(RuntimeUiState.label(cardState), cardState == RuntimeUiState.Status.READY ? PRIMARY : MUTED, 9, true), new LinearLayout.LayoutParams(dp(74), dp(52)));
-            card.addView(action("VERIFY", MUTED, v -> refreshRuntimes()), new LinearLayout.LayoutParams(dp(66), dp(46)));
-            Button open = action(cardState == RuntimeUiState.Status.READY ? "OPEN" : "INSTALL", PRIMARY, v -> { selectedRuntime = profile; if (cardState == RuntimeUiState.Status.READY) startSession(); else installRuntime(); });
-            card.addView(open, new LinearLayout.LayoutParams(dp(70), dp(46)));
+            TextView name = text(profile.displayName() + "\n" + profile.id() + "  " + profile.version(), TEXT, 10, true);
+            card.addView(name, new LinearLayout.LayoutParams(0, dp(58), 1));
+            card.addView(text(RuntimeUiState.label(cardState), cardState == RuntimeUiState.Status.READY ? PRIMARY : MUTED, 9, true), new LinearLayout.LayoutParams(dp(70), dp(58)));
+            card.addView(action("CHECK", MUTED, v -> checkRuntime(profile)), new LinearLayout.LayoutParams(dp(64), dp(46)));
+            Button openOrInstall = action(cardState == RuntimeUiState.Status.READY ? "OPEN" : "INSTALL", PRIMARY, v -> {
+                selectedRuntime = profile;
+                getPreferences(MODE_PRIVATE).edit().putString("runtime_id", profile.id()).apply();
+                terminalTitle.setText("SESSION 01  //  " + profile.displayName());
+                if (cardState == RuntimeUiState.Status.READY) startSession(); else installRuntime(profile);
+            });
+            card.addView(openOrInstall, new LinearLayout.LayoutParams(dp(70), dp(46)));
             if (profile.id().equals(selectedRuntime.id())) card.setBackground(round(Color.rgb(31, 48, 43), dp(7), Color.rgb(78, 120, 103)));
             runtimeList.addView(card);
             runtimeList.addView(space(4));
         }
     }
 
+    private void checkRuntime(RuntimeProfile profile) {
+        File runtime = new File(new File(getFilesDir(), "runtime-vault/runtimes"), profile.id());
+        RuntimeUiState.Status state = RuntimeUiState.resolve(profile.id(), runtime, new File(runtime, "READY.evidence"), new File(getApplicationInfo().nativeLibraryDir, "libproot.so"), new File(runtime, "rootfs"));
+        showStatus("CHECK\n" + profile.displayName() + "\nSTATUS=" + RuntimeUiState.label(state) + "\nROOTFS=" + (new File(runtime, "rootfs").isDirectory() ? "PRESENT" : "MISSING"));
+        refreshRuntimes();
+    }
+
     private void refreshTelemetry() {
-        if (!sessionReady()) { telemetryCpu.setText("--"); telemetryMem.setText("--"); telemetryStorage.setText("--"); telemetryNet.setText("OFFLINE"); showStatus("MONITOR\nWAITING\nStart a verified runtime session first."); return; }
+        if (!sessionReady()) {
+            telemetryCpu.setText("--"); telemetryMem.setText("--"); telemetryStorage.setText("--"); telemetryNet.setText("OFFLINE");
+            showStatus("MONITOR\nWAITING\nStart a verified runtime session first.");
+            return;
+        }
         telemetryNet.setText("LIVE");
         sessionManager.runRuntimeCommand("mt=$(awk '/MemTotal:/{print $2}' /proc/meminfo); ma=$(awk '/MemAvailable:/{print $2}' /proc/meminfo); used=$((mt-ma)); mp=0; [ $mt -gt 0 ] && mp=$((used*100/mt)); df=$(df -P / | awk 'NR==2{gsub(/%/,\"\",$5);print $5}'); printf 'MEM=%s%%\\nSTORAGE=%s%%\\n' $mp ${df:-0}", (output, code) -> postUi(() -> {
             if (code != 0) { showStatus("MONITOR\nBLOCKED\n" + output); return; }
-            for (String line : output.split("\\n")) { if (line.startsWith("MEM=")) telemetryMem.setText(line.substring(4)); if (line.startsWith("STORAGE=")) telemetryStorage.setText(line.substring(9)); }
+            for (String line : output.split("\\n")) {
+                if (line.startsWith("MEM=")) telemetryMem.setText(line.substring(4));
+                if (line.startsWith("STORAGE=")) telemetryStorage.setText(line.substring(9));
+            }
             telemetryCpu.setText("LIVE");
         }));
     }
 
-    private void installRuntime() {
-        final RuntimeProfile profile = selectedRuntime;
+    private void installRuntime(RuntimeProfile profile) {
         if (!uiActive || (sessionManager != null && sessionManager.isRunning())) { showStatus("INSTALL\nBLOCKED\nStop the active session first."); return; }
-        installingRuntimeId = profile.id(); refreshRuntimes();
+        installingRuntimeId = profile.id();
+        refreshRuntimes();
         showStatus("INSTALL\n" + profile.displayName() + "\nVerifying checksum and extracting atomically…");
         new Thread(() -> {
             RuntimeInstaller.Result result;
@@ -286,9 +358,15 @@ public final class StitchOperationalActivity extends Activity implements Runtime
                 File nativeDir = new File(getApplicationInfo().nativeLibraryDir);
                 result = new RuntimeInstaller(vault, message -> postUi(() -> showStatus("INSTALL\n" + message)), new File(nativeDir, "libproot.so"), nativeDir)
                         .install(profile, null, PROOT_SHA256, new URL(profile.rootfsUrl()), profile.rootfsSha256(), profile.rootfsGzip());
-            } catch (Exception e) { result = RuntimeInstaller.Result.fail(profile.id(), e.getClass().getSimpleName() + ":" + e.getMessage(), null); }
+            } catch (Exception e) {
+                result = RuntimeInstaller.Result.fail(profile.id(), e.getClass().getSimpleName() + ":" + e.getMessage(), null);
+            }
             RuntimeInstaller.Result done = result;
-            postUi(() -> { installingRuntimeId = null; refreshRuntimes(); showStatus(done.success ? "INSTALL\nREADY\n" + done.runtimeId : "INSTALL\nFAILED\n" + done.message); });
+            postUi(() -> {
+                installingRuntimeId = null;
+                refreshRuntimes();
+                showStatus(done.success ? "INSTALL\nREADY\n" + done.runtimeId : "INSTALL\nFAILED\n" + done.message);
+            });
         }, "stitch-runtime-installer").start();
     }
 
@@ -316,38 +394,115 @@ public final class StitchOperationalActivity extends Activity implements Runtime
             if (!sessionManager.start(80, 24, 8, 16)) { showStatus("SESSION\nBLOCKED\nRuntime authorization failed."); return; }
             sessionManager.attachTo(terminalView);
             terminalOutput.setVisibility(View.GONE);
-            sessionState.setText("SESSION READY");
-            terminalTitle.setText("TTY1  //  " + profile.displayName());
+            sessionState.setText("READY");
+            terminalTitle.setText("SESSION 01  //  " + profile.displayName());
+            systemState.setText("SYSTEM ONLINE");
             refreshTelemetry();
-        } catch (RuntimeException e) { showStatus("SESSION\nBLOCKED\n" + e.getClass().getSimpleName() + ":" + e.getMessage()); }
+        } catch (RuntimeException e) {
+            showStatus("SESSION\nBLOCKED\n" + e.getClass().getSimpleName() + ":" + e.getMessage());
+        }
     }
 
-    private void stopSession() { if (sessionManager != null && sessionManager.isRunning()) sessionManager.stop(); else showStatus("SESSION\nNo active session."); }
+    private void restartSession() {
+        if (sessionManager == null || !sessionManager.isRunning()) { startSession(); return; }
+        sessionManager.stop();
+        sessionState.setText("RESTARTING");
+        main.postDelayed(this::startSession, 300L);
+    }
+
+    private void stopSession() {
+        if (sessionManager != null && sessionManager.isRunning()) {
+            sessionManager.stop();
+            sessionState.setText("OFFLINE");
+            terminalOutput.setVisibility(View.VISIBLE);
+            terminalOutput.setText("Session stopped. Select OPEN on a verified runtime to start again.");
+        } else showStatus("SESSION\nNo active session.");
+    }
+
+    private void clearTerminal() {
+        if (!sessionReady()) { showStatus("CLEAR\nBLOCKED\nNo active PTY session."); return; }
+        sessionManager.runRuntimeCommand("clear", (output, code) -> postUi(() -> showStatus("CLEAR\nEXIT=" + code)));
+    }
+
     private void runCommand() {
         String command = commandInput == null ? "" : commandInput.getText().toString().trim();
         if (command.isEmpty()) return;
         if (!sessionReady()) { showStatus("COMMAND\nBLOCKED\nVerified runtime session required."); return; }
         sessionManager.runRuntimeCommand(command, (output, code) -> postUi(() -> showStatus("COMMAND\nEXIT=" + code + "\n" + output)));
     }
+
+    private void runLaneProbe() {
+        if (!sessionReady()) { showStatus("EXECUTION LANES\nBLOCKED\nRuntime PTY prompt is not ready."); return; }
+        sessionManager.runRuntimeCommand("printf 'LANES_EVIDENCE=PASS\\n'; command -v sh; command -v ps; command -v env", (output, code) -> postUi(() -> showStatus("EXECUTION LANES\nEXIT=" + code + "\n" + output)));
+    }
+
     private boolean sessionReady() { return sessionManager != null && sessionManager.isRunning() && sessionManager.isPromptReady(); }
+
     private void send(byte[] bytes) {
         TerminalSession session = sessionManager == null ? null : sessionManager.currentSession();
         if (session == null || !session.isRunning()) { showStatus("INPUT\nBLOCKED\nNo active PTY."); return; }
         session.write(bytes, 0, bytes.length);
     }
+
+    private void copyTerminal() {
+        if (terminalView == null || terminalView.mEmulator == null || terminalView.mEmulator.getScreen() == null) { showStatus("COPY\nBLOCKED\nTerminal transcript is unavailable."); return; }
+        ClipboardManager manager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (manager == null) { showStatus("COPY\nBLOCKED\nClipboard service unavailable."); return; }
+        String value = terminalView.mEmulator.getScreen().getTranscriptTextWithFullLinesJoined();
+        manager.setPrimaryClip(ClipData.newPlainText("Alfa terminal", value));
+        showStatus("COPY\nPASS\n" + value.length() + " chars");
+    }
+
     private void selectRuntime() {
         if (sessionManager != null && sessionManager.isRunning()) { showStatus("RUNTIMES\nStop the active session before switching runtime."); return; }
         List<RuntimeProfile> profiles = RuntimeRegistry.all();
-        String[] names = new String[profiles.size()]; int selected = 0;
+        String[] names = new String[profiles.size()];
+        int selected = 0;
         for (int i = 0; i < profiles.size(); i++) { names[i] = profiles.get(i).displayName(); if (profiles.get(i).id().equals(selectedRuntime.id())) selected = i; }
-        new android.app.AlertDialog.Builder(this).setTitle("Select runtime").setSingleChoiceItems(names, selected, (dialog, which) -> { selectedRuntime = profiles.get(which); getPreferences(MODE_PRIVATE).edit().putString("runtime_id", selectedRuntime.id()).apply(); dialog.dismiss(); refreshRuntimes(); terminalTitle.setText("TTY1  //  " + selectedRuntime.displayName()); }).setNegativeButton("Cancel", null).show();
+        new android.app.AlertDialog.Builder(this).setTitle("Select runtime").setSingleChoiceItems(names, selected, (dialog, which) -> {
+            selectedRuntime = profiles.get(which);
+            getPreferences(MODE_PRIVATE).edit().putString("runtime_id", selectedRuntime.id()).apply();
+            terminalTitle.setText("SESSION 01  //  " + selectedRuntime.displayName());
+            dialog.dismiss();
+            refreshRuntimes();
+            showStatus("RUNTIMES\nSELECTED\n" + selectedRuntime.displayName());
+        }).setNegativeButton("CANCEL", null).show();
     }
-    private void scrollToTerminal() { }
-    private void showStatus(String value) { if (statusBanner != null) { statusBanner.setVisibility(View.VISIBLE); statusBanner.setText(value); } }
+
+    private void showSecurity() {
+        showStatus("SECURITY\nPRoot is a rootless runtime compatibility layer, not a host security sandbox.\nBinary/rootfs integrity is checked by the canonical installer.");
+    }
+
+    private void showSettings() {
+        LinearLayout box = column(SURFACE);
+        box.setPadding(dp(14), dp(8), dp(14), dp(8));
+        box.addView(text("STITCH OPERATIONAL SETTINGS", PRIMARY, 11, true));
+        box.addView(text("Runtime: " + selectedRuntime.displayName(), TEXT, 10, true));
+        box.addView(text("Registry: 4 supported distros", MUTED, 10, false));
+        box.addView(action("REFRESH RUNTIMES", MUTED, v -> { refreshRuntimes(); showStatus("SETTINGS\nRuntime registry refreshed."); }), new LinearLayout.LayoutParams(-1, dp(46)));
+        box.addView(action("MONITOR", SECONDARY, v -> refreshTelemetry()), new LinearLayout.LayoutParams(-1, dp(46)));
+        new android.app.AlertDialog.Builder(this).setTitle("SETTINGS").setView(box).setPositiveButton("DONE", null).show();
+    }
+
+    private void scrollTo(View target) {
+        if (scroll != null && target != null) scroll.post(() -> scroll.smoothScrollTo(0, target.getTop()));
+    }
+
+    private void showStatus(String value) {
+        if (statusBanner != null) { statusBanner.setVisibility(View.VISIBLE); statusBanner.setText(value); }
+    }
+
     private void postUi(Runnable r) { if (uiActive && !isFinishing() && !isDestroyed()) runOnUiThread(r); }
     private String shortId() { return UUID.randomUUID().toString().replace("-", "").substring(0, 12); }
-    private Button action(String value, int color, View.OnClickListener listener) { Button b = new Button(this); b.setText(value); b.setTextColor(color); b.setTextSize(10); b.setAllCaps(false); b.setMinHeight(0); b.setMinWidth(0); b.setPadding(dp(5), 0, dp(5), 0); b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); b.setBackground(round(SURFACE_HIGH, dp(6), Color.rgb(60, 72, 67))); b.setStateListAnimator(null); b.setOnClickListener(listener); return b; }
-    private TextView text(String value, int color, int size, boolean bold) { TextView t = new TextView(this); t.setText(value); t.setTextColor(color); t.setTextSize(size); t.setGravity(Gravity.CENTER_VERTICAL); if (bold) t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); return t; }
+    private Button action(String value, int color, View.OnClickListener listener) {
+        Button b = new Button(this);
+        b.setText(value); b.setTextColor(color); b.setTextSize(10); b.setAllCaps(false); b.setMinHeight(0); b.setMinWidth(0);
+        b.setPadding(dp(5), 0, dp(5), 0); b.setGravity(Gravity.CENTER); b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        b.setBackground(round(SURFACE_HIGH, dp(6), Color.rgb(60, 72, 67))); b.setStateListAnimator(null); b.setOnClickListener(listener); return b;
+    }
+    private TextView text(String value, int color, int size, boolean bold) {
+        TextView t = new TextView(this); t.setText(value); t.setTextColor(color); t.setTextSize(size); t.setGravity(Gravity.CENTER_VERTICAL); if (bold) t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD); return t;
+    }
     private LinearLayout row(int color) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setBackgroundColor(color); return l; }
     private LinearLayout column(int color) { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.VERTICAL); l.setBackgroundColor(color); return l; }
     private GradientDrawable round(int color, int radius, int strokeColor) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(radius); d.setStroke(dp(1), strokeColor); return d; }
@@ -355,7 +510,7 @@ public final class StitchOperationalActivity extends Activity implements Runtime
     private View spaceH(int w) { View v = new View(this); v.setLayoutParams(new LinearLayout.LayoutParams(dp(w), 1)); return v; }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
 
-    @Override public void onState(String state) { postUi(() -> { sessionState.setText("SESSION " + state); if ("READY".equals(state) || "RUNNING".equals(state)) { terminalOutput.setVisibility(View.GONE); systemState.setText("SYSTEM ONLINE"); } else terminalOutput.setVisibility(View.VISIBLE); refreshRuntimes(); }); }
+    @Override public void onState(String state) { postUi(() -> { sessionState.setText(state); systemState.setText(("READY".equals(state) || "RUNNING".equals(state)) ? "SYSTEM ONLINE" : "SYSTEM WAITING"); terminalOutput.setVisibility(("READY".equals(state) || "RUNNING".equals(state)) ? View.GONE : View.VISIBLE); refreshRuntimes(); }); }
     @Override public void onTextChanged() { postUi(() -> { if (terminalView != null) terminalView.invalidate(); }); }
-    @Override public void onSessionFinished(int exitStatus) { postUi(() -> { sessionState.setText("SESSION FINISHED"); terminalOutput.setVisibility(View.VISIBLE); terminalOutput.setText("exit_status=" + exitStatus); refreshRuntimes(); }); }
+    @Override public void onSessionFinished(int exitStatus) { postUi(() -> { sessionState.setText("FINISHED"); terminalOutput.setVisibility(View.VISIBLE); terminalOutput.setText("exit_status=" + exitStatus); refreshRuntimes(); }); }
 }
