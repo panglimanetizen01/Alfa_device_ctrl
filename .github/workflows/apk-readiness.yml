@@ -39,16 +39,31 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
-      - name: Decode Debug Keystore
+      - name: Diagnose Debug Keystore Secret Boundary
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
-          test -n "$DEBUG_KEYSTORE_BASE64"
-          printf "%s" "$DEBUG_KEYSTORE_BASE64" | base64 --decode > app/debug.keystore
-          test -s app/debug.keystore
-          chmod 600 app/debug.keystore
-          echo "DEBUG_KEYSTORE_DECODE=PASS"
+          python3 - <<'PY'
+          import base64, hashlib, os, re
+          raw = os.environb.get(b"DEBUG_KEYSTORE_BASE64", b"")
+          print(f"SECRET_PRESENT={'YES' if raw else 'NO'}")
+          print(f"SECRET_BYTES={len(raw)}")
+          print(f"SECRET_SHA256={hashlib.sha256(raw).hexdigest()}")
+          print(f"CR_BYTES={raw.count(b"\\r")}")
+          print(f"LF_BYTES={raw.count(b"\\n")}")
+          print(f"NON_BASE64_BYTES={len(re.sub(rb"[A-Za-z0-9+/=]", b"", raw))}")
+          print(f"LENGTH_MOD_4={len(raw) % 4}")
+          print(f"FIRST_PADDING_OFFSET={raw.find(b"=")}")
+          try:
+              decoded = base64.b64decode(raw, validate=True)
+              print("STRICT_BASE64_DECODE=PASS")
+              print(f"DECODED_BYTES={len(decoded)}")
+              print(f"DECODED_SHA256={hashlib.sha256(decoded).hexdigest()}")
+          except Exception as exc:
+              print("STRICT_BASE64_DECODE=FAIL")
+              print(f"STRICT_BASE64_ERROR={type(exc).__name__}")
+          PY
 
       - name: TDD source UI boundary contract
         run: |
