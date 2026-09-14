@@ -9,6 +9,7 @@ BLACKLIST="${2:-tools/ci/stitch-legacy-ui-blacklist.txt}"
 
 python3 - "$APK" "$BLACKLIST" <<'PY'
 import hashlib
+import struct
 import sys
 import zipfile
 from pathlib import Path
@@ -76,3 +77,64 @@ print(f"APK_DEX_COUNT={len(dex)}")
 print("APK_DEEP_RESIDUE_SCAN=PASS")
 print("STITCH_UI_BINARY_CONTRACT=PASS")
 PY
+
+# Diagnostic instrumentation intentionally runs before the workflow's final
+# zipalign gate. It does not mutate the APK and does not change packaging.
+echo "=== APK ZIP STRUCTURE FORENSIC ==="
+unzip -t "$APK"
+echo "APK_ZIP_TEST_ARCHIVE=PASS"
+unzip -l "$APK"
+ENTRY_COUNT="$(unzip -Z1 "$APK" | wc -l | tr -d ' ')"
+echo "APK_ZIP_ENTRY_COUNT=$ENTRY_COUNT"
+
+echo "--- SO Entry Analysis ---"
+python3 - "$APK" <<'PY'
+import struct
+import sys
+import zipfile
+
+apk = sys.argv[1]
+PAGE = 16384
+with zipfile.ZipFile(apk) as z, open(apk, "rb") as fh:
+    for info in z.infolist():
+        if not info.filename.endswith(".so"):
+            continue
+        fh.seek(info.header_offset)
+        header = fh.read(30)
+        if len(header) != 30 or header[:4] != b"PK\x03\x04":
+            print(f"APK_ZIP_SO_ENTRY={info.filename}")
+            print("APK_ZIP_SO_HEADER=INVALID")
+            continue
+        name_len, extra_len = struct.unpack_from("<HH", header, 26)
+        payload_offset = info.header_offset + 30 + name_len + extra_len
+        mod = payload_offset % PAGE
+        method = info.compress_type
+        print(f"APK_ZIP_SO_ENTRY={info.filename}")
+        print(f"APK_ZIP_SO_HEADER_OFFSET={info.header_offset}")
+        print(f"APK_ZIP_SO_PAYLOAD_OFFSET={payload_offset}")
+        print(f"APK_ZIP_SO_OFFSET={payload_offset}")
+        print(f"APK_ZIP_SO_OFFSET_MOD_16384={mod}")
+        print(f"APK_ZIP_SO_COMPRESSION_METHOD={method}")
+        if method == zipfile.ZIP_STORED and mod != 0:
+            print(f"VIOLATION_DETECTED={info.filename} payload_offset={payload_offset} mod_16384={mod}")
+PY
+
+echo "=== ZIPALIGN DIAGNOSTIC ==="
+ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+if [[ -x "$ZIPALIGN" ]]; then
+  OUT="$(mktemp)"
+  ERR="$(mktemp)"
+  set +e
+  "$ZIPALIGN" -c -P 16 -v 4 "$APK" >"$OUT" 2>"$ERR"
+  ZIPALIGN_RC=$?
+  set -e
+  cat "$OUT"
+  cat "$ERR" >&2
+  echo "ZIPALIGN_DIAGNOSTIC_RC=$ZIPALIGN_RC"
+  ZIPALIGN_DIAGNOSTIC_STDERR="$(tr '\n' ' ' < "$ERR" | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+  echo "ZIPALIGN_DIAGNOSTIC_STDERR=$ZIPALIGN_DIAGNOSTIC_STDERR"
+  rm -f "$OUT" "$ERR"
+else
+  echo "ZIPALIGN_DIAGNOSTIC_TOOL=NOT_AVAILABLE"
+  echo "ZIPALIGN_DIAGNOSTIC_RC=NOT_RUN"
+fi
