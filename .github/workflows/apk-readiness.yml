@@ -208,6 +208,11 @@ jobs:
           ./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
           test -s app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Verify final APK launcher manifest
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_stitch_launcher_apk.sh app/build/outputs/apk/debug/app-debug.apk "$ANDROID_HOME/build-tools/35.0.0/aapt2"
+
       - name: Verify final UI to terminal execution contract
         run: |
           set -euo pipefail
@@ -274,9 +279,9 @@ jobs:
               *) echo "UNEXPECTED_ELF_TYPE=$TYPE"; exit 1 ;;
             esac
           done
-          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 "$APK"
           echo "APK_NATIVE_ELF_ALIGNMENT_PASS=16KB"
-          echo "APK_ZIP_ALIGNMENT_PASS=4BYTE"
+          echo "APK_ZIP_ALIGNMENT_PASS=16KB"
 
       - name: Package exactly one canonical APK and provenance manifest
         run: |
@@ -355,6 +360,11 @@ jobs:
           grep -Fx 'schema_version=apk-artifact-provenance.v2' "$MANIFEST"
           echo "POST_UPLOAD_SHA256_MATCH=PASS"
           echo "POST_UPLOAD_ARTIFACT_SHAPE=PASS"
+
+      - name: Verify launcher manifest in uploaded APK
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_stitch_launcher_apk.sh "$(find artifact -type f -name '*.apk' -print -quit)" "$ANDROID_HOME/build-tools/35.0.0/aapt2"
 
       - name: Run offline binary forensic verifier
         run: |
