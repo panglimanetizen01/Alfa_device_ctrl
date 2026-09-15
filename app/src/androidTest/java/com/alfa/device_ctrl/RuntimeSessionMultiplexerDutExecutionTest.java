@@ -48,7 +48,10 @@ public final class RuntimeSessionMultiplexerDutExecutionTest {
         RuntimeSessionManager b = multiplexer.createSession("SESSION_B", contract(context, profile, "SESSION_B"), listener());
 
         assertNotEquals(a, b);
-        assertNotEquals(a.currentSession(), b.currentSession());
+        assertEquals(2, multiplexer.sessionIds().size());
+        assertNotEquals(multiplexer.sessionIds().get(0), multiplexer.sessionIds().get(1));
+        assertEquals(a, multiplexer.getSession("SESSION_A"));
+        assertEquals(b, multiplexer.getSession("SESSION_B"));
 
         assertTrue("session A PTY did not start", multiplexer.startSession("SESSION_A", 80, 24, 8, 16));
         assertTrue("session B PTY did not start", multiplexer.startSession("SESSION_B", 80, 24, 8, 16));
