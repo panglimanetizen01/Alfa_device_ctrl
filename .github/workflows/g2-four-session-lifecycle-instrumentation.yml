@@ -115,14 +115,28 @@ jobs:
           ls -l /dev/kvm
           echo KVM_READY=PASS
 
-      - name: Create Android Virtual Device
+      - name: Diagnose and create Android Virtual Device
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           DEVICE_LIST="$RUNNER_TEMP/avd-devices.txt"
           avdmanager list device > "$DEVICE_LIST"
           grep -F 'id: 18 or "pixel_2"' "$DEVICE_LIST"
+          IMAGE="$ANDROID_HOME/system-images/android-35/google_apis/x86_64"
+          echo '--- SYSTEM IMAGE CONTENT ---'
+          find "$IMAGE" -maxdepth 2 -type f -printf '%P\n' | sort
+          echo '--- AVD DIRECTORY BEFORE ---'
+          find "$HOME/.android/avd" -maxdepth 3 -print 2>/dev/null | sort || true
+          set +e
           printf 'no\n' | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device 'pixel_2' 2>&1 | tee "$RUNNER_TEMP/avd-create.log"
+          RC=${PIPESTATUS[0]}
+          set -e
+          echo "AVDMANAGER_RC=$RC"
+          echo '--- AVD DIRECTORY AFTER ---'
+          find "$HOME/.android/avd" -maxdepth 3 -print 2>/dev/null | sort || true
+          echo '--- AVD CONFIG IF PRESENT ---'
+          cat "$HOME/.android/avd/g2-api35.avd/config.ini" 2>/dev/null || true
+          test "$RC" -eq 0
           grep -Fx g2-api35 < <(emulator -list-avds)
           echo AVD_CREATED=PASS
 
