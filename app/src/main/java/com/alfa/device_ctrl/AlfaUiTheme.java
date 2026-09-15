@@ -26,6 +26,7 @@ public final class AlfaUiTheme {
     public static final int OBSIDIAN_ERROR = 0xFFEF4444;
     public static final int OBSIDIAN_TELEMETRY = 0xFF38BDF8;
     public static final int OBSIDIAN_UNKNOWN = 0xFF64748B;
+    public static final int TERMINAL = 0xFF0D1117;
     public static final int TOUCH_TARGET_DP = 48;
     public static final int CANVAS = OBSIDIAN_CANVAS;
     public static final int SURFACE_1 = OBSIDIAN_SURFACE;
