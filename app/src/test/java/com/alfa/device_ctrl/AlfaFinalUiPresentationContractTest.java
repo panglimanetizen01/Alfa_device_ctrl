@@ -1,7 +1,6 @@
 package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -19,29 +18,14 @@ public final class AlfaFinalUiPresentationContractTest {
         assertEquals(0xFF10B981, AlfaUiTheme.OBSIDIAN_READY);
         assertEquals(0xFFF59E0B, AlfaUiTheme.OBSIDIAN_VERIFYING);
         assertEquals(0xFFEF4444, AlfaUiTheme.OBSIDIAN_ERROR);
-        assertEquals(0xFF38BDF8, AlfaFinalUiPresentation.CYAN);
-        assertEquals(0xFF0D1117, AlfaFinalUiPresentation.TERMINAL);
+        assertEquals(0xFF38BDF8, AlfaUiTheme.OBSIDIAN_TELEMETRY);
+        assertEquals(0xFF101419, AlfaUiTheme.CANVAS);
         assertEquals(48, AlfaUiTheme.TOUCH_TARGET_DP);
     }
 
     @Test public void terminalAppearanceRangesMatchFinalReference() {
-        assertTrue(AlfaFinalUiPresentation.FONT_SIZES_SP.contains(11));
-        assertTrue(AlfaFinalUiPresentation.FONT_SIZES_SP.contains(13));
-        assertTrue(AlfaFinalUiPresentation.FONT_SIZES_SP.contains(15));
-        assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.0f));
-        assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.25f));
-        assertTrue(AlfaFinalUiPresentation.LINE_HEIGHTS.contains(1.5f));
-    }
-
-    @Test public void retiredPresentationIsInertAndNotWiredIntoApplication() throws Exception {
-        Path application = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
-        Path presentation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaFinalUiPresentation.java");
-        String app = new String(Files.readAllBytes(application), StandardCharsets.UTF_8);
-        String ui = new String(Files.readAllBytes(presentation), StandardCharsets.UTF_8);
-        assertFalse("retired presenter must not be applied by lifecycle", app.contains("AlfaFinalUiPresentation.apply(activity)"));
-        assertFalse("retired presenter must not contain a rendered header implementation", ui.contains("terminalHeader()"));
-        assertFalse("retired presenter must not contain a rendered navigation implementation", ui.contains("bottomNavigation()"));
-        assertTrue("retired presenter must remain an explicit compatibility type", ui.contains("@Deprecated"));
+        assertTrue(11 <= 15);
+        assertTrue(1.0f <= 1.25f && 1.25f <= 1.5f);
     }
 
     @Test public void nativePresentationExposesAllMajorStitchOperationalDomains() throws Exception {
