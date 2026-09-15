@@ -15,9 +15,9 @@ public final class StitchOperationalSessionUiStateContractTest {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java");
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
 
-        assertTrue("StitchOperationalActivity must consume the semantic listener state", text.contains("onState(String s)"));
-        assertTrue("RUNNING semantic state must be projected to the system status", text.contains("\"RUNNING\".equals(s)"));
-        assertTrue("READY semantic state must be projected to the system status", text.contains("\"READY\".equals(s)"));
+        assertTrue("StitchOperationalActivity must consume the semantic listener state", text.contains("onState(String state)"));
+        assertTrue("RUNNING semantic state must be projected to the system status", text.contains("\"RUNNING\".equals(state)"));
+        assertTrue("READY semantic state must be projected to the system status", text.contains("\"READY\".equals(state)"));
         assertFalse("Activity must not parse raw PTY lifecycle events", text.contains("PTY_CREATED"));
         assertFalse("Activity must not parse raw prompt events", text.contains("PTY_WAITING_FOR_PROMPT"));
         assertFalse("Activity must not parse raw process events", text.contains("BACKGROUND_SESSION_PRESERVED"));
