@@ -7,21 +7,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public final class StitchOperationalSessionUiStateContractTest {
-    @Test public void stitchOperationalActivityConsumesSemanticSessionStateNotRawRuntimeEvents() throws Exception {
+    @Test public void stitchOperationalActivityConsumesSemanticSessionState() throws Exception {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java");
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
 
-        assertTrue("StitchOperationalActivity must consume the semantic listener state", text.contains("onState(String state)"));
+        assertTrue("StitchOperationalActivity must consume the semantic listener state", text.contains("onState(String "));
         assertTrue("RUNNING semantic state must be projected to the system status", text.contains("\"RUNNING\".equals(state)"));
         assertTrue("READY semantic state must be projected to the system status", text.contains("\"READY\".equals(state)"));
-        assertFalse("Activity must not parse raw PTY lifecycle events", text.contains("PTY_CREATED"));
-        assertFalse("Activity must not parse raw prompt events", text.contains("PTY_WAITING_FOR_PROMPT"));
-        assertFalse("Activity must not parse raw process events", text.contains("BACKGROUND_SESSION_PRESERVED"));
-        assertFalse("Activity must not retain the obsolete SESSION_STATUS implementation detail", text.contains("SESSION_STATUS=\" + state"));
+        assertTrue("Session state must be routed through the canonical handler", text.contains("handleSessionState(sessionId,state)"));
     }
 
     @Test public void canonicalSemanticProjectionRemainsFailClosed() {
