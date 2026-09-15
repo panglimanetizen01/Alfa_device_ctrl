@@ -29,7 +29,7 @@ required = [
     "RUNTIMES",
     "AlfaStitchOperationalPanels",
     "AlfaFinalUiHooks",
-    "MainActivity",
+    "StitchOperationalActivity",
 ]
 
 with zipfile.ZipFile(apk) as z:
