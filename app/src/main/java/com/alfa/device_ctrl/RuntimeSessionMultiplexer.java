@@ -7,54 +7,40 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Owns multiple independently addressable interactive sessions without creating
- * a second runtime registry. Runtime identity remains owned by InteractiveSessionContract/RuntimeRegistry.
- */
+/** Canonical owner for multiple independently addressable interactive sessions. */
 public final class RuntimeSessionMultiplexer {
     private final Map<String, RuntimeSessionManager> sessions = new LinkedHashMap<>();
+    private String activeSessionId;
 
-    public synchronized RuntimeSessionManager createSession(
-            String sessionId,
-            InteractiveSessionContract contract,
-            RuntimeSessionManager.Listener listener) {
+    public synchronized RuntimeSessionManager createSession(String sessionId, InteractiveSessionContract contract, RuntimeSessionManager.Listener listener) {
         requireSessionId(sessionId);
         if (contract == null) throw new IllegalArgumentException("contract is required");
         if (sessions.containsKey(sessionId)) throw new IllegalStateException("session-already-exists:" + sessionId);
         RuntimeSessionManager manager = new RuntimeSessionManager(contract, listener);
         sessions.put(sessionId, manager);
+        if (activeSessionId == null) activeSessionId = sessionId;
         return manager;
     }
 
-    public synchronized RuntimeSessionManager getSession(String sessionId) {
-        return sessions.get(sessionId);
+    public synchronized RuntimeSessionManager getSession(String sessionId) { return sessions.get(sessionId); }
+    public synchronized RuntimeSessionManager activeSession() { return activeSessionId == null ? null : sessions.get(activeSessionId); }
+    public synchronized String activeSessionId() { return activeSessionId; }
+
+    public synchronized void setActiveSessionId(String sessionId) {
+        requireSession(sessionId);
+        activeSessionId = sessionId;
     }
 
-    public synchronized boolean containsSession(String sessionId) {
-        return sessions.containsKey(sessionId);
+    public synchronized boolean containsSession(String sessionId) { return sessions.containsKey(sessionId); }
+    public synchronized int size() { return sessions.size(); }
+    public synchronized List<String> sessionIds() { return new ArrayList<>(sessions.keySet()); }
+
+    public synchronized boolean startSession(String sessionId, int columns, int rows, int cellWidthPixels, int cellHeightPixels) {
+        return requireSession(sessionId).start(columns, rows, cellWidthPixels, cellHeightPixels);
     }
 
-    public synchronized int size() {
-        return sessions.size();
-    }
-
-    public synchronized List<String> sessionIds() {
-        return new ArrayList<>(sessions.keySet());
-    }
-
-    public synchronized boolean startSession(
-            String sessionId,
-            int columns,
-            int rows,
-            int cellWidthPixels,
-            int cellHeightPixels) {
-        RuntimeSessionManager manager = requireSession(sessionId);
-        return manager.start(columns, rows, cellWidthPixels, cellHeightPixels);
-    }
-
-    public synchronized void attachSession(String sessionId, TerminalView view) {
-        requireSession(sessionId).attachTo(view);
-    }
+    public synchronized void attachSession(String sessionId, TerminalView view) { requireSession(sessionId).attachTo(view); }
+    public synchronized void attachActiveSession(TerminalView view) { requireSession(activeSessionId).attachTo(view); }
 
     public synchronized void stopSession(String sessionId) {
         RuntimeSessionManager manager = sessions.get(sessionId);
@@ -64,16 +50,16 @@ public final class RuntimeSessionMultiplexer {
     public synchronized RuntimeSessionManager removeSession(String sessionId) {
         RuntimeSessionManager manager = sessions.remove(sessionId);
         if (manager != null) manager.stop();
+        if (sessionId != null && sessionId.equals(activeSessionId)) activeSessionId = sessions.isEmpty() ? null : sessions.keySet().iterator().next();
         return manager;
     }
 
-    public synchronized void stopAll() {
-        for (RuntimeSessionManager manager : sessions.values()) manager.stop();
-    }
+    public synchronized void stopAll() { for (RuntimeSessionManager manager : sessions.values()) manager.stop(); }
 
     public synchronized void removeAll() {
         for (RuntimeSessionManager manager : sessions.values()) manager.stop();
         sessions.clear();
+        activeSessionId = null;
     }
 
     private RuntimeSessionManager requireSession(String sessionId) {
@@ -84,8 +70,6 @@ public final class RuntimeSessionMultiplexer {
     }
 
     private static void requireSessionId(String sessionId) {
-        if (sessionId == null || sessionId.trim().isEmpty() || sessionId.indexOf('\0') >= 0) {
-            throw new IllegalArgumentException("sessionId is invalid");
-        }
+        if (sessionId == null || sessionId.trim().isEmpty() || sessionId.indexOf('\0') >= 0) throw new IllegalArgumentException("sessionId is invalid");
     }
 }
