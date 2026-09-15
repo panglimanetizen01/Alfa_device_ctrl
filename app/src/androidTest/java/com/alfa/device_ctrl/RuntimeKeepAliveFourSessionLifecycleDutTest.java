@@ -1,7 +1,6 @@
 package com.alfa.device_ctrl;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -27,7 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Real DUT contract: four independent PTYs survive Activity recreation and reattach to four distinct TerminalViews. */
+/** Real Android contract: four independent PTYs survive Activity recreation and reattach to four distinct TerminalViews. */
 public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
     private Context context;
     private RuntimeSessionManager[] managers;
@@ -52,8 +51,8 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
         assertNotNull("default runtime profile missing", profile);
         File vault = new File(context.getFilesDir(), "runtime-vault");
         File runtime = new File(new File(vault, "runtimes"), profile.id());
-        assertTrue("DUT runtime READY evidence is not installed", new File(runtime, "READY.evidence").isFile());
-        assertTrue("DUT Gate 7 launch contract is not installed", Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
+        assertTrue("runtime READY evidence is not installed", new File(runtime, "READY.evidence").isFile());
+        assertTrue("Gate 7 launch contract is not installed", Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
 
         String[] ids = {"SESSION_A", "SESSION_B", "SESSION_C", "SESSION_D"};
         managers = new RuntimeSessionManager[ids.length];
@@ -68,6 +67,7 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
             assertTrue("PTY PID collision for " + ids[i], pids.add(session.getPid()));
             write(session, "printf 'G2_" + ids[i] + "\\n'");
             awaitTranscript(session, "G2_" + ids[i]);
+            RuntimeKeepAliveService.start(context, managers[i]);
         }
 
         awaitOwners(ids.length);
