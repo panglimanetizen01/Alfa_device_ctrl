@@ -3,7 +3,7 @@ run-name: Stitch Visual Forensic — ${{ github.sha }}
 
 on:
   push:
-    branches: [work/stitch-native-implementation]
+    branches: [work/stitch-native-implementation, work/stitch-dut-canonical-hardening-v2]
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -13,18 +13,19 @@ permissions:
 
 jobs:
   visual-forensic:
-    name: Extract representative Stitch screenshots
+    name: Extract and inventory complete Stitch corpus
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
-      - name: Extract locked visual targets
+      - name: Extract locked visual targets and complete corpus
         run: |
           set -euo pipefail
           z=stitch/stitch_alfa_device_control_v1.0.0.zip
-          test "$(sha256sum "$z" | cut -d' ' -f1)" = '7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d'
+          expected='7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d'
+          test "$(sha256sum "$z" | cut -d' ' -f1)" = "$expected"
           out=stitch-visual-forensic
           rm -rf "$out" stitch-extract
           mkdir -p "$out" stitch-extract
@@ -43,15 +44,41 @@ jobs:
             cp "$src" "$out/$d.png"
           done
           python3 - <<'PY'
-          import hashlib, pathlib, struct
+          import hashlib, json, pathlib, struct
+          root=pathlib.Path('stitch-extract')
+          files=[]
+          counts={'code.html':0,'png':0,'md':0,'other':0}
+          for p in sorted(x for x in root.rglob('*') if x.is_file()):
+              rel=p.relative_to(root).as_posix()
+              b=p.read_bytes()
+              suffix=p.suffix.lower()
+              key='code.html' if p.name == 'code.html' else 'png' if suffix == '.png' else 'md' if suffix in {'.md','.markdown'} else 'other'
+              counts[key]+=1
+              files.append({'path':rel,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          assert counts['code.html']==159, counts
+          assert counts['png']==160, counts
+          assert counts['md']==7, counts
+          assert sum(counts.values())==326, counts
+          manifest={'zip_sha256':'7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d','counts':counts,'files':files}
+          pathlib.Path('stitch-corpus-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
           out=pathlib.Path('stitch-visual-forensic')
           for p in sorted(out.glob('*.png')):
               b=p.read_bytes()
               w,h=struct.unpack('>II', b[16:24])
               print(f'{p.name}|{w}x{h}|{len(b)}|{hashlib.sha256(b).hexdigest()}')
           PY
+          (cd stitch-extract && zip -q -r ../stitch-corpus-forensic.zip .)
+          sha256sum stitch-corpus-forensic.zip > stitch-corpus-forensic.zip.sha256
 
       - uses: actions/upload-artifact@v4
         with:
           name: stitch-visual-forensic-${{ github.sha }}
           path: stitch-visual-forensic
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stitch-complete-corpus-${{ github.sha }}
+          path: |
+            stitch-corpus-forensic.zip
+            stitch-corpus-forensic.zip.sha256
+            stitch-corpus-manifest.json

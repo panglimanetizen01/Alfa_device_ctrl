@@ -9,10 +9,7 @@ import java.nio.file.Files;
 
 import org.junit.Test;
 
-/**
- * Locks the boundary between the Android UI/session presentation and the external
- * phone-control execution lanes used by the Alfa workflow.
- */
+/** Locks the boundary between the canonical Stitch UI/session surface and external phone-control lanes. */
 public final class ExecutionLaneIsolationContractTest {
     @Test
     public void externalLanesAreExplicitAndIndependent() {
@@ -24,8 +21,8 @@ public final class ExecutionLaneIsolationContractTest {
     }
 
     @Test
-    public void mainActivityDoesNotOwnExternalBridgeExecution() throws Exception {
-        File source = new File("src/main/java/com/alfa/device_ctrl/MainActivity.java");
+    public void stitchOperationalActivityDoesNotOwnExternalBridgeExecution() throws Exception {
+        File source = new File("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java");
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         assertFalse(text.contains("com.termux.api"));
         assertFalse(text.contains("rikka.shizuku"));

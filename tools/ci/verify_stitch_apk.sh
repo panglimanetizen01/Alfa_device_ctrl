@@ -29,7 +29,7 @@ required = [
     "RUNTIMES",
     "AlfaStitchOperationalPanels",
     "AlfaFinalUiHooks",
-    "MainActivity",
+    "StitchOperationalActivity",
 ]
 
 with zipfile.ZipFile(apk) as z:
@@ -77,7 +77,7 @@ with zipfile.ZipFile(apk) as z:
                 continue
             raw.seek(info.header_offset)
             header = raw.read(30)
-            if len(header) != 30 or header[:4] != b"PK\\x03\\x04":
+            if len(header) != 30 or header[:4] != b"PK\x03\x04":
                 print(f"APK_ZIP_LOCAL_HEADER_INVALID entry={info.filename}")
                 continue
             fields = struct.unpack("<4s5H3I2H", header)
