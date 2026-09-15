@@ -23,11 +23,6 @@ public final class AlfaFinalUiPresentationContractTest {
         assertEquals(48, AlfaUiTheme.TOUCH_TARGET_DP);
     }
 
-    @Test public void terminalAppearanceRangesMatchFinalReference() {
-        assertTrue(11 <= 15);
-        assertTrue(1.0f <= 1.25f && 1.25f <= 1.5f);
-    }
-
     @Test public void nativePresentationExposesAllMajorStitchOperationalDomains() throws Exception {
         Path navigation = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaUiNavigation.java");
         Path panels = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
