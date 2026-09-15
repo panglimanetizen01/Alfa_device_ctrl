@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.regex.Pattern;
 
 public final class RuntimeKeepAliveOwnershipContractTest {
     @Test public void serviceSourceUsesMultiOwnerLifecycle() throws Exception {
@@ -15,8 +16,8 @@ public final class RuntimeKeepAliveOwnershipContractTest {
         assertTrue(text.contains("Set<RuntimeSessionManager> owners"));
         assertTrue(text.contains("owners.contains(manager)"));
         assertTrue(!text.contains("RuntimeSessionManager owner;"));
-        assertTrue(text.contains("empty = owners.isEmpty()"));
-        assertTrue(text.contains("if (empty) context.stopService"));
-        assertTrue(text.contains("current.size() == 1"));
+        assertTrue(Pattern.compile("empty\\s*=\\s*owners\\.isEmpty\\(\\)").matcher(text).find());
+        assertTrue(Pattern.compile("if\\s*\\(\\s*empty\\s*\\)\\s*context\\.stopService").matcher(text).find());
+        assertTrue(Pattern.compile("current\\.size\\(\\)\\s*==\\s*1").matcher(text).find());
     }
 }

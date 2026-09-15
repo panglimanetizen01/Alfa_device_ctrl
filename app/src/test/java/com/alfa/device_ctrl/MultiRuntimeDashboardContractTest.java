@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
-/** Regression contract for the canonical runtime UI presentation. */
+/** Regression contract for the canonical registry-driven Stitch runtime presentation. */
 public final class MultiRuntimeDashboardContractTest {
     @Test public void canonicalRegistryContainsFourSupportedRuntimes() {
         assertEquals(4, RuntimeRegistry.all().size());
@@ -19,11 +19,12 @@ public final class MultiRuntimeDashboardContractTest {
         assertTrue(RuntimeRegistry.get("kali") != null);
     }
 
-    @Test public void runtimeDashboardUsesCanonicalScrollableContainer() throws Exception {
-        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/MainActivity.java")), StandardCharsets.UTF_8);
-        assertTrue(source.contains("runtimeDashboard = column(Color.BLACK)"));
-        assertTrue(source.contains("runtimeScroll.addView(runtimeDashboard"));
-        assertTrue(source.contains("LINUX RUNTIMES"));
-        assertTrue(source.contains("showRuntimeDashboard()"));
+    @Test public void stitchRuntimeDashboardConsumesCanonicalRegistryAndSemanticRuntimeState() throws Exception {
+        String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java")), StandardCharsets.UTF_8);
+        assertTrue(source.contains("RuntimeRegistry.all()"));
+        assertTrue(source.contains("refreshNodes()"));
+        assertTrue(source.contains("runtimeCard(RuntimeProfile p)"));
+        assertTrue(source.contains("RuntimeUiState.Status"));
+        assertTrue(source.contains("StitchV1RuntimeStateMachine.from"));
     }
 }
