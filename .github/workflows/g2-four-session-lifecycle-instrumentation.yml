@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          yes no | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64'
+          avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device 'pixel_2' </dev/null
           emulator -list-avds | grep -Fx g2-api35
           echo AVD_CREATED=PASS
 
