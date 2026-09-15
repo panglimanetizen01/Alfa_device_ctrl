@@ -9,10 +9,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-/**
- * Architectural regression contract: local interactive execution must not acquire a
- * hidden dependency on Android/network transport facilities.
- */
+/** Architectural regression contract for the network acquisition/execution boundary and Stitch evidence surface. */
 public final class RuntimeNetworkIndependenceContractTest {
     private static String source(String path) throws Exception {
         File file = new File(path);
@@ -31,12 +28,16 @@ public final class RuntimeNetworkIndependenceContractTest {
         }
     }
 
-    @Test public void networkEvidenceIsDownstreamOfReadySession() throws Exception {
-        String main = source("src/main/java/com/alfa/device_ctrl/MainActivity.java");
-        int networkMethod = main.indexOf("private void showNetwork()");
-        assertTrue("MainActivity network surface missing", networkMethod >= 0);
-        int readyGate = main.indexOf("if (!sessionReady())", networkMethod);
-        assertTrue("network surface must require an already-ready local session", readyGate > networkMethod);
+    @Test public void StitchNetworkEvidenceUsesAndroidNetworkEvidenceBoundary() throws Exception {
+        String panel = source("src/main/java/com/alfa/device_ctrl/AlfaNetworkPanel.java");
+        String hooks = source("src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java");
+        assertTrue(panel.contains("ConnectivityManager"));
+        assertTrue(panel.contains("NetworkCapabilities"));
+        assertTrue(panel.contains("LinkProperties"));
+        assertTrue(panel.contains("getActiveNetwork()"));
+        assertTrue(panel.contains("getDnsServers()"));
+        assertTrue(panel.contains("/proc/net/tcp"));
+        assertTrue(hooks.contains("case NETWORK: return network(a)"));
     }
 
     @Test public void networkAcquisitionRemainsConfinedToInstaller() throws Exception {

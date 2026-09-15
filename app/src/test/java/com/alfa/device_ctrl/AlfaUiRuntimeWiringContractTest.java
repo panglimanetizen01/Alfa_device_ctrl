@@ -15,7 +15,9 @@ public final class AlfaUiRuntimeWiringContractTest {
         Path source = Paths.get("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
         String text = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
         assertFalse(text.contains("AlfaFinalUiPresentation.apply(activity)"));
-        assertTrue(text.contains("AlfaFinalUiHooks.apply(activity)"));
+        assertFalse(text.contains("AlfaFinalUiHooks.apply(activity)"));
+        assertTrue(text.contains("AlfaUiTheme.apply(activity)"));
+        assertTrue(text.contains("RuntimeStartupCoordinator.onActivityResumed(activity)"));
         assertFalse(text.contains("StitchV1ReferenceConsole.installEntry(activity)"));
     }
 }

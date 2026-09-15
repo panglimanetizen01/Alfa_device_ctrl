@@ -12,6 +12,9 @@ on:
 permissions:
   contents: read
 
+env:
+  ALFA_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   g2:
     runs-on: ubuntu-latest
@@ -21,15 +24,27 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          ref: ${{ env.ALFA_SOURCE_COMMIT }}
 
       - name: Verify source identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${ALFA_SOURCE_COMMIT}"
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "${ALFA_SOURCE_COMMIT}^{tree}")"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
           if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
             test "${GITHUB_REF}" = refs/heads/master
+            test "${GITHUB_SHA}" = "${ALFA_SOURCE_COMMIT}"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            test "${GITHUB_BASE_REF}" = master
+            test "${{ github.event.pull_request.head.sha }}" = "${ALFA_SOURCE_COMMIT}"
           fi
+          echo "EXPECTED_SOURCE_COMMIT=${ALFA_SOURCE_COMMIT}"
+          echo "ACTUAL_HEAD=$(git rev-parse HEAD)"
+          echo "ACTUAL_TREE=$(git rev-parse HEAD^{tree})"
+          echo "SOURCE_STATUS=$(git status --porcelain=v1 --untracked-files=all)"
+          echo "EXACT_SOURCE_IDENTITY=PASS"
 
       - name: Run G1 prerequisite
         shell: bash
@@ -37,7 +52,7 @@ jobs:
           set -euo pipefail
           bash tools/gate1_foundation_v2.sh
           test "$(sed -n 's/^gate_status=//p' artifacts/gates/g1/foundation-contract.txt)" = GREEN
-          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g1/foundation-contract.txt)" = "${GITHUB_SHA}"
+          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g1/foundation-contract.txt)" = "${ALFA_SOURCE_COMMIT}"
 
       - name: Negative stale-source test
         shell: bash
@@ -62,15 +77,16 @@ jobs:
           set -euo pipefail
           bash tools/gate2_canonical_source_build_boundary.sh
           test "$(sed -n 's/^gate_status=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = GREEN
-          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = "${GITHUB_SHA}"
+          test "$(sed -n 's/^source_commit=//p' artifacts/gates/g2/canonical-source-build-boundary.txt)" = "${ALFA_SOURCE_COMMIT}"
 
-      - name: Verify PR does not substitute merge ref for canonical master
+      - name: Verify PR does not substitute merge ref for canonical source
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git rev-parse HEAD)" = "${ALFA_SOURCE_COMMIT}"
           test "${GITHUB_BASE_REF}" = master
+          echo G2_PR_EXACT_HEAD_SOURCE=PASS
           echo G2_PR_CANONICAL_MASTER_UNTOUCHED=PASS
 
       - name: Upload G2 evidence
