@@ -59,6 +59,18 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Pin Android preference and AVD locations
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANDROID_USER_HOME="$RUNNER_TEMP/android-user-home"
+          ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo "ANDROID_USER_HOME=$ANDROID_USER_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_USER_HOME=$ANDROID_USER_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME"
+
       - name: Prepare Android SDK and NDK
         shell: bash
         run: |
@@ -115,29 +127,16 @@ jobs:
           ls -l /dev/kvm
           echo KVM_READY=PASS
 
-      - name: Diagnose and create Android Virtual Device
+      - name: Create Android Virtual Device
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           DEVICE_LIST="$RUNNER_TEMP/avd-devices.txt"
           avdmanager list device > "$DEVICE_LIST"
           grep -F 'id: 18 or "pixel_2"' "$DEVICE_LIST"
-          IMAGE="$ANDROID_HOME/system-images/android-35/google_apis/x86_64"
-          echo '--- SYSTEM IMAGE CONTENT ---'
-          find "$IMAGE" -maxdepth 2 -type f -printf '%P\n' | sort
-          echo '--- AVD DIRECTORY BEFORE ---'
-          find "$HOME/.android/avd" -maxdepth 3 -print 2>/dev/null | sort || true
-          set +e
-          printf 'no\n' | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device 'pixel_2' 2>&1 | tee "$RUNNER_TEMP/avd-create.log"
-          RC=${PIPESTATUS[0]}
-          set -e
-          echo "AVDMANAGER_RC=$RC"
-          echo '--- AVD DIRECTORY AFTER ---'
-          find "$HOME/.android/avd" -maxdepth 3 -print 2>/dev/null | sort || true
-          echo '--- AVD CONFIG IF PRESENT ---'
-          cat "$HOME/.android/avd/g2-api35.avd/config.ini" 2>/dev/null || true
-          test "$RC" -eq 0
-          grep -Fx g2-api35 < <(emulator -list-avds)
+          avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device 'pixel_2' </dev/null
+          test -f "$ANDROID_AVD_HOME/g2-api35.avd/config.ini"
+          emulator -list-avds | grep -Fx g2-api35
           echo AVD_CREATED=PASS
 
       - name: Start Android Emulator and prove target readiness
@@ -176,7 +175,6 @@ jobs:
           adb shell dumpsys activity activities | grep -F 'com.alfa.device_ctrl' || true
           find app/build/outputs -maxdepth 7 -type f -print 2>/dev/null || true
           find app/build/reports -maxdepth 7 -type f -print 2>/dev/null || true
-          cat "$RUNNER_TEMP/avd-create.log" 2>/dev/null || true
           cat "$RUNNER_TEMP/emulator.log" 2>/dev/null || true
 
       - name: Upload Android instrumentation evidence
@@ -189,6 +187,5 @@ jobs:
             app/build/outputs/connected_android_test_additional_output/**
             app/build/reports/androidTests/**
             app/build/test-results/**
-            ${{ runner.temp }}/avd-create.log
             ${{ runner.temp }}/emulator.log
           if-no-files-found: warn
