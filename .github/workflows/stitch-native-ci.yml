@@ -3,7 +3,7 @@ run-name: Stitch Native CI — ${{ github.sha }}
 
 on:
   push:
-    branches: [work/stitch-native-implementation]
+    branches: [work/stitch-native-implementation, work/stitch-dut-canonical-hardening-v2]
   pull_request:
     branches: [master]
   workflow_dispatch:
@@ -84,7 +84,7 @@ jobs:
           echo 'CURRENT_RUN_GATE7=PASS'
 
       - name: Run focused Stitch contract tests
-        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.StitchV1NativeSurfaceContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --no-daemon --stacktrace
+        run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.StitchV1NativeSurfaceContractTest --tests com.alfa.device_ctrl.AlfaFinalUiPresentationContractTest --tests com.alfa.device_ctrl.RuntimeSessionMultiplexerContractTest --tests com.alfa.device_ctrl.RuntimeSessionMultiplexerBehaviorTest --no-daemon --stacktrace
 
       - name: Run full unit tests and debug APK build
         run: |
@@ -100,8 +100,14 @@ jobs:
           grep -Fq 'APPEARANCE // TEMA & TAMPILAN' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'STORAGE // VFS POLICY' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'DIAGNOSTIC ENGINE' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
-          grep -Fq 'NOT_EXPOSED_BY_CANONICAL_MANAGER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
-          grep -Fq 'SAF_REQUIRED' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          ! grep -Fq 'NOT_EXPOSED_BY_CANONICAL_MANAGER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
+          grep -Fq 'RuntimeSessionMultiplexer' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
+          grep -Fq 'setActiveSessionId' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
+          grep -Fq 'attachTo(terminal)' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
+          grep -Fq 'Map<String, RuntimeSessionManager>' app/src/main/java/com/alfa/device_ctrl/RuntimeSessionMultiplexer.java
+          grep -Fq 'activeSessionId' app/src/main/java/com/alfa/device_ctrl/RuntimeSessionMultiplexer.java
+          grep -Fq 'stopAll' app/src/main/java/com/alfa/device_ctrl/RuntimeSessionMultiplexer.java
+          grep -Fq 'removeSession' app/src/main/java/com/alfa/device_ctrl/RuntimeSessionMultiplexer.java
           grep -Fq 'AlfaUiTheme.TOUCH_TARGET_DP' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'runRuntimeCommand' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           echo 'STITCH_NATIVE_SOURCE_CONTRACT=PASS'
