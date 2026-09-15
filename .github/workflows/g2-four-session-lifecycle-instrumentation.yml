@@ -122,7 +122,7 @@ jobs:
           DEVICE_LIST="$RUNNER_TEMP/avd-devices.txt"
           avdmanager list device > "$DEVICE_LIST"
           cat "$DEVICE_LIST"
-          DEVICE_ID="$(awk -F': ' '/^id:/{print $2; exit}' "$DEVICE_LIST")"
+          DEVICE_ID="$(sed -n 's/^id: [0-9]* or "\([^"]*\)"$/\1/p' "$DEVICE_LIST" | sed -n '1p')"
           test -n "$DEVICE_ID"
           echo "SELECTED_AVD_DEVICE=$DEVICE_ID"
           avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device "$DEVICE_ID" </dev/null
