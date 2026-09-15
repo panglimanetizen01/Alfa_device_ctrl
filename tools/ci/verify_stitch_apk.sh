@@ -28,7 +28,6 @@ required = [
     "TERMINAL",
     "RUNTIMES",
     "AlfaStitchOperationalPanels",
-    "AlfaFinalUiHooks",
     "StitchOperationalActivity",
 ]
 
