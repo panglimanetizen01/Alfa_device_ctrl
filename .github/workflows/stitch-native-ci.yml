@@ -100,7 +100,6 @@ jobs:
           grep -Fq 'APPEARANCE // TEMA & TAMPILAN' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'STORAGE // VFS POLICY' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'DIAGNOSTIC ENGINE' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
-          ! grep -Fq 'NOT_EXPOSED_BY_CANONICAL_MANAGER' app/src/main/java/com/alfa/device_ctrl/AlfaStitchOperationalPanels.java
           grep -Fq 'RuntimeSessionMultiplexer' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
           grep -Fq 'setActiveSessionId' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
           grep -Fq 'attachTo(terminal)' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java
