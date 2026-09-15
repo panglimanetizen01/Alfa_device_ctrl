@@ -121,12 +121,9 @@ jobs:
           set -euo pipefail
           DEVICE_LIST="$RUNNER_TEMP/avd-devices.txt"
           avdmanager list device > "$DEVICE_LIST"
-          cat "$DEVICE_LIST"
-          DEVICE_ID="$(sed -n 's/^id: [0-9]* or "\([^"]*\)"$/\1/p' "$DEVICE_LIST" | sed -n '1p')"
-          test -n "$DEVICE_ID"
-          echo "SELECTED_AVD_DEVICE=$DEVICE_ID"
-          avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device "$DEVICE_ID" </dev/null
-          emulator -list-avds | grep -Fx g2-api35
+          grep -F 'id: 18 or "pixel_2"' "$DEVICE_LIST"
+          printf 'no\n' | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64' --device 'pixel_2' 2>&1 | tee "$RUNNER_TEMP/avd-create.log"
+          grep -Fx g2-api35 < <(emulator -list-avds)
           echo AVD_CREATED=PASS
 
       - name: Start Android Emulator and prove target readiness
@@ -165,6 +162,7 @@ jobs:
           adb shell dumpsys activity activities | grep -F 'com.alfa.device_ctrl' || true
           find app/build/outputs -maxdepth 7 -type f -print 2>/dev/null || true
           find app/build/reports -maxdepth 7 -type f -print 2>/dev/null || true
+          cat "$RUNNER_TEMP/avd-create.log" 2>/dev/null || true
           cat "$RUNNER_TEMP/emulator.log" 2>/dev/null || true
 
       - name: Upload Android instrumentation evidence
@@ -177,5 +175,6 @@ jobs:
             app/build/outputs/connected_android_test_additional_output/**
             app/build/reports/androidTests/**
             app/build/test-results/**
+            ${{ runner.temp }}/avd-create.log
             ${{ runner.temp }}/emulator.log
           if-no-files-found: warn
