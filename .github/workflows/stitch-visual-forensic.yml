@@ -67,7 +67,6 @@ jobs:
               w,h=struct.unpack('>II', b[16:24])
               print(f'{p.name}|{w}x{h}|{len(b)}|{hashlib.sha256(b).hexdigest()}')
           PY
-          cp stitch-corpus-manifest.json "$out/../stitch-corpus-manifest.json"
           (cd stitch-extract && zip -q -r ../stitch-corpus-forensic.zip .)
           sha256sum stitch-corpus-forensic.zip > stitch-corpus-forensic.zip.sha256
 
