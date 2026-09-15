@@ -3,7 +3,7 @@ run-name: Stitch Visual Forensic — ${{ github.sha }}
 
 on:
   push:
-    branches: [work/stitch-native-implementation]
+    branches: [work/stitch-native-implementation, work/stitch-dut-canonical-hardening-v2]
   pull_request:
     branches: [master]
   workflow_dispatch:
