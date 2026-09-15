@@ -29,7 +29,7 @@ public final class RuntimeSessionLifecycleContractTest {
         assertTrue(bridge.isFile());
         String text = new String(Files.readAllBytes(bridge.toPath()), StandardCharsets.UTF_8);
         assertTrue(text.contains("findTerminalView"));
-        assertTrue(text.contains("manager.rebindListener"));
+        assertTrue(text.contains("adoptSession"));
         assertTrue(text.contains("manager.attachTo"));
     }
 }

@@ -18,6 +18,6 @@ public final class RuntimeKeepAliveOwnershipContractTest {
         assertTrue(!text.contains("RuntimeSessionManager owner;"));
         assertTrue(Pattern.compile("empty\\s*=\\s*owners\\.isEmpty\\(\\)").matcher(text).find());
         assertTrue(Pattern.compile("if\\s*\\(\\s*empty\\s*\\)\\s*context\\.stopService").matcher(text).find());
-        assertTrue(Pattern.compile("current\\.size\\(\\)\\s*==\\s*1").matcher(text).find());
+        assertTrue(Pattern.compile("for\\s*\\(RuntimeSessionManager manager:ownersSnapshot\\(\\)\\)").matcher(text).find());
     }
 }
