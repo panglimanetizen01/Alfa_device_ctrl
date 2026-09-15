@@ -66,21 +66,7 @@ jobs:
           echo "ACTUAL_TREE=$(git rev-parse HEAD^{tree})"
           echo "SOURCE_STATUS=$(git status --porcelain=v1 --untracked-files=all)"
           echo EXACT_SOURCE_IDENTITY=PASS
-          set +e
-          git config --show-origin --get core.commitGraph
-          git commit-graph verify
-          COMMIT_GRAPH_RC=$?
-          git fsck --full --no-progress 2>&1
-          FSCK_RC=$?
-          git fsck --full --no-progress --no-references 2>&1
-          FSCK_NO_REFS_RC=$?
-          git fsck --connectivity-only --no-progress 2>&1
-          FSCK_CONNECTIVITY_RC=$?
-          echo "COMMIT_GRAPH_RC=$COMMIT_GRAPH_RC"
-          echo "FSCK_RC=$FSCK_RC"
-          echo "FSCK_NO_REFS_RC=$FSCK_NO_REFS_RC"
-          echo "FSCK_CONNECTIVITY_RC=$FSCK_CONNECTIVITY_RC"
-          test "$FSCK_RC" -eq 0
+          git fsck --full --no-progress
       - name: Install upstream packaged PRoot runtime
         shell: bash
         run: |
