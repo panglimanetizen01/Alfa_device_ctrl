@@ -69,6 +69,7 @@ jobs:
           test -x "$ANDROID_HOME/platform-tools/adb"
           test -x "$ANDROID_HOME/emulator/emulator"
           test -x "$ANDROID_HOME/ndk/28.0.13004108/ndk-build"
+          printf '%s\n' "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo ANDROID_SDK_READY=PASS
 
       - name: Prepare canonical Gate 7 launch provenance
@@ -118,8 +119,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
-          printf 'no\n' | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64'
+          yes no | avdmanager create avd --force --name g2-api35 --package 'system-images;android-35;google_apis;x86_64'
           emulator -list-avds | grep -Fx g2-api35
           echo AVD_CREATED=PASS
 
@@ -127,7 +127,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           emulator -avd g2-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > "$RUNNER_TEMP/emulator.log" 2>&1 &
           EMULATOR_PID=$!
           echo "EMULATOR_PID=$EMULATOR_PID" >> "$GITHUB_ENV"
