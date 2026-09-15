@@ -139,7 +139,7 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
         assertEquals(count, RuntimeKeepAliveService.ownersSnapshot().size());
     }
 
-    private static void awaitAttachedViews(String[] ids) {
+    private void awaitAttachedViews(String[] ids) {
         long deadline = SystemClock.uptimeMillis() + 10000L;
         while (SystemClock.uptimeMillis() < deadline) {
             final boolean[] attached = {false};
