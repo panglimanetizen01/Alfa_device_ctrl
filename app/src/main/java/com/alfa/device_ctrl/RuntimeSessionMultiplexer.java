@@ -22,6 +22,16 @@ public final class RuntimeSessionMultiplexer {
         return manager;
     }
 
+    synchronized void adoptSession(String sessionId, RuntimeSessionManager manager, RuntimeSessionManager.Listener listener) {
+        requireSessionId(sessionId);
+        if (manager == null || listener == null) throw new IllegalArgumentException("manager and listener are required");
+        RuntimeSessionManager existing = sessions.get(sessionId);
+        if (existing != null && existing != manager) throw new IllegalStateException("session-already-owned:" + sessionId);
+        manager.rebindListener(listener);
+        sessions.put(sessionId, manager);
+        if (activeSessionId == null) activeSessionId = sessionId;
+    }
+
     public synchronized RuntimeSessionManager getSession(String sessionId) { return sessions.get(sessionId); }
     public synchronized boolean containsSession(String sessionId) { return sessions.containsKey(sessionId); }
     public synchronized int size() { return sessions.size(); }
