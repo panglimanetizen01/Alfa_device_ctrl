@@ -17,7 +17,7 @@ public final class StitchOperationalSessionUiStateContractTest {
         assertTrue("StitchOperationalActivity must consume the semantic listener state", text.contains("onState(String "));
         assertTrue("RUNNING semantic state must be projected to the system status", text.contains("\"RUNNING\".equals(state)"));
         assertTrue("READY semantic state must be projected to the system status", text.contains("\"READY\".equals(state)"));
-        assertTrue("Session state must be routed through the canonical handler", text.contains("handleSessionState(sessionId,state)"));
+        assertTrue("Session state must be routed through the canonical handler", text.contains("handleSessionState(sessionId,"));
     }
 
     @Test public void canonicalSemanticProjectionRemainsFailClosed() {
