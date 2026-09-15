@@ -13,7 +13,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.termux.terminal.TerminalSession;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,8 +40,8 @@ public final class RuntimeSessionMultiplexerDutExecutionTest {
         File runtime = new File(new File(vault, "runtimes"), profile.id());
         File ready = new File(runtime, "READY.evidence");
         File launch = new File(vault, "gate7-launch.properties");
-        Assume.assumeTrue("DUT runtime READY evidence is not installed", ready.isFile());
-        Assume.assumeTrue("DUT Gate 7 launch contract is not installed", Gate6LaunchContract.verify(launch, profile.id()));
+        assertTrue("DUT runtime READY evidence is not installed", ready.isFile());
+        assertTrue("DUT Gate 7 launch contract is not installed", Gate6LaunchContract.verify(launch, profile.id()));
 
         multiplexer = new RuntimeSessionMultiplexer();
         RuntimeSessionManager a = multiplexer.createSession("SESSION_A", contract(context, profile, "SESSION_A"), listener());
