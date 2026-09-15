@@ -51,20 +51,23 @@ public final class RuntimeSessionMultiplexer {
         manager.attachTo(view);
     }
 
+    /** Explicit user stop: unlike lifecycle stopAll(), this must terminate the owned PTY. */
     public synchronized void stopSession(String sessionId) {
         RuntimeSessionManager manager = sessions.get(sessionId);
-        if (manager != null) manager.stop();
+        if (manager != null) manager.finishForKeepAliveStop();
     }
 
+    /** Explicit user removal: terminate first, then remove the manager from canonical ownership. */
     public synchronized RuntimeSessionManager removeSession(String sessionId) {
         RuntimeSessionManager manager = sessions.remove(sessionId);
-        if (manager != null) manager.stop();
+        if (manager != null) manager.finishForKeepAliveStop();
         if (sessionId != null && sessionId.equals(activeSessionId)) {
             activeSessionId = sessions.isEmpty() ? null : sessions.keySet().iterator().next();
         }
         return manager;
     }
 
+    /** Lifecycle/background operation: retain sessions according to RuntimeKeepAliveService ownership semantics. */
     public synchronized void stopAll() { for (RuntimeSessionManager manager : sessions.values()) manager.stop(); }
 
     public synchronized void removeAll() {
