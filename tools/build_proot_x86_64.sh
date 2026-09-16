@@ -87,7 +87,7 @@ make clean >/dev/null 2>&1 || true
 make \
   CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" \
   AR="$AR" \
-  CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -fPIC -std=c11 -Wall -Wextra" \
+  CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -fPIC -std=c11 -Wall -Wextra -D_PATH_TMP=\"/data/user/0/com.alfa.device_ctrl/cache/\"" \
   LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT" \
   libandroid-shmem.a libandroid-shmem.so
 install -m 0644 libandroid-shmem.a "$TALLOC_PREFIX/lib/libandroid-shmem.a"
