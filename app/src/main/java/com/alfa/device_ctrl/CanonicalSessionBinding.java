@@ -31,4 +31,9 @@ public final class CanonicalSessionBinding {
     public static boolean isRuntimeBound(String sessionId) {
         return isCanonicalSession(sessionId);
     }
+
+    /** The UI contract remains four independent session surfaces, not aliases. */
+    public static int canonicalSessionCount() {
+        return 4;
+    }
 }
