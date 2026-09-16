@@ -27,7 +27,7 @@ public final class CanonicalSessionBinding {
                 || "SESSION_D".equals(sessionId);
     }
 
-    /** CI trigger: this contract is consumed by the canonical four-session UI. */
+    /** Keep the mapping explicit at the Android source boundary. */
     public static boolean isRuntimeBound(String sessionId) {
         return isCanonicalSession(sessionId);
     }
