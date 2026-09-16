@@ -65,7 +65,7 @@ elif [ -s bin/default/libtalloc.a ]; then
 elif [ -n "$TALLOC_OBJECT" ] && [ -s "$TALLOC_OBJECT" ]; then
     echo "TALLOC_STATIC_OBJECT=$TALLOC_OBJECT"
     rm -f "$TALLOC_PREFIX/lib/libtalloc.a"
-    "$AR" qf "$TALLOC_PREFIX/lib/libtalloc.a" "$TALLOC_OBJECT"
+    "$AR" rcs "$TALLOC_PREFIX/lib/libtalloc.a" "$TALLOC_OBJECT"
 else
     echo 'PROOT_STATUS=BLOCKED'
     echo 'PROOT_REASON=TALLOC_STATIC_OBJECT_MISSING_AFTER_INSTALL'
