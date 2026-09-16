@@ -48,7 +48,6 @@ Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
 Checking getconf large file support flags work: OK
 Checking for large file support without additional flags: OK
-Checking for large file support without additional flags: OK
 Checking for working strptime: OK
 Checking for HAVE_SHARED_MMAP: OK
 Checking for HAVE_MREMAP: OK
@@ -94,9 +93,9 @@ export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h"
 export CPPFLAGS="$CFLAGS -D_GNU_SOURCE -include string.h"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot
-# Loader compilation must not inherit the global GNU/string.h injection: Android bionic's GNU basename declaration collides with PRoot's private word_t basename helper. The loader does not require the missing ashmem/string prototypes.
-LOADER_CFLAGS="$CFLAGS"
-LOADER_CPPFLAGS="$CFLAGS"
+# Loader compilation must not inherit the main PRoot compatibility headers or GNU feature macro. PRoot's loader.c defines a private basename(word_t); Bionic's GNU basename(const char *) becomes visible through the injected system headers and is an incompatible declaration. The loader does not use the bzero/strcmp/memset compatibility injections required by the main PRoot engine.
+LOADER_CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$CANONICAL_INCLUDE -I$WORK/src"
+LOADER_CPPFLAGS=""
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" LDFLAGS="$LDFLAGS" loader/loader
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
