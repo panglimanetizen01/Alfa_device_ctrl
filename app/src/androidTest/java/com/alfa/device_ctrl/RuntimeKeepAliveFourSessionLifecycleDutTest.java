@@ -49,15 +49,25 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
     }
 
     @Test public void fourIndependentSessionsReattachAfterActivityRecreation() throws Exception {
-        assertEquals("four canonical session/runtime bindings required", 4, SESSION_IDS.length);
-        assertEquals("four canonical runtime profiles required", 4, RUNTIME_IDS.length);
-        for (int i = 0; i < RUNTIME_IDS.length; i++) {
-            RuntimeProfile profile = RuntimeRegistry.get(RUNTIME_IDS[i]);
-            assertNotNull("runtime profile missing: " + RUNTIME_IDS[i], profile);
-        }
+        assertEquals(4, SESSION_IDS.length);
+        assertEquals(4, RUNTIME_IDS.length);
+        for (String runtimeId : RUNTIME_IDS) assertNotNull("runtime profile missing: " + runtimeId, RuntimeRegistry.get(runtimeId));
 
         File vault = new File(context.getFilesDir(), "runtime-vault");
         assertTrue("Gate 7 launch contract is not installed", new File(vault, "gate7-launch.properties").isFile());
+
+        // Provision each runtime through the real Activity startup path. The coordinator invokes the same
+        // canonical RuntimeInstaller used by the product; no installer API is called directly by this test.
+        scenario = ActivityScenario.launch(StitchOperationalActivity.class);
+        for (int i = 0; i < SESSION_IDS.length; i++) {
+            final String sessionId = SESSION_IDS[i];
+            final String runtimeId = RUNTIME_IDS[i];
+            scenario.onActivity(activity -> activity.getPreferences(Context.MODE_PRIVATE).edit().putString("session_id", sessionId).apply());
+            scenario.recreate();
+            awaitRuntimeReady(vault, runtimeId);
+            scenario.onActivity(activity -> assertEquals(runtimeId, activity.getPreferences(Context.MODE_PRIVATE).getString("session_id", "" ).equals(sessionId) ? runtimeId : ""));
+        }
+
         managers = new RuntimeSessionManager[SESSION_IDS.length];
         Set<Integer> pids = new HashSet<>();
         Set<String> runtimeIds = new HashSet<>();
@@ -69,7 +79,7 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
             assertTrue("runtime READY evidence is not installed: " + profile.id(), ready.isFile());
             assertTrue("Gate 7 launch contract is not valid for " + profile.id(), Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
             runtimeIds.add(profile.id());
-            assertTrue("runtime binding duplicated: " + profile.id(), runtimeIds.size() == i + 1);
+            assertEquals(i + 1, runtimeIds.size());
 
             managers[i] = new RuntimeSessionManager(contract(profile, sessionId), listener());
             assertTrue("PTY did not start for " + sessionId, managers[i].start(80, 24, 8, 16));
@@ -82,14 +92,14 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
             awaitTranscript(session, "G2_" + sessionId + "_" + profile.id());
             RuntimeKeepAliveService.start(context, managers[i]);
         }
-        assertEquals("all four runtime bindings must be distinct", 4, runtimeIds.size());
+        assertEquals(4, runtimeIds.size());
 
         awaitOwners(SESSION_IDS.length);
         assertEquals(SESSION_IDS.length, RuntimeKeepAliveService.ownersSnapshot().size());
         awaitServiceActive();
 
-        scenario = ActivityScenario.launch(StitchOperationalActivity.class);
-        awaitAttachedViews(SESSION_IDS);
+        // The four PTYs now exist; recreate the Activity and require all four real TerminalViews to reattach.
+        scenario.onActivity(activity -> activity.getPreferences(Context.MODE_PRIVATE).edit().putString("session_id", "SESSION_A").apply());
         scenario.recreate();
         awaitAttachedViews(SESSION_IDS);
 
@@ -116,12 +126,22 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
                 assertTrue("prompt state lost after recreation: " + sessionId, manager.isPromptReady());
                 assertNotNull(manager.currentSession());
                 assertTrue("reattached session missing from view set: " + sessionId, attachedSessions.contains(manager.currentSession()));
-                String marker = "G2_" + sessionId + "_" + runtimeId;
                 String transcript = transcript(manager.currentSession());
+                String marker = "G2_" + sessionId + "_" + runtimeId;
                 assertTrue("session transcript lost marker after recreation: " + marker, transcript.contains(marker));
                 for (String otherSessionId : SESSION_IDS) if (!otherSessionId.equals(sessionId)) assertTrue("cross-session marker leaked into " + sessionId, !transcript.contains("G2_" + otherSessionId + "_"));
             }
         });
+    }
+
+    private void awaitRuntimeReady(File vault, String runtimeId) {
+        File runtime = new File(new File(vault, "runtimes"), runtimeId);
+        File ready = new File(runtime, "READY.evidence");
+        long deadline = SystemClock.uptimeMillis() + 180000L;
+        while (SystemClock.uptimeMillis() < deadline && !ready.isFile()) SystemClock.sleep(500L);
+        assertTrue("runtime READY evidence is not installed: " + runtimeId, ready.isFile());
+        assertTrue("runtime rootfs missing: " + runtimeId, new File(runtime, "rootfs").isDirectory());
+        assertTrue("runtime shell missing: " + runtimeId, new File(runtime, "rootfs/bin/sh").exists());
     }
 
     private InteractiveSessionContract contract(RuntimeProfile profile, String id) {
