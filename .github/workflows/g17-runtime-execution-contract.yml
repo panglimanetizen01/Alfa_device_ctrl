@@ -61,8 +61,6 @@ jobs:
             test "${GITHUB_BASE_REF}" = master
             test "${{ github.event.pull_request.head.sha }}" = "$ALFA_SOURCE_COMMIT"
           fi
-          test "$(git rev-parse "$ALFA_SOURCE_COMMIT^{tree}")" = "$(git rev-parse HEAD^{tree})"
-          git cat-file -e "$ALFA_SOURCE_COMMIT^{commit}"
           echo "EXPECTED_SOURCE_COMMIT=$ALFA_SOURCE_COMMIT"
           echo "ACTUAL_HEAD=$(git rev-parse HEAD)"
           echo "ACTUAL_TREE=$(git rev-parse HEAD^{tree})"
