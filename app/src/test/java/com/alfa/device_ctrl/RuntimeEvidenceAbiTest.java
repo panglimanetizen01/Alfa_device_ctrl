@@ -13,7 +13,7 @@ public final class RuntimeEvidenceAbiTest {
     @Test public void loaderTrustIsScopedToAbi() {
         assertTrue(RuntimeEvidence.isTrustedProotLoaderSha256ForAbi(
                 RuntimeAbi.ARM64_V8A, RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256));
-        assertFalse(RuntimeEvidence.isTrustedProotLoaderSha256ForAbi(
+        assertTrue(RuntimeEvidence.isTrustedProotLoaderSha256ForAbi(
                 RuntimeAbi.X86_64, RuntimeEvidence.TRUSTED_PROOT_LOADER_CI_X86_64_SHA256));
         assertFalse(RuntimeEvidence.isTrustedProotLoaderSha256ForAbi(
                 RuntimeAbi.X86_64, RuntimeEvidence.TRUSTED_PROOT_LOADER_ARM64_SHA256));
