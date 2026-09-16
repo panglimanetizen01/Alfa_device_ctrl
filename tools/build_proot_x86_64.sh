@@ -4,11 +4,14 @@ ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 TALLOC_VERSION="2.4.3"
 TALLOC_SHA256="dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd"
+LIBANDROID_SHMEM_VERSION="0.7"
+LIBANDROID_SHMEM_SHA256="1e5ff8459bc0a8c229dd8a94b27d119987e09ef3414331c2b5ebfff20b98e867"
 NDK_VERSION="28.0.13004108"
 OUT_DIR="$ROOT/app/build/generated/jniLibs/x86_64"
 EVIDENCE_DIR="${RUNNER_TEMP:-$ROOT/app/build/generated/runtime-artifact-evidence}"
 WORK="$ROOT/.build/proot-x86_64/$PROOT_COMMIT"
 TALLOC_WORK="$ROOT/.build/talloc-$TALLOC_VERSION"
+LIBANDROID_SHMEM_WORK="$ROOT/.build/libandroid-shmem-$LIBANDROID_SHMEM_VERSION"
 mkdir -p "$EVIDENCE_DIR"
 exec > >(tee "$EVIDENCE_DIR/build_proot_x86_64.log") 2>&1
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
@@ -48,10 +51,6 @@ Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
 Checking getconf large file support flags work: OK
 Checking for large file support without additional flags: OK
-Checking for working strptime: OK
-Checking for HAVE_SHARED_MMAP: OK
-Checking for HAVE_MREMAP: OK
-Checking for HAVE_INCOHERENT_MMAP: OK
 EOF
 ./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
 make -j2
@@ -74,10 +73,29 @@ else
     exit 20
 fi
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
+LIBANDROID_SHMEM_ARCHIVE="$ROOT/.build/libandroid-shmem-${LIBANDROID_SHMEM_VERSION}.tar.gz"
+if [ ! -f "$LIBANDROID_SHMEM_ARCHIVE" ]; then curl -fsSL "https://github.com/termux/libandroid-shmem/archive/refs/tags/v${LIBANDROID_SHMEM_VERSION}.tar.gz" -o "$LIBANDROID_SHMEM_ARCHIVE"; fi
+test "$(sha256sum "$LIBANDROID_SHMEM_ARCHIVE" | awk '{print $1}')" = "$LIBANDROID_SHMEM_SHA256"
+rm -rf "$LIBANDROID_SHMEM_WORK"; mkdir -p "$LIBANDROID_SHMEM_WORK"; tar -xzf "$LIBANDROID_SHMEM_ARCHIVE" -C "$LIBANDROID_SHMEM_WORK" --strip-components=1
+SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+cd "$LIBANDROID_SHMEM_WORK"
+make clean >/dev/null 2>&1 || true
+make \
+  CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" \
+  AR="$AR" \
+  CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -fPIC -std=c11 -Wall -Wextra" \
+  LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT" \
+  libandroid-shmem.a libandroid-shmem.so
+install -m 0644 libandroid-shmem.a "$TALLOC_PREFIX/lib/libandroid-shmem.a"
+install -m 0644 libandroid-shmem.so "$TALLOC_PREFIX/lib/libandroid-shmem.so"
+test -s "$TALLOC_PREFIX/lib/libandroid-shmem.a"
+test -s "$TALLOC_PREFIX/lib/libandroid-shmem.so"
+file "$TALLOC_PREFIX/lib/libandroid-shmem.so"
+readelf -h "$TALLOC_PREFIX/lib/libandroid-shmem.so" | grep -E 'Class:|Machine:'
+readelf -d "$TALLOC_PREFIX/lib/libandroid-shmem.so" | grep -E 'Shared library: \[(liblog.so|libandroid.so)\]'
 if [ ! -d "$WORK/.git" ]; then git clone --depth=1 https://github.com/termux/proot.git "$WORK"; fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" sparse-checkout disable 2>/dev/null || true; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 git -C "$WORK" cat-file -e "$PROOT_COMMIT:src/cli/cli.h"
-SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
 make -C "$WORK/src" clean
 CANONICAL_INCLUDE="$WORK/.canonical-include"
@@ -95,9 +113,10 @@ LOADER_CPPFLAGS=""
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" loader/loader loader/loader-m32
 # Now build the engine. The exported LDFLAGS stays an environment value so GNU make can append the upstream PRoot link requirements (-ltalloc and Android shmem) from its GNUmakefile.
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS"
-install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
-file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
-readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
-ENGINE_SHA256="$(sha256sum "$OUT_DIR/libproot.so" | awk '{print $1}')"; LOADER_SHA256="$(sha256sum "$OUT_DIR/libproot-loader.so" | awk '{print $1}')"
-printf 'ABI=x86_64\nPROOT_SHA256=%s\nLOADER_SHA256=%s\n' "$ENGINE_SHA256" "$LOADER_SHA256"
+install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"; install -m 0644 "$TALLOC_PREFIX/lib/libandroid-shmem.so" "$OUT_DIR/libandroid-shmem.so"
+file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so" "$OUT_DIR/libandroid-shmem.so"
+readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libandroid-shmem.so" | grep -E 'Class:|Machine:'
+readelf -d "$OUT_DIR/libproot.so" | grep -F 'Shared library: [libandroid-shmem.so]'
+ENGINE_SHA256="$(sha256sum "$OUT_DIR/libproot.so" | awk '{print $1}')"; LOADER_SHA256="$(sha256sum "$OUT_DIR/libproot-loader.so" | awk '{print $1}')"; SHMEM_SHA256="$(sha256sum "$OUT_DIR/libandroid-shmem.so" | awk '{print $1}')"
+printf 'ABI=x86_64\nPROOT_SHA256=%s\nLOADER_SHA256=%s\nANDROID_SHMEM_SHA256=%s\n' "$ENGINE_SHA256" "$LOADER_SHA256" "$SHMEM_SHA256"
 printf 'PROOT_STATUS=UNTRUSTED_ARTIFACTS_REQUIRES_REVIEW\nPROOT_REASON=ENGINE_SHA_REQUIRES_REVIEW\nPROOT_PATH=%s\n' "$OUT_DIR/libproot.so"
