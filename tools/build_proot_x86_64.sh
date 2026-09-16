@@ -87,7 +87,8 @@ mkdir -p "$CANONICAL_INCLUDE/cli"
 git -C "$WORK" show "$PROOT_COMMIT:src/cli/cli.h" > "$CANONICAL_INCLUDE/cli/cli.h"
 test -s "$CANONICAL_INCLUDE/cli/cli.h"
 test "$(git -C "$WORK" hash-object "$CANONICAL_INCLUDE/cli/cli.h")" = "$(git -C "$WORK" rev-parse "$PROOT_COMMIT:src/cli/cli.h")"
-export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src"; export CPPFLAGS="$CFLAGS"
+# PRoot 7266fb3 tracee.c uses bzero while including string.h; Android bionic exposes bzero via strings.h. Inject the authoritative system header without modifying upstream PRoot sources.
+export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h"; export CPPFLAGS="$CFLAGS"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot loader/loader
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
