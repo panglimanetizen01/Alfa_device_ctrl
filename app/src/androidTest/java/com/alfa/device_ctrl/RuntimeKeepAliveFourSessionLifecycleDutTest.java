@@ -28,7 +28,8 @@ import java.util.Set;
 
 /** Real Android contract: four independent PTYs survive Activity recreation and reattach to four distinct TerminalViews. */
 public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
-    // G2 lane intentionally relies on the real APK-side RuntimeInstaller provisioning before this contract starts.
+    private static final String[] SESSION_IDS = {"SESSION_A", "SESSION_B", "SESSION_C", "SESSION_D"};
+    private static final String[] RUNTIME_IDS = {"debian", "ubuntu", "alpine", "kali"};
     private Context context;
     private RuntimeSessionManager[] managers;
     private ActivityScenario<StitchOperationalActivity> scenario;
@@ -48,37 +49,49 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
     }
 
     @Test public void fourIndependentSessionsReattachAfterActivityRecreation() throws Exception {
-        RuntimeProfile profile = RuntimeSelection.profile(RuntimeSelection.DEFAULT_RUNTIME_ID);
-        assertNotNull("default runtime profile missing", profile);
-        File vault = new File(context.getFilesDir(), "runtime-vault");
-        File runtime = new File(new File(vault, "runtimes"), profile.id());
-        assertTrue("runtime READY evidence is not installed", new File(runtime, "READY.evidence").isFile());
-        assertTrue("Gate 7 launch contract is not installed", Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
+        assertEquals("four canonical session/runtime bindings required", 4, SESSION_IDS.length);
+        assertEquals("four canonical runtime profiles required", 4, RUNTIME_IDS.length);
+        for (int i = 0; i < RUNTIME_IDS.length; i++) {
+            RuntimeProfile profile = RuntimeRegistry.get(RUNTIME_IDS[i]);
+            assertNotNull("runtime profile missing: " + RUNTIME_IDS[i], profile);
+        }
 
-        String[] ids = {"SESSION_A", "SESSION_B", "SESSION_C", "SESSION_D"};
-        managers = new RuntimeSessionManager[ids.length];
+        File vault = new File(context.getFilesDir(), "runtime-vault");
+        assertTrue("Gate 7 launch contract is not installed", new File(vault, "gate7-launch.properties").isFile());
+        managers = new RuntimeSessionManager[SESSION_IDS.length];
         Set<Integer> pids = new HashSet<>();
-        for (int i = 0; i < ids.length; i++) {
-            managers[i] = new RuntimeSessionManager(contract(profile, ids[i]), listener());
-            assertTrue("PTY did not start for " + ids[i], managers[i].start(80, 24, 8, 16));
+        Set<String> runtimeIds = new HashSet<>();
+        for (int i = 0; i < SESSION_IDS.length; i++) {
+            String sessionId = SESSION_IDS[i];
+            RuntimeProfile profile = RuntimeRegistry.get(RUNTIME_IDS[i]);
+            File runtime = new File(new File(vault, "runtimes"), profile.id());
+            File ready = new File(runtime, "READY.evidence");
+            assertTrue("runtime READY evidence is not installed: " + profile.id(), ready.isFile());
+            assertTrue("Gate 7 launch contract is not valid for " + profile.id(), Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
+            runtimeIds.add(profile.id());
+            assertTrue("runtime binding duplicated: " + profile.id(), runtimeIds.size() == i + 1);
+
+            managers[i] = new RuntimeSessionManager(contract(profile, sessionId), listener());
+            assertTrue("PTY did not start for " + sessionId, managers[i].start(80, 24, 8, 16));
             awaitPrompt(managers[i]);
             TerminalSession session = managers[i].currentSession();
             assertNotNull(session);
-            assertTrue("PTY PID missing for " + ids[i], session.getPid() > 0);
-            assertTrue("PTY PID collision for " + ids[i], pids.add(session.getPid()));
-            write(session, "printf 'G2_" + ids[i] + "\\n'");
-            awaitTranscript(session, "G2_" + ids[i]);
+            assertTrue("PTY PID missing for " + sessionId, session.getPid() > 0);
+            assertTrue("PTY PID collision for " + sessionId, pids.add(session.getPid()));
+            write(session, "printf 'G2_" + sessionId + "_" + profile.id() + "\\n'");
+            awaitTranscript(session, "G2_" + sessionId + "_" + profile.id());
             RuntimeKeepAliveService.start(context, managers[i]);
         }
+        assertEquals("all four runtime bindings must be distinct", 4, runtimeIds.size());
 
-        awaitOwners(ids.length);
-        assertEquals(ids.length, RuntimeKeepAliveService.ownersSnapshot().size());
+        awaitOwners(SESSION_IDS.length);
+        assertEquals(SESSION_IDS.length, RuntimeKeepAliveService.ownersSnapshot().size());
         awaitServiceActive();
 
         scenario = ActivityScenario.launch(StitchOperationalActivity.class);
-        awaitAttachedViews(ids);
+        awaitAttachedViews(SESSION_IDS);
         scenario.recreate();
-        awaitAttachedViews(ids);
+        awaitAttachedViews(SESSION_IDS);
 
         scenario.onActivity(activity -> {
             List<TerminalView> terminals = taggedTerminalViews(activity.getWindow().getDecorView());
@@ -95,13 +108,18 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
             }
             assertEquals(4, sessionTags.size());
             assertEquals(4, attachedSessions.size());
-            for (RuntimeSessionManager manager : managers) {
-                assertTrue("session orphaned after recreation", manager.isRunning());
-                assertTrue("prompt state lost after recreation", manager.isPromptReady());
+            for (int i = 0; i < managers.length; i++) {
+                RuntimeSessionManager manager = managers[i];
+                String sessionId = SESSION_IDS[i];
+                String runtimeId = RUNTIME_IDS[i];
+                assertTrue("session orphaned after recreation: " + sessionId, manager.isRunning());
+                assertTrue("prompt state lost after recreation: " + sessionId, manager.isPromptReady());
                 assertNotNull(manager.currentSession());
-                assertTrue("reattached session missing from view set", attachedSessions.contains(manager.currentSession()));
-                String marker = "G2_" + manager.currentSession().mSessionName;
-                assertTrue("session transcript lost marker after recreation", transcript(manager.currentSession()).contains(marker));
+                assertTrue("reattached session missing from view set: " + sessionId, attachedSessions.contains(manager.currentSession()));
+                String marker = "G2_" + sessionId + "_" + runtimeId;
+                String transcript = transcript(manager.currentSession());
+                assertTrue("session transcript lost marker after recreation: " + marker, transcript.contains(marker));
+                for (String otherSessionId : SESSION_IDS) if (!otherSessionId.equals(sessionId)) assertTrue("cross-session marker leaked into " + sessionId, !transcript.contains("G2_" + otherSessionId + "_"));
             }
         });
     }
