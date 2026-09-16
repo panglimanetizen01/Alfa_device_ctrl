@@ -1,5 +1,6 @@
 package com.alfa.device_ctrl;
 
+// Diagnostic-only harness: records live PRoot/tracee procfs state without changing the canonical smoke contract.
 import android.content.Context;
 import android.os.Process;
 import android.util.Log;
