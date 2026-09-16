@@ -46,7 +46,7 @@ Checking for HAVE_IFACE_GETIFADDRS: OK
 Checking for HAVE_IFACE_IFCONF: OK
 Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
-Checking for large file support without additional flags: OK
+Checking for large file support flags work: OK
 Checking for working strptime: OK
 Checking for HAVE_SHARED_MMAP: OK
 Checking for HAVE_MREMAP: OK
@@ -54,22 +54,24 @@ Checking for HAVE_INCOHERENT_MMAP: OK
 Checking getconf large file support flags work: OK
 EOF
 ./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
+# PRoot's static-build recipe depends on the post-install talloc_3.o object.
+# talloc 2.4.3 does not emit libtalloc.a during the ordinary build, so install
+# first and only then synthesize the archive from the canonical object when needed.
 make -j2
-# The upstream PRoot static-build recipe constructs libtalloc.a from the
-# canonical talloc_3.o object; the standalone talloc install does not install
-# that archive itself on this release/build configuration.
+make install
 mkdir -p "$TALLOC_PREFIX/lib"
-if [ -f bin/default/libtalloc.a ]; then
+if [ -s "$TALLOC_PREFIX/lib/libtalloc.a" ]; then
+    :
+elif [ -s bin/default/libtalloc.a ]; then
     cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"
-elif [ -f bin/default/talloc_3.o ]; then
+elif [ -s bin/default/talloc_3.o ]; then
     rm -f "$TALLOC_PREFIX/lib/libtalloc.a"
-    ar qf "$TALLOC_PREFIX/lib/libtalloc.a" bin/default/talloc_3.o
+    "$AR" qf "$TALLOC_PREFIX/lib/libtalloc.a" bin/default/talloc_3.o
 else
     echo 'PROOT_STATUS=BLOCKED'
-    echo 'PROOT_REASON=TALLOC_STATIC_OBJECT_MISSING'
+    echo 'PROOT_REASON=TALLOC_STATIC_OBJECT_MISSING_AFTER_INSTALL'
     exit 20
 fi
-make install
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
 if [ ! -d "$WORK/.git" ]; then git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"; fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
