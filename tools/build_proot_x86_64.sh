@@ -46,7 +46,7 @@ Checking for HAVE_IFACE_GETIFADDRS: OK
 Checking for HAVE_IFACE_IFCONF: OK
 Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
-Checking getconf large file support flags work: OK
+Checking getconf LFS_CFLAGS work: OK
 Checking for large file support without additional flags: OK
 Checking for large file support without additional flags: OK
 Checking for working strptime: OK
@@ -89,7 +89,7 @@ test -s "$CANONICAL_INCLUDE/cli/cli.h"
 test "$(git -C "$WORK" hash-object "$CANONICAL_INCLUDE/cli/cli.h")" = "$(git -C "$WORK" rev-parse "$PROOT_COMMIT:src/cli/cli.h")"
 # PRoot 7266fb3 tracee.c uses bzero while including string.h; Android bionic exposes bzero via strings.h. Inject the authoritative system headers without modifying upstream PRoot sources.
 # Primary-source audit of PRoot 7266fb3 src/extension/ashmem_memfd/ashmem_memfd.c also shows strcmp/memset are used without string.h.
-export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h -include string.h"; export CPPFLAGS="$CFLAGS"
+export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h -include string.h"; export CPPFLAGS="$CFLAGS -D_GNU_SOURCE"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot loader/loader
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
