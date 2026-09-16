@@ -46,17 +46,14 @@ Checking for HAVE_IFACE_GETIFADDRS: OK
 Checking for HAVE_IFACE_IFCONF: OK
 Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
-Checking for large file support flags work: OK
+Checking getconf large file support flags work: OK
+Checking for large file support without additional flags: OK
 Checking for working strptime: OK
 Checking for HAVE_SHARED_MMAP: OK
 Checking for HAVE_MREMAP: OK
 Checking for HAVE_INCOHERENT_MMAP: OK
-Checking getconf large file support flags work: OK
 EOF
 ./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
-# PRoot's static-build recipe depends on the post-install talloc_3.o object.
-# talloc 2.4.3 does not emit libtalloc.a during the ordinary build, so install
-# first and only then synthesize the archive from the canonical object when needed.
 make -j2
 make install
 mkdir -p "$TALLOC_PREFIX/lib"
