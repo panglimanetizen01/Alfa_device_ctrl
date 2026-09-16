@@ -233,44 +233,42 @@ jobs:
           adb shell run-as com.alfa.device_ctrl sh -c "test \"\$(grep '^runtime_id=' '$READY' | cut -d= -f2-)\" = debian"
           adb shell run-as com.alfa.device_ctrl test -f "$ROOTFS/etc/os-release"
           adb shell run-as com.alfa.device_ctrl sh -c "grep -E '^ID=debian$' '$ROOTFS/etc/os-release'"
-          adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault/runtimes/debian" -maxdepth 3 -type f -print | sort' 
+          adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault/runtimes/debian" -maxdepth 3 -type f -print | sort'
           kill "$LOGCAT_PID" 2>/dev/null || true
           adb shell am force-stop com.alfa.device_ctrl
           echo CANONICAL_RUNTIME_PROVISIONING=PASS
 
-      - name: Run exactly RuntimeKeepAliveFourSessionLifecycleDutTest
+      - name: Run G2 four-session lifecycle acceptance
         shell: bash
         run: |
           set -euo pipefail
-          ./gradlew :app:connectedDebugAndroidTest \
-            -Pandroid.testInstrumentationRunnerArguments.class=com.alfa.device_ctrl.RuntimeKeepAliveFourSessionLifecycleDutTest \
-            --no-daemon --stacktrace
-          echo G2_INSTRUMENTATION_EXECUTION=PASS
+          adb shell am instrument -w -r \
+            -e class com.alfa.device_ctrl.RuntimeKeepAliveFourSessionLifecycleDutTest \
+            com.alfa.device_ctrl.test/androidx.test.runner.AndroidJUnitRunner
 
-      - name: Collect execution evidence
+      - name: Collect G2 evidence
         if: always()
         shell: bash
         run: |
-          set +e
-          if [ -n "${LOGCAT_PID:-}" ]; then kill "$LOGCAT_PID" 2>/dev/null || true; fi
-          adb shell ps -A | grep -F 'com.alfa.device_ctrl' || true
-          adb shell dumpsys activity activities | grep -F 'com.alfa.device_ctrl' || true
-          adb shell pm path com.alfa.device_ctrl || true
-          find app/build/outputs -maxdepth 7 -type f -print 2>/dev/null || true
-          find app/build/reports -maxdepth 7 -type f -print 2>/dev/null || true
-          cat "$RUNNER_TEMP/g2-logcat.txt" 2>/dev/null || true
-          cat "$RUNNER_TEMP/emulator.log" 2>/dev/null || true
+          set -u
+          mkdir -p "$RUNNER_TEMP/g2-evidence"
+          cp "$RUNNER_TEMP/g2-logcat.txt" "$RUNNER_TEMP/g2-evidence/g2-logcat.txt" 2>/dev/null || true
+          cp "$RUNNER_TEMP/emulator.log" "$RUNNER_TEMP/g2-evidence/emulator.log" 2>/dev/null || true
+          adb get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1 || true
+          adb shell getprop ro.product.cpu.abi > "$RUNNER_TEMP/g2-evidence/device-abi.txt" 2>&1 || true
+          adb shell getprop ro.product.cpu.abilist > "$RUNNER_TEMP/g2-evidence/device-abilist.txt" 2>&1 || true
+          adb shell dumpsys package com.alfa.device_ctrl > "$RUNNER_TEMP/g2-evidence/package.txt" 2>&1 || true
+          adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault" -maxdepth 6 -type f -print -exec ls -l {} \;' > "$RUNNER_TEMP/g2-evidence/runtime-vault.txt" 2>&1 || true
+          adb shell run-as com.alfa.device_ctrl sh -c 'if test -f "$HOME/runtime-vault/runtimes/debian/READY.evidence"; then cat "$HOME/runtime-vault/runtimes/debian/READY.evidence"; fi' > "$RUNNER_TEMP/g2-evidence/READY.evidence.txt" 2>&1 || true
+          adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault/runtimes/debian/rootfs" -maxdepth 2 -type f -name os-release -exec sh -c "echo === {} ===; cat {}" \;' > "$RUNNER_TEMP/g2-evidence/rootfs-os-release.txt" 2>&1 || true
+          adb shell uiautomator dump /sdcard/g2-window-final.xml >/dev/null 2>&1 || true
+          adb shell cat /sdcard/g2-window-final.xml > "$RUNNER_TEMP/g2-evidence/ui.xml" 2>&1 || true
 
-      - name: Upload Android instrumentation evidence
+      - name: Upload G2 evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8 
         with:
           name: g2-four-session-lifecycle-evidence-${{ github.sha }}
-          path: |
-            app/build/outputs/androidTest-results/**
-            app/build/outputs/connected_android_test_additional_output/**
-            app/build/reports/androidTests/**
-            app/build/test-results/**
-            ${{ runner.temp }}/g2-logcat.txt
-            ${{ runner.temp }}/emulator.log
-          if-no-files-found: warn
+          path: ${{ runner.temp }}/g2-evidence
+          if-no-files-found: error
+          retention-days: 7
