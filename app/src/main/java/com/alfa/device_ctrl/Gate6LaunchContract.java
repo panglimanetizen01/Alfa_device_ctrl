@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
-/** Converts one current Gate 6 bootstrap into a runtime-bound Gate 7 launch contract. */
+/** Gate 7 launch authorization plus runtime-registry provenance. */
 public final class Gate6LaunchContract {
     public static final String INPUT_SCHEMA = "gate6-bootstrap.v1";
     public static final String OUTPUT_SCHEMA = "gate7-launch.v1";
@@ -70,8 +70,9 @@ public final class Gate6LaunchContract {
         }
     }
 
-    public static boolean verify(File launchFile, String runtimeId) {
-        if (launchFile == null || runtimeId == null || !launchFile.isFile()) return false;
+    /** Verify the app-wide Gate 7 authorization and canonical runtime-registry provenance. */
+    public static boolean verifyAuthorized(File launchFile) {
+        if (launchFile == null || !launchFile.isFile()) return false;
         try {
             Properties p = new Properties();
             try (InputStream in = new FileInputStream(launchFile)) { p.load(in); }
@@ -81,18 +82,30 @@ public final class Gate6LaunchContract {
             require(p, "launch_status", "AUTHORIZED");
             require(p, "launch_source", "gate6-bootstrap");
             require(p, "authorization_status", "AUTHORIZED");
-            if (!runtimeId.equals(p.getProperty("runtime_id"))) return false;
+            String runtimeId = token(p, "runtime_id");
             if (RuntimeRegistry.get(runtimeId) == null) return false;
             token(p, "pipeline_run_id");
             String registryHash = hex(p, "runtime_registry_sha256", 64);
-            if (!RuntimeRegistry.CANONICAL_REGISTRY_SHA256.equalsIgnoreCase(registryHash)) return false;
-            hex(p, "source_commit", 40);
-            hex(p, "gate4_contract_sha256", 64);
-            hex(p, "profile_sha256", 64);
-            hex(p, "implementation_commit", 40);
-            token(p, "decision_id");
-            token(p, "request_id");
-            return true;
+            return RuntimeRegistry.CANONICAL_REGISTRY_SHA256.equalsIgnoreCase(registryHash)
+                    && hex(p, "source_commit", 40) != null
+                    && hex(p, "gate4_contract_sha256", 64) != null
+                    && hex(p, "profile_sha256", 64) != null
+                    && hex(p, "implementation_commit", 40) != null
+                    && token(p, "decision_id") != null
+                    && token(p, "request_id") != null;
+        } catch (Exception error) {
+            return false;
+        }
+    }
+
+    /** Verify a launch contract that is explicitly bound to one runtime. */
+    public static boolean verify(File launchFile, String runtimeId) {
+        if (!launchFile.isFile() || runtimeId == null) return false;
+        if (!verifyAuthorized(launchFile)) return false;
+        try {
+            Properties p = new Properties();
+            try (InputStream in = new FileInputStream(launchFile)) { p.load(in); }
+            return runtimeId.equals(p.getProperty("runtime_id"));
         } catch (Exception error) {
             return false;
         }
