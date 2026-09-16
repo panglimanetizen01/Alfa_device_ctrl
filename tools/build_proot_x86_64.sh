@@ -79,7 +79,7 @@ if [ ! -d "$WORK/.git" ]; then git clone --depth=1 https://github.com/termux/pro
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" sparse-checkout disable 2>/dev/null || true; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 git -C "$WORK" cat-file -e "$PROOT_COMMIT:src/cli/cli.h"
 SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export CPPFLAGS="$CFLAGS"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
+export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
 make -C "$WORK/src" clean
 # Keep the canonical blob outside the PRoot source tree as an explicit compiler input. Preserve source-root lookup for its transitive headers.
 CANONICAL_INCLUDE="$WORK/.canonical-include"
@@ -87,11 +87,17 @@ mkdir -p "$CANONICAL_INCLUDE/cli"
 git -C "$WORK" show "$PROOT_COMMIT:src/cli/cli.h" > "$CANONICAL_INCLUDE/cli/cli.h"
 test -s "$CANONICAL_INCLUDE/cli/cli.h"
 test "$(git -C "$WORK" hash-object "$CANONICAL_INCLUDE/cli/cli.h")" = "$(git -C "$WORK" rev-parse "$PROOT_COMMIT:src/cli/cli.h")"
-# PRoot 7266fb3 tracee.c uses bzero while including string.h; Android bionic exposes bzero via strings.h. Inject the authoritative system headers without modifying upstream PRoot sources.
+# PRoot 7266fb3 tracee.c uses bzero while including string.h; Android bionic exposes bzero via strings.h. Inject the authoritative system header without modifying upstream PRoot sources.
 # Primary-source audit of PRoot 7266fb3 src/extension/ashmem_memfd/ashmem_memfd.c also shows strcmp/memset are used without string.h.
-export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h -include string.h"; export CPPFLAGS="$CFLAGS -D_GNU_SOURCE"
+# Keep string.h scoped to the main PRoot build. The loader has its own basename() helper; Bionic string.h declares a GNU basename when __USE_GNU is active, which conflicts with that private helper.
+export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h"
+export CPPFLAGS="$CFLAGS -D_GNU_SOURCE -include string.h"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
-make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot loader/loader
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot
+# Loader compilation must not inherit the global GNU/string.h injection: Android bionic's GNU basename declaration collides with PRoot's private word_t basename helper. The loader does not require the missing ashmem/string prototypes.
+LOADER_CFLAGS="$CFLAGS"
+LOADER_CPPFLAGS="$CFLAGS"
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" LDFLAGS="$LDFLAGS" loader/loader
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
 readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
