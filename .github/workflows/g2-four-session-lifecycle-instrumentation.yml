@@ -1,5 +1,7 @@
 name: G2 Four-Session Lifecycle Instrumentation
 
+# Real emulator lane: clean-install APK, invoke canonical RuntimeInstaller through the app, then run G2 instrumentation.
+
 on:
   push:
     branches: [work/g2-four-session-lifecycle]
@@ -49,7 +51,7 @@ jobs:
           echo EXACT_SOURCE_IDENTITY=PASS
 
       - name: Setup Java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffbf961 # v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
