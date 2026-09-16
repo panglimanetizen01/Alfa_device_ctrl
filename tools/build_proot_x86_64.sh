@@ -80,23 +80,21 @@ git -C "$WORK" cat-file -e "$PROOT_COMMIT:src/cli/cli.h"
 SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
 make -C "$WORK/src" clean
-# Keep the canonical blob outside the PRoot source tree as an explicit compiler input. Preserve source-root lookup for its transitive headers.
 CANONICAL_INCLUDE="$WORK/.canonical-include"
 mkdir -p "$CANONICAL_INCLUDE/cli"
 git -C "$WORK" show "$PROOT_COMMIT:src/cli/cli.h" > "$CANONICAL_INCLUDE/cli/cli.h"
 test -s "$CANONICAL_INCLUDE/cli/cli.h"
 test "$(git -C "$WORK" hash-object "$CANONICAL_INCLUDE/cli/cli.h")" = "$(git -C "$WORK" rev-parse "$PROOT_COMMIT:src/cli/cli.h")"
-# PRoot 7266fb3 tracee.c uses bzero while including string.h; Android bionic exposes bzero via strings.h. Inject the authoritative system header without modifying upstream PRoot sources.
-# Primary-source audit of PRoot 7266fb3 src/extension/ashmem_memfd/ashmem_memfd.c also shows strcmp/memset are used without string.h.
-# Keep string.h scoped to the main PRoot build. The loader has its own basename() helper; Bionic string.h declares a GNU basename when __USE_GNU is active, which conflicts with that private helper.
+# The main PRoot engine needs bzero/strcmp/memset compatibility declarations on Android.
 export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h"
 export CPPFLAGS="$CFLAGS -D_GNU_SOURCE -include string.h"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
-make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot
-# Loader compilation must not inherit the main PRoot compatibility headers or GNU feature macro. PRoot's loader.c defines a private basename(word_t); Bionic's GNU basename(const char *) becomes visible through the injected system headers and is an incompatible declaration. The loader does not use the bzero/strcmp/memset compatibility injections required by the main PRoot engine.
+# Build the standalone loader first with a clean flag set. The upstream proot target embeds loader/loader-wrapped.o and therefore will otherwise compile loader/loader.o using the engine's compatibility headers.
 LOADER_CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$CANONICAL_INCLUDE -I$WORK/src"
 LOADER_CPPFLAGS=""
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" LDFLAGS="$LDFLAGS" loader/loader
+# Now build the engine. loader/loader.o is already up to date from the isolated loader build, so the engine receives its compatibility flags only for engine objects and wrapper embedding.
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
 readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
