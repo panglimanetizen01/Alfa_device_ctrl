@@ -10,8 +10,9 @@ import java.util.Properties;
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
     public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
-    public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33";
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33";
+    /** Empty until an x86_64 loader artifact is actually built and its SHA is reviewed. */
+    public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "";
 
     private RuntimeEvidence() { }
 
@@ -28,7 +29,8 @@ public final class RuntimeEvidence {
             return TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256);
         }
         if (RuntimeAbi.X86_64.equals(abi)) {
-            return TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.equalsIgnoreCase(sha256);
+            return !TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.isEmpty()
+                    && TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.equalsIgnoreCase(sha256);
         }
         return false;
     }
