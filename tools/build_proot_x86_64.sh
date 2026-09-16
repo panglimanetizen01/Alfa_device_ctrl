@@ -48,6 +48,7 @@ Checking for HAVE_IFACE_IFREQ: OK
 Checking getconf LFS_CFLAGS: OK
 Checking getconf large file support flags work: OK
 Checking for large file support without additional flags: OK
+Checking for large file support without additional flags: OK
 Checking for working strptime: OK
 Checking for HAVE_SHARED_MMAP: OK
 Checking for HAVE_MREMAP: OK
@@ -74,8 +75,9 @@ else
     exit 20
 fi
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
-if [ ! -d "$WORK/.git" ]; then git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"; fi
+if [ ! -d "$WORK/.git" ]; then git clone --depth=1 https://github.com/termux/proot.git "$WORK"; fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" sparse-checkout disable 2>/dev/null || true; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
+git -C "$WORK" cat-file -e "$PROOT_COMMIT:src/cli/cli.h"
 test -s "$WORK/src/cli/cli.h"
 SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export CPPFLAGS="$CFLAGS"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
