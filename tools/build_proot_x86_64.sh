@@ -89,11 +89,11 @@ test "$(git -C "$WORK" hash-object "$CANONICAL_INCLUDE/cli/cli.h")" = "$(git -C 
 export CFLAGS="$CFLAGS -I$CANONICAL_INCLUDE -I$WORK/src -include strings.h"
 export CPPFLAGS="$CFLAGS -D_GNU_SOURCE -include string.h"
 ls -l "$CANONICAL_INCLUDE/cli/cli.h"
-# Build the standalone loader first with a clean flag set. The upstream proot target embeds loader/loader-wrapped.o and therefore will otherwise compile loader/loader.o using the engine's compatibility headers.
+# Build both standalone loader variants first with a clean flag set. The upstream proot target embeds loader/loader-wrapped.o and loader/loader-m32-wrapped.o and otherwise compiles their source with the engine compatibility headers.
 LOADER_CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$CANONICAL_INCLUDE -I$WORK/src"
 LOADER_CPPFLAGS=""
-make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" LDFLAGS="$LDFLAGS" loader/loader
-# Now build the engine. loader/loader.o is already up to date from the isolated loader build, so the engine receives its compatibility flags only for engine objects and wrapper embedding.
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" LDFLAGS="$LDFLAGS" loader/loader loader/loader-m32
+# Now build the engine. loader/loader.o and loader/loader-m32.o are already up to date from the isolated loader build, so the engine receives its compatibility flags only for engine objects and wrapper embedding.
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
