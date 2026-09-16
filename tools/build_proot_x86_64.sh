@@ -92,7 +92,7 @@ ls -l "$CANONICAL_INCLUDE/cli/cli.h"
 # Build both standalone loader variants first with a clean flag set. The upstream proot target embeds loader/loader-wrapped.o and loader/loader-m32-wrapped.o and otherwise compiles their source with the engine compatibility headers.
 LOADER_CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$CANONICAL_INCLUDE -I$WORK/src"
 LOADER_CPPFLAGS=""
-make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS"
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$LOADER_CFLAGS" CPPFLAGS="$LOADER_CPPFLAGS" loader/loader loader/loader-m32
 # Now build the engine. The exported LDFLAGS stays an environment value so GNU make can append the upstream PRoot link requirements (-ltalloc and Android shmem) from its GNUmakefile.
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS"
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
