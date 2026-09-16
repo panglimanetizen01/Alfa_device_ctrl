@@ -51,6 +51,15 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" platform-tools 'platforms;android-36' 'build-tools;36.0.0' emulator 'system-images;android-35;google_apis;x86_64'
           printf '%s\n' "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+      - name: Enable KVM hardware acceleration
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm4all"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -e /dev/kvm
+          ls -l /dev/kvm
+          echo KVM_READY=PASS
       - name: Create and start emulator
         run: |
           set -euo pipefail
