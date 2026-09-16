@@ -26,4 +26,9 @@ public final class CanonicalSessionBinding {
                 || "SESSION_C".equals(sessionId)
                 || "SESSION_D".equals(sessionId);
     }
+
+    /** CI trigger: this contract is consumed by the canonical four-session UI. */
+    public static boolean isRuntimeBound(String sessionId) {
+        return isCanonicalSession(sessionId);
+    }
 }
