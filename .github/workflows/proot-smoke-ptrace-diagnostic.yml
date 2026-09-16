@@ -49,7 +49,8 @@ jobs:
           set -euo pipefail
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" platform-tools 'platforms;android-36' 'build-tools;36.0.0' emulator 'system-images;android-35;google_apis;x86_64'
+          "$SDKMANAGER" platform-tools 'platforms;android-36' 'build-tools;36.0.0' emulator 'system-images;android-35;google_apis;x86_64' 'ndk;28.0.13004108'
+          test -x "$ANDROID_HOME/ndk/28.0.13004108/ndk-build"
           printf '%s\n' "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
       - name: Enable KVM hardware acceleration
         run: |
