@@ -42,6 +42,7 @@ permissions:
 env:
   ALFA_SOURCE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
   ALFA_GATE7_RUNTIME_ID: debian
+  GITHUB_EVENT_PULL_REQUEST_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
 
 jobs:
   g2-instrumentation:
