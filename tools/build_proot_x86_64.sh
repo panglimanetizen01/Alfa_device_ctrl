@@ -1,43 +1,31 @@
 #!/usr/bin/env bash
-# Build the native x86_64 Android PRoot engine and loader used by the G2 x86_64 DUT.
-# The engine and loader SHA values are intentionally not trusted until their
-# exact build artifacts have been observed and reviewed.
 set -euo pipefail
-
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 TALLOC_VERSION="2.4.3"
 TALLOC_SHA256="dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd"
 NDK_VERSION="28.0.13004108"
 OUT_DIR="$ROOT/app/build/generated/jniLibs/x86_64"
+EVIDENCE_DIR="$ROOT/app/build/generated/runtime-artifact-evidence"
 WORK="$ROOT/.build/proot-x86_64/$PROOT_COMMIT"
 TALLOC_WORK="$ROOT/.build/talloc-$TALLOC_VERSION"
-
+mkdir -p "$EVIDENCE_DIR"
+exec > >(tee "$EVIDENCE_DIR/build_proot_x86_64.log") 2>&1
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
 [ -n "$ANDROID_SDK_ROOT" ] || { echo 'PROOT_STATUS=BLOCKED'; echo 'PROOT_REASON=ANDROID_SDK_ROOT_MISSING'; exit 20; }
 NDK="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
 [ -d "$NDK" ] || { echo 'PROOT_STATUS=BLOCKED'; echo "PROOT_REASON=NDK_MISSING:$NDK_VERSION"; exit 20; }
 TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-CC="$TOOLCHAIN/clang"
-AR="$TOOLCHAIN/llvm-ar"
-STRIP="$TOOLCHAIN/llvm-strip"
+CC="$TOOLCHAIN/clang"; AR="$TOOLCHAIN/llvm-ar"; STRIP="$TOOLCHAIN/llvm-strip"
 [ -x "$CC" ] || { echo 'PROOT_STATUS=BLOCKED'; echo 'PROOT_REASON=CLANG_MISSING'; exit 20; }
 [ -x "$AR" ] || { echo 'PROOT_STATUS=BLOCKED'; echo 'PROOT_REASON=LLVM_AR_MISSING'; exit 20; }
 [ -x "$STRIP" ] || { echo 'PROOT_STATUS=BLOCKED'; echo 'PROOT_REASON=LLVM_STRIP_MISSING'; exit 20; }
-
 mkdir -p "$ROOT/.build" "$OUT_DIR"
-
 TALLOC_ARCHIVE="$ROOT/.build/talloc-${TALLOC_VERSION}.tar.gz"
-if [ ! -f "$TALLOC_ARCHIVE" ]; then
-  curl -fsSL "https://www.samba.org/ftp/talloc/talloc-${TALLOC_VERSION}.tar.gz" -o "$TALLOC_ARCHIVE"
-fi
+if [ ! -f "$TALLOC_ARCHIVE" ]; then curl -fsSL "https://www.samba.org/ftp/talloc/talloc-${TALLOC_VERSION}.tar.gz" -o "$TALLOC_ARCHIVE"; fi
 test "$(sha256sum "$TALLOC_ARCHIVE" | awk '{print $1}')" = "$TALLOC_SHA256"
-rm -rf "$TALLOC_WORK"
-mkdir -p "$TALLOC_WORK"
-tar -xzf "$TALLOC_ARCHIVE" -C "$TALLOC_WORK" --strip-components=1
-
-TALLOC_PREFIX="$TALLOC_WORK/out"
-cd "$TALLOC_WORK"
+rm -rf "$TALLOC_WORK"; mkdir -p "$TALLOC_WORK"; tar -xzf "$TALLOC_ARCHIVE" -C "$TALLOC_WORK" --strip-components=1
+TALLOC_PREFIX="$TALLOC_WORK/out"; cd "$TALLOC_WORK"
 cat > cross-answers.txt <<'EOF'
 Checking uname sysname type: "Linux"
 Checking uname machine type: "dontcare"
@@ -65,47 +53,19 @@ Checking for HAVE_MREMAP: OK
 Checking for HAVE_INCOHERENT_MMAP: OK
 Checking getconf large file support flags work: OK
 EOF
-./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt \
-  CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
-make -j2
-make install
-mkdir -p "$TALLOC_PREFIX/lib"
-if [ -f bin/default/libtalloc.a ]; then cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"; fi
+./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
+make -j2; make install
+mkdir -p "$TALLOC_PREFIX/lib"; if [ -f bin/default/libtalloc.a ]; then cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"; fi
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
-
-if [ ! -d "$WORK/.git" ]; then
-  git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"
-fi
-git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"
-git -C "$WORK" checkout --detach "$PROOT_COMMIT"
-
+if [ ! -d "$WORK/.git" ]; then git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"; fi
+git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
-export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"
-export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"
-export CPPFLAGS="$CFLAGS"
-export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"
-export CC="$CC"
-export AR="$AR"
-export RANLIB="$TOOLCHAIN/llvm-ranlib"
-export STRIP="$STRIP"
-
+export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export CPPFLAGS="$CFLAGS"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
 make -C "$WORK/src" clean
-make -C "$WORK/src" \
-  PROOT_WITH_LIBANDROID_SHMEM=true \
-  CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" \
-  LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" \
-  AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" \
-  CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" \
-  proot loader/loader
-
-install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"
-install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
-
+make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot loader/loader
+install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
-readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'
-readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
-
-ENGINE_SHA256="$(sha256sum "$OUT_DIR/libproot.so" | awk '{print $1}')"
-LOADER_SHA256="$(sha256sum "$OUT_DIR/libproot-loader.so" | awk '{print $1}')"
+readelf -h "$OUT_DIR/libproot.so" | grep -E 'Class:|Machine:'; readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
+ENGINE_SHA256="$(sha256sum "$OUT_DIR/libproot.so" | awk '{print $1}')"; LOADER_SHA256="$(sha256sum "$OUT_DIR/libproot-loader.so" | awk '{print $1}')"
 printf 'ABI=x86_64\nPROOT_SHA256=%s\nLOADER_SHA256=%s\n' "$ENGINE_SHA256" "$LOADER_SHA256"
-printf 'PROOT_STATUS=UNTRUSTED_ARTIFACTS_REQUIRES_REVIEW\nPROOT_REASON=ENGINE_AND_LOADER_SHA_REQUIRES_REVIEW\nPROOT_PATH=%s\n' "$OUT_DIR/libproot.so"
+printf 'PROOT_STATUS=UNTRUSTED_ARTIFACTS_REQUIRES_REVIEW\nPROOT_REASON=ENGINE_SHA_REQUIRES_REVIEW\nPROOT_PATH=%s\n' "$OUT_DIR/libproot.so"
