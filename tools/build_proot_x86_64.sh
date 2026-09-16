@@ -78,11 +78,13 @@ test -s "$TALLOC_PREFIX/lib/libtalloc.a"
 if [ ! -d "$WORK/.git" ]; then git clone --depth=1 https://github.com/termux/proot.git "$WORK"; fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" sparse-checkout disable 2>/dev/null || true; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
 git -C "$WORK" cat-file -e "$PROOT_COMMIT:src/cli/cli.h"
-git -C "$WORK" show "$PROOT_COMMIT:src/cli/cli.h" > "$WORK/src/cli/cli.h"
-test -s "$WORK/src/cli/cli.h"
 SYSROOT="$NDK/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
 export PKG_CONFIG_PATH="$TALLOC_PREFIX/lib/pkgconfig"; export CFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -I$TALLOC_PREFIX/include"; export CPPFLAGS="$CFLAGS"; export LDFLAGS="--target=x86_64-linux-android26 --sysroot=$SYSROOT -L$TALLOC_PREFIX/lib"; export CC="$CC"; export AR="$AR"; export RANLIB="$TOOLCHAIN/llvm-ranlib"; export STRIP="$STRIP"
 make -C "$WORK/src" clean
+# The canonical header is a source-tree input, not a make clean output. Re-materialize it after clean and bind its blob identity immediately before compilation.
+git -C "$WORK" show "$PROOT_COMMIT:src/cli/cli.h" > "$WORK/src/cli/cli.h"
+test -s "$WORK/src/cli/cli.h"
+test "$(git -C "$WORK" hash-object "$WORK/src/cli/cli.h")" = "$(git -C "$WORK" rev-parse "$PROOT_COMMIT:src/cli/cli.h")"
 make -C "$WORK/src" PROOT_WITH_LIBANDROID_SHMEM=true CC="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" LD="$CC --target=x86_64-linux-android26 --sysroot=$SYSROOT" AR="$AR" RANLIB="$RANLIB" STRIP="$STRIP" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" proot loader/loader
 install -m 0755 "$WORK/src/proot" "$OUT_DIR/libproot.so"; install -m 0755 "$WORK/src/loader/loader" "$OUT_DIR/libproot-loader.so"
 file "$OUT_DIR/libproot.so" "$OUT_DIR/libproot-loader.so"
