@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Build the pinned PRoot ARM64 external loader as a reproducible build input.
-# The generated ELF is intentionally not stored in Git; Gradle packages it from
-# app/build/generated/jniLibs/arm64-v8a/libproot-loader.so.
+# Build the pinned PRoot external loader for every Android ABI shipped by Alfa.
+# Generated ELF files are intentionally not stored in Git; Gradle packages them
+# from app/build/generated/jniLibs/<abi>/libproot-loader.so.
 set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -9,7 +9,6 @@ PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 NDK_VERSION="28.0.13004108"
 TRUSTED_LOADER_SHA256_ARM64="b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa"
 TRUSTED_LOADER_SHA256_X86_64="1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33"
-OUT="${PROOT_LOADER_OUT:-$ROOT/app/build/generated/jniLibs/arm64-v8a/libproot-loader.so}"
 WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
@@ -17,7 +16,7 @@ WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 NDK="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
 [ -d "$NDK" ] || { echo 'LOADER_STATUS=BLOCKED'; echo "LOADER_REASON=NDK_MISSING:$NDK_VERSION"; exit 20; }
 
-mkdir -p "$ROOT/.build" "$(dirname "$OUT")"
+mkdir -p "$ROOT/.build"
 if [ ! -d "$WORK/.git" ]; then
   rm -rf "$WORK"
   git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"
@@ -30,13 +29,11 @@ case "$(uname -m)" in
   aarch64|arm64)
     CLANG="${ALFA_NATIVE_CLANG:-$(command -v clang)}"
     STRIP="${ALFA_NATIVE_STRIP:-$(command -v llvm-strip)}"
-    EXPECTED_LOADER_SHA256="$TRUSTED_LOADER_SHA256_ARM64"
     ;;
   x86_64)
     TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
     CLANG="$TOOLCHAIN/clang"
     STRIP="$TOOLCHAIN/llvm-strip"
-    EXPECTED_LOADER_SHA256="$TRUSTED_LOADER_SHA256_X86_64"
     ;;
   *)
     echo 'LOADER_STATUS=BLOCKED'
@@ -47,33 +44,32 @@ esac
 
 [ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
 [ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
-if [ "$(uname -m)" = "x86_64" ]; then
-  CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
-else
-  CC="$CLANG --target=aarch64-linux-android26 --sysroot=$SYSROOT"
-fi
 
-LOADER_LDFLAGS='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
+build_loader() {
+  local abi="$1"
+  local target="$2"
+  local expected="$3"
+  local out="$4"
+  local cc="$CLANG --target=$target --sysroot=$SYSROOT"
+  local loader_ldflags='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
 
-make -C "$WORK/src" \
-  CC="$CC" \
-  LD="$CC" \
-  STRIP="$STRIP" \
-  LOADER_LDFLAGS="$LOADER_LDFLAGS" \
-  loader/loader
+  mkdir -p "$(dirname "$out")"
+  make -C "$WORK/src" clean CC="$cc" LD="$cc" STRIP="$STRIP" LOADER_LDFLAGS="$loader_ldflags" loader/loader
 
-install -m 0755 "$WORK/src/loader/loader" "$OUT"
-file "$OUT"
-readelf -h "$OUT" | grep -E 'Class:|Machine:'
-ACTUAL_LOADER_SHA256="$(sha256sum "$OUT" | awk '{print $1}')"
-printf 'LOADER_SHA256=%s\n' "$ACTUAL_LOADER_SHA256"
-if [ "$ACTUAL_LOADER_SHA256" != "$EXPECTED_LOADER_SHA256" ]; then
-  echo 'LOADER_STATUS=BLOCKED'
-  echo "LOADER_REASON=TRUSTED_SHA256_MISMATCH:expected=$EXPECTED_LOADER_SHA256:actual=$ACTUAL_LOADER_SHA256"
-  exit 21
-fi
-printf 'LOADER_STATUS=PASS\n'
-printf 'PROOT_COMMIT=%s\n' "$PROOT_COMMIT"
-printf 'NDK_VERSION=%s\n' "$NDK_VERSION"
-printf 'BUILD_HOST=%s\n' "$(uname -m)"
-printf 'LOADER_PATH=%s\n' "$OUT"
+  install -m 0755 "$WORK/src/loader/loader" "$out"
+  file "$out"
+  readelf -h "$out" | grep -E 'Class:|Machine:'
+  local actual
+  actual="$(sha256sum "$out" | awk '{print $1}')"
+  printf 'ABI=%s\nLOADER_SHA256=%s\n' "$abi" "$actual"
+  if [ "$actual" != "$expected" ]; then
+    echo 'LOADER_STATUS=BLOCKED'
+    echo "LOADER_REASON=TRUSTED_SHA256_MISMATCH:abi=$abi:expected=$expected:actual=$actual"
+    exit 21
+  fi
+}
+
+build_loader "arm64-v8a" "aarch64-linux-android26" "$TRUSTED_LOADER_SHA256_ARM64" "$ROOT/app/build/generated/jniLibs/arm64-v8a/libproot-loader.so"
+build_loader "x86_64" "x86_64-linux-android26" "$TRUSTED_LOADER_SHA256_X86_64" "$ROOT/app/build/generated/jniLibs/x86_64/libproot-loader.so"
+
+printf 'LOADER_STATUS=PASS\nPROOT_COMMIT=%s\nNDK_VERSION=%s\nBUILD_HOST=%s\n' "$PROOT_COMMIT" "$NDK_VERSION" "$(uname -m)"
