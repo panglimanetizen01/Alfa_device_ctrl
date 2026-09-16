@@ -16,6 +16,10 @@ on:
       - 'gradle.properties'
   workflow_dispatch:
 
+env:
+  ALFA_SOURCE_COMMIT: ${{ github.sha }}
+  ALFA_GATE7_RUNTIME_ID: debian
+
 permissions:
   contents: read
 
@@ -44,7 +48,7 @@ jobs:
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb
         with:
           gradle-version: '8.11.1'
-      - name: Prepare SDK
+      - name: Prepare Android SDK and NDK
         run: |
           set -euo pipefail
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -52,6 +56,36 @@ jobs:
           "$SDKMANAGER" platform-tools 'platforms;android-36' 'build-tools;36.0.0' emulator 'system-images;android-35;google_apis;x86_64' 'ndk;28.0.13004108'
           test -x "$ANDROID_HOME/ndk/28.0.13004108/ndk-build"
           printf '%s\n' "$ANDROID_HOME/platform-tools" "$ANDROID_HOME/emulator" "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+      - name: Prepare canonical Gate 7 launch provenance
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          export ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-ci-shared"
+          export TMPDIR="$RUNNER_TEMP/alfa-ci-private"
+          OUT="$RUNNER_TEMP/runtime-pipeline.out"
+          bash tools/runtime_pipeline.sh > "$OUT" 2>&1
+          cat "$OUT"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$OUT" | sed -n '1p')"
+          test -n "$RUN_ID"
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
+          bash tools/apk_readiness_provenance.sh "$RUN_ID" "$ALFA_GATE7_RUNTIME_ID" g2-ptrace-diagnostic
+          test -s "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'gate_status=PASS' "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'bootstrap_status=PASS' "$RUN_DIR/gate6/bootstrap.txt"
+          grep -Fx 'authorization_status=AUTHORIZED' "$RUN_DIR/gate6/bootstrap.txt"
+          OUT7="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT7" RUNTIME_ID="$ALFA_GATE7_RUNTIME_ID" bash tools/prepare_gate7_android_asset.sh "$RUN_ID"
+          test -s "$OUT7"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT7"
+          grep -Fx 'gate_status=READY' "$OUT7"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT7"
+          grep -Fx "pipeline_run_id=$RUN_ID" "$OUT7"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT7"
+          echo "ALFA_GATE7_ASSET=$OUT7" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo CURRENT_RUN_GATE7=PASS
       - name: Enable KVM hardware acceleration
         run: |
           set -euo pipefail
