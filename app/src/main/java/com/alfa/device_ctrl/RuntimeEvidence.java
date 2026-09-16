@@ -16,12 +16,15 @@ public final class RuntimeEvidence {
 
     private RuntimeEvidence() { }
 
-    public static boolean isTrustedProotSha256ForAbi(String abi, String sha256) {
-        if (RuntimeAbi.ARM64_V8A.equals(abi)) {
-            return TRUSTED_PROOT_ARM64_SHA256.equalsIgnoreCase(sha256);
-        }
+    public static String trustedProotSha256ForAbi(String abi) {
+        if (RuntimeAbi.ARM64_V8A.equals(abi)) return TRUSTED_PROOT_ARM64_SHA256;
         // x86_64 remains fail-closed until the exact built artifact SHA is observed and reviewed.
-        return false;
+        return null;
+    }
+
+    public static boolean isTrustedProotSha256ForAbi(String abi, String sha256) {
+        String expected = trustedProotSha256ForAbi(abi);
+        return expected != null && expected.equalsIgnoreCase(sha256);
     }
 
     public static boolean isTrustedProotLoaderSha256ForAbi(String abi, String sha256) {
