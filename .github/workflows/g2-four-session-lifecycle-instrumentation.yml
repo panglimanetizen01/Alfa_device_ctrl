@@ -49,7 +49,7 @@ jobs:
           echo EXACT_SOURCE_IDENTITY=PASS
 
       - name: Setup Java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
@@ -156,6 +156,37 @@ jobs:
           adb shell getprop ro.product.cpu.abi
           adb devices
           echo ANDROID_TARGET_READY=PASS
+
+      - name: Clean-install exact G2 APKs and invoke canonical runtime provisioning
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --stacktrace
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          TEST_APK="app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          test -s "$APK"
+          test -s "$TEST_APK"
+          echo "APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
+          echo "TEST_APK_SHA256=$(sha256sum "$TEST_APK" | awk '{print $1}')"
+          adb uninstall com.alfa.device_ctrl >/dev/null 2>&1 || true
+          adb install "$APK"
+          adb install "$TEST_APK"
+          adb shell am start -W -n com.alfa.device_ctrl/.StitchOperationalActivity
+          READY="/data/user/0/com.alfa.device_ctrl/files/runtime-vault/runtimes/debian/READY.evidence"
+          ROOTFS="/data/user/0/com.alfa.device_ctrl/files/runtime-vault/runtimes/debian/rootfs"
+          for i in $(seq 1 180); do
+            if adb shell run-as com.alfa.device_ctrl test -f "$READY" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          adb shell run-as com.alfa.device_ctrl test -f "$READY"
+          adb shell run-as com.alfa.device_ctrl test -d "$ROOTFS"
+          adb shell run-as com.alfa.device_ctrl sh -c "grep -E '^(schema_version|status|runtime_id|engine_source|engine_abi|rootfs_path|engine_sha256|archive_sha256|smoke_contract)=' '$READY'"
+          adb shell run-as com.alfa.device_ctrl sh -c "test \"\$(grep '^status=' '$READY' | cut -d= -f2-)\" = READY"
+          adb shell run-as com.alfa.device_ctrl sh -c "test \"\$(grep '^runtime_id=' '$READY' | cut -d= -f2-)\" = debian"
+          adb shell run-as com.alfa.device_ctrl test -f "$ROOTFS/etc/os-release"
+          adb shell run-as com.alfa.device_ctrl sh -c "grep -E '^ID=debian$' '$ROOTFS/etc/os-release'"
+          adb shell am force-stop com.alfa.device_ctrl
+          echo CANONICAL_RUNTIME_PROVISIONING=PASS
 
       - name: Run exactly RuntimeKeepAliveFourSessionLifecycleDutTest
         shell: bash
