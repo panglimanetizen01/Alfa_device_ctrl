@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Build the pinned PRoot external loader for every Android ABI shipped by Alfa.
 set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
@@ -24,13 +23,19 @@ esac
 [ -x "$CLANG" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_CLANG_MISSING'; exit 20; }
 [ -x "$STRIP" ] || { echo 'LOADER_STATUS=BLOCKED'; echo 'LOADER_REASON=NATIVE_LLVM_STRIP_MISSING'; exit 20; }
 build_loader(){
-  local abi="$1" target="$2" expected="$3" out="$4" cc="$CLANG --target=$target --sysroot=$SYSROOT" loader_ldflags='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
+  local abi target expected out cc loader_ldflags actual
+  abi="$1"
+  target="$2"
+  expected="$3"
+  out="$4"
+  cc="$CLANG --target=$target --sysroot=$SYSROOT"
+  loader_ldflags='-static -nostdlib -Wl,--build-id=none,--image-base=0x2000000000,-z,noexecstack'
   mkdir -p "$(dirname "$out")"
   make -C "$WORK/src" clean CC="$cc" LD="$cc" STRIP="$STRIP" LOADER_LDFLAGS="$loader_ldflags" loader/loader
   install -m 0755 "$WORK/src/loader/loader" "$out"
   file "$out"
   readelf -h "$out" | grep -E 'Class:|Machine:'
-  local actual; actual="$(sha256sum "$out" | awk '{print $1}')"
+  actual="$(sha256sum "$out" | awk '{print $1}')"
   printf 'ABI=%s\nLOADER_SHA256=%s\n' "$abi" "$actual"
   if [ "$actual" != "$expected" ]; then echo 'LOADER_STATUS=BLOCKED'; echo "LOADER_REASON=TRUSTED_SHA256_MISMATCH:abi=$abi:expected=$expected:actual=$actual"; exit 21; fi
 }
