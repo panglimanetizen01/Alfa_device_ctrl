@@ -2,7 +2,6 @@ package com.alfa.device_ctrl;
 
 // Diagnostic-only harness: records live PRoot/tracee procfs state without changing the canonical smoke contract.
 import android.content.Context;
-import android.os.Process;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -52,7 +51,7 @@ public final class RuntimeSmokePtraceDiagnosticTest {
     }
 
     private static String runDiagnostic(File engine, File root, File evidence) {
-        Process p = null;
+        java.lang.Process p = null;
         long start = System.nanoTime();
         try {
             File tmp = new File(root.getParentFile(), "proot_tmp");
@@ -75,7 +74,7 @@ public final class RuntimeSmokePtraceDiagnosticTest {
             File out = new File(evidence.getParentFile(), "g2-proot-verbose.log");
             b.redirectOutput(out);
             p = b.start();
-            int ppid = Process.myPid();
+            int ppid = android.os.Process.myPid();
             write(evidence, "parent_test_pid=" + ppid + "\nengine=" + engine + "\nroot=" + root + "\nstart_ns=" + start + "\n");
 
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(35);
@@ -84,9 +83,7 @@ public final class RuntimeSmokePtraceDiagnosticTest {
                 append(evidence, "\n=== sample_ms=" + ms + " process_alive=" + p.isAlive() + " ===\n");
                 List<Integer> roots = children(ppid);
                 append(evidence, "test_children=" + roots + "\n");
-                for (int pid : roots) {
-                    dumpTree(pid, evidence, 0, new HashSet<>());
-                }
+                for (int pid : roots) dumpTree(pid, evidence, 0, new HashSet<>());
                 Thread.sleep(250);
             }
             boolean alive = p.isAlive();
@@ -118,23 +115,9 @@ public final class RuntimeSmokePtraceDiagnosticTest {
         for (int child : children(pid)) dumpTree(child, evidence, depth + 1, seen);
     }
 
-    private static String readProc(int pid, String name) throws IOException {
-        return "--- /proc/" + pid + "/" + name + " ---\n" + readProcValue(pid, name) + "\n";
-    }
-
-    private static String readProcValue(int pid, String name) {
-        try { return read(new File("/proc/" + pid + "/" + name)); }
-        catch (Exception e) { return "<unreadable:" + e.getClass().getSimpleName() + ":" + e.getMessage() + ">"; }
-    }
-
-    private static List<Integer> children(int pid) {
-        List<Integer> out = new ArrayList<>();
-        String s = readProcValue(pid, "task/" + pid + "/children").trim();
-        if (s.startsWith("<unreadable:")) return out;
-        for (String x : s.split("\\s+")) if (!x.isEmpty()) try { out.add(Integer.parseInt(x)); } catch (NumberFormatException ignored) {}
-        return out;
-    }
-
+    private static String readProc(int pid, String name) throws IOException { return "--- /proc/" + pid + "/" + name + " ---\n" + readProcValue(pid, name) + "\n"; }
+    private static String readProcValue(int pid, String name) { try { return read(new File("/proc/" + pid + "/" + name)); } catch (Exception e) { return "<unreadable:" + e.getClass().getSimpleName() + ":" + e.getMessage() + ">"; } }
+    private static List<Integer> children(int pid) { List<Integer> out = new ArrayList<>(); String s = readProcValue(pid, "task/" + pid + "/children").trim(); if (s.startsWith("<unreadable:")) return out; for (String x : s.split("\\s+")) if (!x.isEmpty()) try { out.add(Integer.parseInt(x)); } catch (NumberFormatException ignored) {} return out; }
     private static String read(File f) throws IOException { try (InputStream in = new FileInputStream(f)) { ByteArrayOutputStream b = new ByteArrayOutputStream(); byte[] buf = new byte[8192]; int n; while ((n = in.read(buf)) != -1) b.write(buf,0,n); return b.toString(StandardCharsets.UTF_8.name()); } }
     private static String tail(String s, int n) { return s.length() <= n ? s : s.substring(s.length() - n); }
     private static void write(File f, String s) throws IOException { File p = f.getParentFile(); if (p != null) p.mkdirs(); try (FileOutputStream o = new FileOutputStream(f)) { o.write(s.getBytes(StandardCharsets.UTF_8)); } }
