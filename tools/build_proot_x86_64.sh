@@ -57,16 +57,20 @@ EOF
 make -j2
 make install
 mkdir -p "$TALLOC_PREFIX/lib"
+TALLOC_OBJECT="$(find bin/default -type f -name '*.o' -print | grep -E '/talloc([.]c)?([.]|$)' | sed -n '1p')"
 if [ -s "$TALLOC_PREFIX/lib/libtalloc.a" ]; then
     :
 elif [ -s bin/default/libtalloc.a ]; then
     cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"
-elif [ -s bin/default/talloc_3.o ]; then
+elif [ -n "$TALLOC_OBJECT" ] && [ -s "$TALLOC_OBJECT" ]; then
+    echo "TALLOC_STATIC_OBJECT=$TALLOC_OBJECT"
     rm -f "$TALLOC_PREFIX/lib/libtalloc.a"
-    "$AR" qf "$TALLOC_PREFIX/lib/libtalloc.a" bin/default/talloc_3.o
+    "$AR" qf "$TALLOC_PREFIX/lib/libtalloc.a" "$TALLOC_OBJECT"
 else
     echo 'PROOT_STATUS=BLOCKED'
     echo 'PROOT_REASON=TALLOC_STATIC_OBJECT_MISSING_AFTER_INSTALL'
+    echo 'TALLOC_OBJECT_CANDIDATES:'
+    find bin/default -type f -name '*.o' -print | sort || true
     exit 20
 fi
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
