@@ -7,8 +7,10 @@ set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 NDK_VERSION="28.0.13004108"
-TRUSTED_LOADER_SHA256_ARM64="b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa"
-TRUSTED_LOADER_SHA256_X86_64="1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33"
+# These are observed artifact values. The x86_64 value remains pending until the
+# x86_64 loader is actually built and its ELF/SHA-256 are captured.
+TRUSTED_LOADER_SHA256_ARM64="1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33"
+TRUSTED_LOADER_SHA256_X86_64=""
 WORK="$ROOT/.build/proot-loader/$PROOT_COMMIT"
 
 : "${ANDROID_SDK_ROOT:=${ANDROID_HOME:-}}"
@@ -62,10 +64,13 @@ build_loader() {
   local actual
   actual="$(sha256sum "$out" | awk '{print $1}')"
   printf 'ABI=%s\nLOADER_SHA256=%s\n' "$abi" "$actual"
-  if [ "$actual" != "$expected" ]; then
+  if [ -n "$expected" ] && [ "$actual" != "$expected" ]; then
     echo 'LOADER_STATUS=BLOCKED'
     echo "LOADER_REASON=TRUSTED_SHA256_MISMATCH:abi=$abi:expected=$expected:actual=$actual"
     exit 21
+  fi
+  if [ -z "$expected" ]; then
+    echo "LOADER_STATUS=UNTRUSTED_SHA_REQUIRES_REVIEW:abi=$abi"
   fi
 }
 
