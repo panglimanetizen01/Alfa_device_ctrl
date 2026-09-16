@@ -28,6 +28,7 @@ import java.util.Set;
 
 /** Real Android contract: four independent PTYs survive Activity recreation and reattach to four distinct TerminalViews. */
 public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
+    // G2 lane intentionally relies on the real APK-side RuntimeInstaller provisioning before this contract starts.
     private Context context;
     private RuntimeSessionManager[] managers;
     private ActivityScenario<StitchOperationalActivity> scenario;
