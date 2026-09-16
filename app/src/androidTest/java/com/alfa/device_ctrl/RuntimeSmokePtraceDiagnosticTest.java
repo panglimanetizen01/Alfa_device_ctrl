@@ -1,16 +1,13 @@
 package com.alfa.device_ctrl;
 
 // Diagnostic-only harness: records live PRoot/tracee procfs state without changing the canonical smoke contract.
-// Trigger marker: KVM-enabled diagnostic lane.
+// Trigger marker: canonical Gate 7 provenance lane.
 import android.content.Context;
 import android.util.Log;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
