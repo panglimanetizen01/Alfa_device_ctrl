@@ -8,6 +8,8 @@ on:
     paths:
       - 'app/src/main/java/com/alfa/device_ctrl/**'
       - 'app/src/androidTest/**'
+      - 'app/src/test/**'
+      - 'app/src/main/res/**'
       - 'app/build.gradle'
       - 'terminal-view/**'
       - 'runtime/**'
@@ -168,11 +170,32 @@ jobs:
           TEST_APK="app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
           test -s "$APK"
           test -s "$TEST_APK"
-          echo "APK_SHA256=$(sha256sum "$APK" | awk '{print $1}')"
-          echo "TEST_APK_SHA256=$(sha256sum "$TEST_APK" | awk '{print $1}')"
+          APK_SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          TEST_APK_SHA256="$(sha256sum "$TEST_APK" | awk '{print $1}')"
+          echo "APK_SHA256=$APK_SHA256"
+          echo "TEST_APK_SHA256=$TEST_APK_SHA256"
           adb uninstall com.alfa.device_ctrl >/dev/null 2>&1 || true
+          if adb shell pm list packages | grep -Fqx 'package:com.alfa.device_ctrl'; then
+            echo STALE_PACKAGE_PRESENT_AFTER_UNINSTALL=FAIL
+            exit 1
+          fi
+          echo STALE_PACKAGE_ABSENT=PASS
           adb install "$APK"
           adb install "$TEST_APK"
+          echo "INSTALLED_PACKAGE=$(adb shell pm list packages | tr -d '\r' | grep -F 'com.alfa.device_ctrl')"
+          adb shell dumpsys package com.alfa.device_ctrl | grep -E 'versionCode=|versionName=' | head -n 4 || true
+          APK_PATH="$(adb shell pm path com.alfa.device_ctrl | sed -n 's/^package://p' | tr -d '\r' | sed -n '1p')"
+          test -n "$APK_PATH"
+          echo "INSTALLED_APK_PATH=$APK_PATH"
+          adb shell sha256sum "$APK_PATH" || true
+          RESOLVED="$(adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER com.alfa.device_ctrl | tr -d '\r' | tail -n 1)"
+          echo "RESOLVED_LAUNCHER=$RESOLVED"
+          test "$RESOLVED" = 'com.alfa.device_ctrl/.StitchOperationalActivity'
+          echo CANONICAL_LAUNCHER=PASS
+          adb logcat -c
+          adb logcat -b all -v threadtime > "$RUNNER_TEMP/g2-logcat.txt" 2>&1 &
+          LOGCAT_PID=$!
+          echo "LOGCAT_PID=$LOGCAT_PID" >> "$GITHUB_ENV"
           adb shell am start -W -n com.alfa.device_ctrl/.StitchOperationalActivity
           READY="/data/user/0/com.alfa.device_ctrl/files/runtime-vault/runtimes/debian/READY.evidence"
           ROOTFS="/data/user/0/com.alfa.device_ctrl/files/runtime-vault/runtimes/debian/rootfs"
@@ -180,13 +203,38 @@ jobs:
             if adb shell run-as com.alfa.device_ctrl test -f "$READY" 2>/dev/null; then break; fi
             sleep 2
           done
-          adb shell run-as com.alfa.device_ctrl test -f "$READY"
+          if ! adb shell run-as com.alfa.device_ctrl test -f "$READY"; then
+            echo '=== PROVISIONING FAILURE DIAGNOSTICS ==='
+            echo 'DEVICE_ABI:'
+            adb shell getprop ro.product.cpu.abi
+            echo 'SECONDARY_ABI:'
+            adb shell getprop ro.product.cpu.abilist
+            echo 'PACKAGE:'
+            adb shell dumpsys package com.alfa.device_ctrl | grep -E 'versionCode=|versionName=|pkgFlags=|primaryCpuAbi=|secondaryCpuAbi=' || true
+            echo 'NATIVE_LIB_DIR:'
+            adb shell run-as com.alfa.device_ctrl sh -c 'ls -la "$HOME"; find "$HOME" -maxdepth 3 -type f -name "libproot*.so" -print -exec ls -l {} \;' || true
+            echo 'RUNTIME_VAULT_FILES:'
+            adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault" -maxdepth 5 -type f -print 2>/dev/null | sort' || true
+            echo 'RUNTIME_VAULT_DIRS:'
+            adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault" -maxdepth 5 -type d -print 2>/dev/null | sort' || true
+            echo 'TOP_ACTIVITY:'
+            adb shell dumpsys activity activities | grep -F 'com.alfa.device_ctrl' || true
+            echo 'UI_HIERARCHY:'
+            adb shell uiautomator dump /sdcard/g2-window.xml >/dev/null 2>&1 || true
+            adb shell cat /sdcard/g2-window.xml 2>/dev/null || true
+            echo 'LOGCAT_TAIL:'
+            tail -n 400 "$RUNNER_TEMP/g2-logcat.txt" 2>/dev/null || true
+            kill "$LOGCAT_PID" 2>/dev/null || true
+            exit 1
+          fi
           adb shell run-as com.alfa.device_ctrl test -d "$ROOTFS"
           adb shell run-as com.alfa.device_ctrl sh -c "grep -E '^(schema_version|status|runtime_id|engine_source|engine_abi|rootfs_path|engine_sha256|archive_sha256|smoke_contract)=' '$READY'"
           adb shell run-as com.alfa.device_ctrl sh -c "test \"\$(grep '^status=' '$READY' | cut -d= -f2-)\" = READY"
           adb shell run-as com.alfa.device_ctrl sh -c "test \"\$(grep '^runtime_id=' '$READY' | cut -d= -f2-)\" = debian"
           adb shell run-as com.alfa.device_ctrl test -f "$ROOTFS/etc/os-release"
           adb shell run-as com.alfa.device_ctrl sh -c "grep -E '^ID=debian$' '$ROOTFS/etc/os-release'"
+          adb shell run-as com.alfa.device_ctrl sh -c 'find "$HOME/runtime-vault/runtimes/debian" -maxdepth 3 -type f -print | sort' 
+          kill "$LOGCAT_PID" 2>/dev/null || true
           adb shell am force-stop com.alfa.device_ctrl
           echo CANONICAL_RUNTIME_PROVISIONING=PASS
 
@@ -204,10 +252,13 @@ jobs:
         shell: bash
         run: |
           set +e
+          if [ -n "${LOGCAT_PID:-}" ]; then kill "$LOGCAT_PID" 2>/dev/null || true; fi
           adb shell ps -A | grep -F 'com.alfa.device_ctrl' || true
           adb shell dumpsys activity activities | grep -F 'com.alfa.device_ctrl' || true
+          adb shell pm path com.alfa.device_ctrl || true
           find app/build/outputs -maxdepth 7 -type f -print 2>/dev/null || true
           find app/build/reports -maxdepth 7 -type f -print 2>/dev/null || true
+          cat "$RUNNER_TEMP/g2-logcat.txt" 2>/dev/null || true
           cat "$RUNNER_TEMP/emulator.log" 2>/dev/null || true
 
       - name: Upload Android instrumentation evidence
@@ -220,5 +271,6 @@ jobs:
             app/build/outputs/connected_android_test_additional_output/**
             app/build/reports/androidTests/**
             app/build/test-results/**
+            ${{ runner.temp }}/g2-logcat.txt
             ${{ runner.temp }}/emulator.log
           if-no-files-found: warn
