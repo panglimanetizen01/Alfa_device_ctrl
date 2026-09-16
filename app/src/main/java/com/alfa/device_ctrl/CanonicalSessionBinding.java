@@ -19,4 +19,11 @@ public final class CanonicalSessionBinding {
         if ("kali".equals(runtimeId)) return "SESSION_D";
         throw new IllegalArgumentException("unknown-runtime:" + runtimeId);
     }
+
+    public static boolean isCanonicalSession(String sessionId) {
+        return "SESSION_A".equals(sessionId)
+                || "SESSION_B".equals(sessionId)
+                || "SESSION_C".equals(sessionId)
+                || "SESSION_D".equals(sessionId);
+    }
 }
