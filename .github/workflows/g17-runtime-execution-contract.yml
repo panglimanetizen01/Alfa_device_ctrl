@@ -66,7 +66,7 @@ jobs:
           echo "ACTUAL_TREE=$(git rev-parse HEAD^{tree})"
           echo "SOURCE_STATUS=$(git status --porcelain=v1 --untracked-files=all)"
           echo EXACT_SOURCE_IDENTITY=PASS
-          git fsck --full --no-progress --no-dangling
+          git fsck --full --no-progress --no-dangling "$ALFA_SOURCE_COMMIT"
       - name: Install upstream packaged PRoot runtime
         shell: bash
         run: |
