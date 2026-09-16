@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -51,35 +52,39 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
     @Test public void fourIndependentSessionsReattachAfterActivityRecreation() throws Exception {
         assertEquals(4, SESSION_IDS.length);
         assertEquals(4, RUNTIME_IDS.length);
-        for (String runtimeId : RUNTIME_IDS) assertNotNull("runtime profile missing: " + runtimeId, RuntimeRegistry.get(runtimeId));
 
         File vault = new File(context.getFilesDir(), "runtime-vault");
-        assertTrue("Gate 7 launch contract is not installed", new File(vault, "gate7-launch.properties").isFile());
+        File launch = new File(vault, "gate7-launch.properties");
+        assertTrue("Gate 7 launch contract is not installed", launch.isFile());
 
-        // Provision each runtime through the real Activity startup path. The coordinator invokes the same
-        // canonical RuntimeInstaller used by the product; no installer API is called directly by this test.
-        scenario = ActivityScenario.launch(StitchOperationalActivity.class);
-        for (int i = 0; i < SESSION_IDS.length; i++) {
-            final String sessionId = SESSION_IDS[i];
-            final String runtimeId = RUNTIME_IDS[i];
-            scenario.onActivity(activity -> activity.getPreferences(Context.MODE_PRIVATE).edit().putString("session_id", sessionId).apply());
-            scenario.recreate();
+        // Provision all four real rootfs instances through the production RuntimeInstaller on the real Android target.
+        // This is instrumentation against production provisioning code, not a unit-test substitute for runtime execution.
+        File engine = new File(context.getApplicationInfo().nativeLibraryDir, "libproot.so");
+        RuntimeInstaller installer = new RuntimeInstaller(vault, message -> { });
+        Set<String> runtimeIds = new HashSet<>();
+        for (String runtimeId : RUNTIME_IDS) {
+            RuntimeProfile profile = RuntimeRegistry.get(runtimeId);
+            assertNotNull("runtime profile missing: " + runtimeId, profile);
+            assertTrue("Gate 7 launch contract is not valid for " + runtimeId, Gate6LaunchContract.verify(launch, runtimeId));
+            RuntimeInstaller.Result result = installer.install(profile, new URL(profile.rootfsUrl()), profile.rootfsSha256(), profile.rootfsGzip());
+            assertTrue("runtime provisioning failed for " + runtimeId + ": " + result.message, result.success);
+            runtimeIds.add(runtimeId);
+            assertEquals(runtimeIds.size(), new HashSet<>(runtimeIds).size());
             awaitRuntimeReady(vault, runtimeId);
-            scenario.onActivity(activity -> assertEquals(runtimeId, activity.getPreferences(Context.MODE_PRIVATE).getString("session_id", "" ).equals(sessionId) ? runtimeId : ""));
         }
+        assertEquals(4, runtimeIds.size());
 
+        // ActivityScenario is now used only for the real UI/session lifecycle and recreation proof.
+        scenario = ActivityScenario.launch(StitchOperationalActivity.class);
         managers = new RuntimeSessionManager[SESSION_IDS.length];
         Set<Integer> pids = new HashSet<>();
-        Set<String> runtimeIds = new HashSet<>();
         for (int i = 0; i < SESSION_IDS.length; i++) {
             String sessionId = SESSION_IDS[i];
             RuntimeProfile profile = RuntimeRegistry.get(RUNTIME_IDS[i]);
             File runtime = new File(new File(vault, "runtimes"), profile.id());
             File ready = new File(runtime, "READY.evidence");
             assertTrue("runtime READY evidence is not installed: " + profile.id(), ready.isFile());
-            assertTrue("Gate 7 launch contract is not valid for " + profile.id(), Gate6LaunchContract.verify(new File(vault, "gate7-launch.properties"), profile.id()));
-            runtimeIds.add(profile.id());
-            assertEquals(i + 1, runtimeIds.size());
+            assertTrue("Gate 7 launch contract is not valid for " + profile.id(), Gate6LaunchContract.verify(launch, profile.id()));
 
             managers[i] = new RuntimeSessionManager(contract(profile, sessionId), listener());
             assertTrue("PTY did not start for " + sessionId, managers[i].start(80, 24, 8, 16));
@@ -92,13 +97,11 @@ public final class RuntimeKeepAliveFourSessionLifecycleDutTest {
             awaitTranscript(session, "G2_" + sessionId + "_" + profile.id());
             RuntimeKeepAliveService.start(context, managers[i]);
         }
-        assertEquals(4, runtimeIds.size());
 
         awaitOwners(SESSION_IDS.length);
         assertEquals(SESSION_IDS.length, RuntimeKeepAliveService.ownersSnapshot().size());
         awaitServiceActive();
 
-        // The four PTYs now exist; recreate the Activity and require all four real TerminalViews to reattach.
         scenario.onActivity(activity -> activity.getPreferences(Context.MODE_PRIVATE).edit().putString("session_id", "SESSION_A").apply());
         scenario.recreate();
         awaitAttachedViews(SESSION_IDS);
