@@ -1,5 +1,7 @@
 package com.alfa.device_ctrl;
 
+import android.os.Build;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -78,12 +80,18 @@ public final class InteractiveSessionContract {
 
     private static String[] withLoader(String[] supplied, File prootExecutable) {
         ArrayList<String> values = new ArrayList<>();
-        if (supplied != null) for (String entry : supplied) if (entry != null && !entry.startsWith("PROOT_LOADER=")) values.add(entry);
+        if (supplied != null) for (String entry : supplied) if (entry != null && !entry.startsWith("PROOT_LOADER=") && !entry.startsWith("PROOT_NO_SECCOMP=")) values.add(entry);
         File parent = prootExecutable == null ? null : prootExecutable.getParentFile();
         File loader = parent == null ? null : new File(parent, "libproot-loader.so");
         if (loader == null || !loader.isFile() || !loader.canExecute()) values.add("PROOT_LOADER=");
         else try { values.add("PROOT_LOADER=" + loader.getCanonicalPath()); } catch (Exception error) { values.add("PROOT_LOADER="); }
+        if (arm64TranslationHost()) values.add("PROOT_NO_SECCOMP=1");
         return values.toArray(new String[0]);
+    }
+
+    private static boolean arm64TranslationHost() {
+        for (String abi : Build.SUPPORTED_ABIS) if ("arm64-v8a".equals(abi)) return false;
+        return true;
     }
 
     public boolean isAuthorizedForInteractiveRuntime() {
