@@ -46,7 +46,7 @@ public final class RuntimeSmokePtraceDiagnosticTest {
             if (alive) { p.destroyForcibly(); p.waitFor(5, TimeUnit.SECONDS); return "diagnostic-timeout-35s"; }
             String outText = read(out); append(evidence, "exit=" + p.exitValue() + "\noutput_tail=" + tail(outText, 8000) + "\n");
             if (p.exitValue() != 0) return "diagnostic-exit-" + p.exitValue(); if (!outText.contains("ALFA_RUNTIME_SMOKE_OK")) return "diagnostic-contract-missing"; return null;
-        } catch (Exception e) { if (p != null) p.destroyForcibly(); append(evidence, "exception=" + e + "\n"); return "diagnostic-exception-" + e.getClass().getSimpleName() + ":" + e.getMessage(); }
+        } catch (Exception e) { if (p != null) p.destroyForcibly(); try { append(evidence, "exception=" + e + "\n"); } catch (IOException ignored) {} return "diagnostic-exception-" + e.getClass().getSimpleName() + ":" + e.getMessage(); }
     }
     private static void dumpTree(int pid, File evidence, int depth, Set<Integer> seen) throws IOException { if (depth > 3 || !seen.add(pid)) return; append(evidence, "PID=" + pid + " depth=" + depth + "\n"); append(evidence, readProc(pid, "status")); append(evidence, "wchan=" + readProcValue(pid, "wchan") + "\n"); append(evidence, "syscall=" + readProcValue(pid, "syscall") + "\n"); append(evidence, "cmdline=" + readProcValue(pid, "cmdline").replace('\0', ' ') + "\n"); for (int child : children(pid)) dumpTree(child, evidence, depth + 1, seen); }
     private static String readProc(int pid, String name) throws IOException { return "--- /proc/" + pid + "/" + name + " ---\n" + readProcValue(pid, name) + "\n"; }
