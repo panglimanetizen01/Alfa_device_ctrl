@@ -54,8 +54,22 @@ Checking for HAVE_INCOHERENT_MMAP: OK
 Checking getconf large file support flags work: OK
 EOF
 ./configure --prefix="$TALLOC_PREFIX" --disable-rpath --disable-python --cross-compile --cross-answers=cross-answers.txt CC="$CC --target=x86_64-linux-android26" AR="$AR" RANLIB="$TOOLCHAIN/llvm-ranlib"
-make -j2; make install
-mkdir -p "$TALLOC_PREFIX/lib"; if [ -f bin/default/libtalloc.a ]; then cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"; fi
+make -j2
+# The upstream PRoot static-build recipe constructs libtalloc.a from the
+# canonical talloc_3.o object; the standalone talloc install does not install
+# that archive itself on this release/build configuration.
+mkdir -p "$TALLOC_PREFIX/lib"
+if [ -f bin/default/libtalloc.a ]; then
+    cp bin/default/libtalloc.a "$TALLOC_PREFIX/lib/libtalloc.a"
+elif [ -f bin/default/talloc_3.o ]; then
+    rm -f "$TALLOC_PREFIX/lib/libtalloc.a"
+    ar qf "$TALLOC_PREFIX/lib/libtalloc.a" bin/default/talloc_3.o
+else
+    echo 'PROOT_STATUS=BLOCKED'
+    echo 'PROOT_REASON=TALLOC_STATIC_OBJECT_MISSING'
+    exit 20
+fi
+make install
 test -s "$TALLOC_PREFIX/lib/libtalloc.a"
 if [ ! -d "$WORK/.git" ]; then git clone --filter=blob:none https://github.com/termux/proot.git "$WORK"; fi
 git -C "$WORK" fetch --depth=1 origin "$PROOT_COMMIT"; git -C "$WORK" checkout --detach "$PROOT_COMMIT"
