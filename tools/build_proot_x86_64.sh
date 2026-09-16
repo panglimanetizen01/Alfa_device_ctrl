@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build the native x86_64 Android PRoot engine and loader used by the G2 x86_64 DUT.
-# The engine SHA is intentionally not trusted until an observed build artifact is audited.
+# The engine and loader SHA values are intentionally not trusted until their
+# exact build artifacts have been observed and reviewed.
 set -euo pipefail
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -8,7 +9,6 @@ PROOT_COMMIT="7266fb3e8516535682f5a9c8f3a7e70f6506eddb"
 TALLOC_VERSION="2.4.3"
 TALLOC_SHA256="dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd"
 NDK_VERSION="28.0.13004108"
-TRUSTED_LOADER_SHA256="1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33"
 OUT_DIR="$ROOT/app/build/generated/jniLibs/x86_64"
 WORK="$ROOT/.build/proot-x86_64/$PROOT_COMMIT"
 TALLOC_WORK="$ROOT/.build/talloc-$TALLOC_VERSION"
@@ -103,5 +103,4 @@ readelf -h "$OUT_DIR/libproot-loader.so" | grep -E 'Class:|Machine:'
 ENGINE_SHA256="$(sha256sum "$OUT_DIR/libproot.so" | awk '{print $1}')"
 LOADER_SHA256="$(sha256sum "$OUT_DIR/libproot-loader.so" | awk '{print $1}')"
 printf 'ABI=x86_64\nPROOT_SHA256=%s\nLOADER_SHA256=%s\n' "$ENGINE_SHA256" "$LOADER_SHA256"
-test "$LOADER_SHA256" = "$TRUSTED_LOADER_SHA256"
-printf 'PROOT_STATUS=UNTRUSTED_ENGINE_SHA\nPROOT_REASON=ENGINE_SHA_REQUIRES_REVIEW\nPROOT_PATH=%s\n' "$OUT_DIR/libproot.so"
+printf 'PROOT_STATUS=UNTRUSTED_ARTIFACTS_REQUIRES_REVIEW\nPROOT_REASON=ENGINE_AND_LOADER_SHA_REQUIRES_REVIEW\nPROOT_PATH=%s\n' "$OUT_DIR/libproot.so"
