@@ -23,6 +23,7 @@ public final class MultiDistroRuntimeContractTest {
             assertTrue(profile.environment().length > 0);
             assertTrue(profile.requiredPaths().length >= 5);
             assertTrue(profile.capabilities().length >= 5);
+            assertTrue(profile.prootArguments().length > 0);
         }
     }
 
@@ -37,6 +38,33 @@ public final class MultiDistroRuntimeContractTest {
         boolean found = false;
         for (String capability : RuntimeRegistry.get("kali").capabilities()) if ("kernel-features-limited".equals(capability)) found = true;
         assertTrue(found);
+    }
+
+    @Test public void canonicalRuntimeJsonProjectsIntoTheSameRuntimeMetadata() throws Exception {
+        File file = new File("../runtime/runtimes.v1.json");
+        if (!file.isFile()) file = new File("runtime/runtimes.v1.json");
+        assertTrue("canonical runtime registry JSON is missing", file.isFile());
+        String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        List<RuntimeProfile> projected = RuntimeRegistry.parseCanonicalJson(json);
+        assertEquals(RuntimeRegistry.all().size(), projected.size());
+        for (int i = 0; i < projected.size(); i++) {
+            RuntimeProfile actual = RuntimeRegistry.all().get(i);
+            RuntimeProfile fromCanonical = projected.get(i);
+            assertEquals(actual.id(), fromCanonical.id());
+            assertEquals(actual.displayName(), fromCanonical.displayName());
+            assertEquals(actual.version(), fromCanonical.version());
+            assertEquals(actual.architecture(), fromCanonical.architecture());
+            assertEquals(actual.archiveFormat(), fromCanonical.archiveFormat());
+            assertEquals(actual.rootfsUrl(), fromCanonical.rootfsUrl());
+            assertEquals(actual.rootfsSha256(), fromCanonical.rootfsSha256());
+            assertEquals(actual.rootfsGzip(), fromCanonical.rootfsGzip());
+            assertEquals(actual.packageManager(), fromCanonical.packageManager());
+            assertEquals(actual.promptContract(), fromCanonical.promptContract());
+            assertEquals(actual.environment().length, fromCanonical.environment().length);
+            assertEquals(actual.requiredPaths().length, fromCanonical.requiredPaths().length);
+            assertEquals(actual.capabilities().length, fromCanonical.capabilities().length);
+            assertEquals(actual.prootArguments().length, fromCanonical.prootArguments().length);
+        }
     }
 
     @Test public void canonicalRuntimeJsonMatchesRegistryIdentityAndArtifactMetadata() throws Exception {
