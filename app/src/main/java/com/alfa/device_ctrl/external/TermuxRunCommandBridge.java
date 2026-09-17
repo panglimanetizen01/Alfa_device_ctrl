@@ -30,6 +30,7 @@ public final class TermuxRunCommandBridge implements ExternalExecutionTransport 
     public static final String RESULT_ERRMSG = "errmsg";
     public static final String TERMUX_PREFIX = "/data/data/com.termux/files/usr";
     public static final String TERMUX_SHELL = TERMUX_PREFIX + "/bin/sh";
+    public static final int TERMUX_RESULT_OK = -1;
 
     private static final AtomicInteger REQUEST_IDS = new AtomicInteger(1);
     private final Context context;
@@ -95,7 +96,7 @@ public final class TermuxRunCommandBridge implements ExternalExecutionTransport 
 
         Intent callbackIntent = new Intent(context, TermuxResultReceiverService.class)
                 .putExtra(TermuxResultReceiverService.EXTRA_REQUEST_ID, requestId);
-        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+        int pendingFlags = PendingIntent.FLAG_ONE_SHOT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             pendingFlags |= PendingIntent.FLAG_MUTABLE;
         }
@@ -108,7 +109,8 @@ public final class TermuxRunCommandBridge implements ExternalExecutionTransport 
         intent.putExtra(EXTRA_ARGUMENTS, wrapCommand(commandPath, arguments));
         if (stdin != null) intent.putExtra(EXTRA_STDIN, stdin);
         if (workDir != null && !workDir.isEmpty()) intent.putExtra(EXTRA_WORKDIR, workDir);
-        intent.putExtra(EXTRA_BACKGROUND, false);
+        // Background mode is required here so Termux returns separate stdout/stderr result fields.
+        intent.putExtra(EXTRA_BACKGROUND, true);
         intent.putExtra(EXTRA_PENDING_INTENT, pendingIntent);
 
         try {
