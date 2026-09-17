@@ -4,6 +4,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.alfa.device_ctrl.external.ExternalExecutionResult;
+import com.alfa.device_ctrl.external.ExternalExecutionTransport;
 import com.alfa.device_ctrl.external.ShizukuExecutionBridge;
 
 import org.junit.Test;
@@ -28,9 +29,16 @@ public final class ExternalBridgeContractTest {
     }
 
     @Test
-    public void shizukuBridgeIsExternalAndNeverRuntimeLane() {
+    public void externalTransportContractSeparatesRuntimeAndExternalLanes() {
         assertTrue(ExecutionLane.SHIZUKU_RISH.isExternalToApp());
+        assertTrue(ExecutionLane.TERMUX.isExternalToApp());
+        assertTrue(ExecutionLane.TERMUX_API.isExternalToApp());
         assertFalse(ExecutionLane.RUNTIME.isExternalToApp());
+        assertTrue(ExternalExecutionTransport.class.isInterface());
+    }
+
+    @Test
+    public void shizukuPermissionRequestHasStableApplicationCode() {
         assertTrue(ShizukuExecutionBridge.REQUEST_PERMISSION_CODE > 0);
     }
 }
