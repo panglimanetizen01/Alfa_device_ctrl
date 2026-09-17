@@ -1,13 +1,17 @@
 package com.alfa.device_ctrl;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Test;
 
 public final class MultiDistroRuntimeContractTest {
@@ -40,47 +44,58 @@ public final class MultiDistroRuntimeContractTest {
         assertTrue(found);
     }
 
-    @Test public void canonicalRuntimeJsonProjectsIntoTheSameRuntimeMetadata() throws Exception {
+    @Test public void canonicalRuntimeJsonIndependentlyProjectsEachRuntimeProfile() throws Exception {
         File file = new File("../runtime/runtimes.v1.json");
         if (!file.isFile()) file = new File("runtime/runtimes.v1.json");
         assertTrue("canonical runtime registry JSON is missing", file.isFile());
-        String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-        List<RuntimeProfile> projected = RuntimeRegistry.parseCanonicalJson(json);
-        assertEquals(RuntimeRegistry.all().size(), projected.size());
-        for (int i = 0; i < projected.size(); i++) {
-            RuntimeProfile actual = RuntimeRegistry.all().get(i);
-            RuntimeProfile fromCanonical = projected.get(i);
-            assertEquals(actual.id(), fromCanonical.id());
-            assertEquals(actual.displayName(), fromCanonical.displayName());
-            assertEquals(actual.version(), fromCanonical.version());
-            assertEquals(actual.architecture(), fromCanonical.architecture());
-            assertEquals(actual.archiveFormat(), fromCanonical.archiveFormat());
-            assertEquals(actual.rootfsUrl(), fromCanonical.rootfsUrl());
-            assertEquals(actual.rootfsSha256(), fromCanonical.rootfsSha256());
-            assertEquals(actual.rootfsGzip(), fromCanonical.rootfsGzip());
-            assertEquals(actual.packageManager(), fromCanonical.packageManager());
-            assertEquals(actual.promptContract(), fromCanonical.promptContract());
-            assertEquals(actual.environment().length, fromCanonical.environment().length);
-            assertEquals(actual.requiredPaths().length, fromCanonical.requiredPaths().length);
-            assertEquals(actual.capabilities().length, fromCanonical.capabilities().length);
-            assertEquals(actual.prootArguments().length, fromCanonical.prootArguments().length);
+
+        JSONObject registry = new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+        assertEquals("runtime-registry.v1", registry.getString("schema_version"));
+        assertEquals("multi-distro-linux-runtime.v1", registry.getString("engine_contract"));
+        assertEquals("arm64-v8a", registry.getString("target_architecture"));
+
+        JSONArray runtimes = registry.getJSONArray("runtimes");
+        assertEquals(RuntimeRegistry.all().size(), runtimes.length());
+        Set<String> runtimeIds = new HashSet<>();
+        Set<Integer> acceptanceOrders = new HashSet<>();
+
+        for (int i = 0; i < runtimes.length(); i++) {
+            JSONObject expected = runtimes.getJSONObject(i);
+            String runtimeId = expected.getString("runtime_id");
+            assertTrue("duplicate runtime_id: " + runtimeId, runtimeIds.add(runtimeId));
+
+            int acceptanceOrder = expected.getInt("acceptance_order");
+            assertTrue("duplicate acceptance_order: " + acceptanceOrder, acceptanceOrders.add(acceptanceOrder));
+            assertEquals("SUPPORTED", expected.getString("acceptance_status"));
+            assertEquals(i + 1, acceptanceOrder);
+
+            RuntimeProfile actual = RuntimeRegistry.get(runtimeId);
+            assertTrue("missing RuntimeProfile for " + runtimeId, actual != null);
+
+            assertEquals(expected.getString("runtime_id"), actual.id());
+            assertEquals(expected.getString("family"), actual.displayName());
+            assertEquals(expected.getString("version"), actual.version());
+            assertEquals(expected.getString("architecture"), actual.architecture());
+            assertEquals(expected.getString("rootfs_uri"), actual.rootfsUrl());
+            assertEquals(expected.getString("rootfs_sha256"), actual.rootfsSha256());
+            assertEquals(expected.getBoolean("rootfs_gzip"), actual.rootfsGzip());
+            assertEquals(expected.getString("archive_format"), actual.archiveFormat());
+            assertEquals(expected.getString("shell_path"), actual.shell());
+            assertEquals(expected.getString("package_manager"), actual.packageManager());
+            assertEquals(expected.getString("prompt_contract"), actual.promptContract());
+            assertArrayEquals(jsonArrayToStrings(expected.getJSONArray("environment")), actual.environment());
+            assertArrayEquals(jsonArrayToStrings(expected.getJSONArray("required_paths")), actual.requiredPaths());
+            assertArrayEquals(jsonArrayToStrings(expected.getJSONArray("capabilities")), actual.capabilities());
+            assertArrayEquals(jsonArrayToStrings(expected.getJSONArray("proot_arguments")), actual.prootArguments());
         }
+
+        assertEquals(runtimes.length(), runtimeIds.size());
+        assertEquals(runtimes.length(), acceptanceOrders.size());
     }
 
-    @Test public void canonicalRuntimeJsonMatchesRegistryIdentityAndArtifactMetadata() throws Exception {
-        File file = new File("../runtime/runtimes.v1.json");
-        if (!file.isFile()) file = new File("runtime/runtimes.v1.json");
-        assertTrue("canonical runtime registry JSON is missing", file.isFile());
-        String json = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-        for (RuntimeProfile profile : RuntimeRegistry.all()) {
-            assertTrue(json.contains("\"runtime_id\": \"" + profile.id() + "\""));
-            assertTrue(json.contains("\"family\": \"" + profile.displayName() + "\""));
-            assertTrue(json.contains("\"version\": \"" + profile.version() + "\""));
-            assertTrue(json.contains("\"architecture\": \"" + profile.architecture() + "\""));
-            assertTrue(json.contains("\"archive_format\": \"" + profile.archiveFormat() + "\""));
-            assertTrue(json.contains("\"rootfs_uri\": \"" + profile.rootfsUrl() + "\""));
-            assertTrue(json.contains("\"rootfs_sha256\": \"" + profile.rootfsSha256() + "\""));
-            assertTrue(json.contains("\"shell_path\": \"" + profile.shell() + "\""));
-        }
+    private static String[] jsonArrayToStrings(JSONArray array) {
+        String[] values = new String[array.length()];
+        for (int i = 0; i < array.length(); i++) values[i] = array.getString(i);
+        return values;
     }
 }
