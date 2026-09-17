@@ -370,3 +370,69 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/ci/verify_stitch_apk.sh "$(find "$GITHUB_WORKSPACE/artifact" -type f -name '*.apk' -print -quit)" tools/ci/stitch-legacy-ui-blacklist.txt
+  b1-runtime-registry-provenance:
+    name: B1 Source JSON = APK asset = Gate7 SHA
+    needs: apk-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact build commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Download canonical APK artifact from this workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: alfa-device-ctrl-stitch-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          path: b1-artifact
+
+      - name: Verify same commit, same APK, and three-way registry SHA
+        run: |
+          set -euo pipefail
+
+          ALFA_SOURCE_COMMIT="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$ALFA_SOURCE_COMMIT"
+
+          mapfile -t APKS < <(find b1-artifact -type f -name '*.apk' | sort)
+          mapfile -t MANIFESTS < <(find b1-artifact -type f -name 'apk-artifact-provenance.txt' | sort)
+          test "${#APKS[@]}" -eq 1
+          test "${#MANIFESTS[@]}" -eq 1
+
+          APK="${APKS[0]}"
+          MANIFEST="${MANIFESTS[0]}"
+
+          test "$(sed -n 's/^source_commit=//p' "$MANIFEST")" = "$ALFA_SOURCE_COMMIT"
+
+          EXPECTED_APK_SHA="$(sed -n 's/^apk_sha256=//p' "$MANIFEST")"
+          ACTUAL_APK_SHA="$(sha256sum "$APK" | awk '{print $1}')"
+          test "$EXPECTED_APK_SHA" = "$ACTUAL_APK_SHA"
+
+          TMP=$(mktemp -d)
+          trap 'rm -rf "$TMP"' EXIT
+
+          unzip -p "$APK" assets/runtimes.v1.json > "$TMP/runtimes.v1.json"
+          unzip -p "$APK" assets/gate7-launch.properties > "$TMP/gate7-launch.properties"
+
+          test -s "$TMP/runtimes.v1.json"
+          test -s "$TMP/gate7-launch.properties"
+
+          SOURCE_SHA="$(sha256sum runtime/runtimes.v1.json | awk '{print $1}')"
+          APK_SHA="$(sha256sum "$TMP/runtimes.v1.json" | awk '{print $1}')"
+
+          test "$(grep -c '^runtime_registry_sha256=' "$TMP/gate7-launch.properties")" = 1
+          GATE7_SHA="$(awk -F= '$1=="runtime_registry_sha256" {print $2; exit}' "$TMP/gate7-launch.properties")"
+          printf '%s\n' "$GATE7_SHA" | grep -Eq '^[0-9a-fA-F]{64}$'
+
+          echo "B1_PROVENANCE_COMMIT_SHA=$ALFA_SOURCE_COMMIT"
+          echo "B1_PROVENANCE_APK_SHA256=$ACTUAL_APK_SHA"
+          echo "B1_PROVENANCE_SOURCE_SHA256=$SOURCE_SHA"
+          echo "B1_PROVENANCE_PACKAGED_ASSET_SHA256=$APK_SHA"
+          echo "B1_PROVENANCE_GATE7_RUNTIME_REGISTRY_SHA256=$GATE7_SHA"
+
+          test "$SOURCE_SHA" = "$APK_SHA"
+          test "$APK_SHA" = "$GATE7_SHA"
+          test "$SOURCE_SHA" = "$GATE7_SHA"
+
+          echo "B1_RUNTIME_REGISTRY_APK_PROVENANCE=PASS"
