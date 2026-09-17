@@ -10,14 +10,14 @@ import java.util.Properties;
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
     public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
-    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33";
+    public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
     public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "bf3a874eb863a148c89ee453d78e2a17cfb1feba25f58a2d4cb5a94ba0c70a58";
 
     private RuntimeEvidence() { }
 
     public static String trustedProotSha256ForAbi(String abi) {
         if (RuntimeAbi.ARM64_V8A.equals(abi)) return TRUSTED_PROOT_ARM64_SHA256;
-        // x86_64 remains fail-closed until the exact built engine artifact SHA is observed and reviewed.
+        // x86_64 remains fail-closed until the exact built artifact SHA is observed and reviewed.
         return null;
     }
 
