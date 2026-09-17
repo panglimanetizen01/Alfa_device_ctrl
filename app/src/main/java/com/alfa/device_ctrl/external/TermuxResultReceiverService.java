@@ -10,18 +10,18 @@ import java.util.concurrent.ConcurrentHashMap;
 /** Receives the documented Termux RUN_COMMAND PendingIntent result bundle. */
 public final class TermuxResultReceiverService extends IntentService {
     public static final String EXTRA_REQUEST_ID = "alfa.termux.request_id";
-    private static final Map<Integer, TermuxRunCommandBridge.Callback> CALLBACKS = new ConcurrentHashMap<>();
+    private static final Map<Integer, ExternalExecutionTransport.Callback> CALLBACKS = new ConcurrentHashMap<>();
 
     public TermuxResultReceiverService() {
         super("AlfaTermuxResultReceiver");
     }
 
-    static void register(int requestId, TermuxRunCommandBridge.Callback callback) {
+    static void register(int requestId, ExternalExecutionTransport.Callback callback) {
         CALLBACKS.put(requestId, callback);
     }
 
     static void fail(int requestId, String message) {
-        TermuxRunCommandBridge.Callback callback = CALLBACKS.remove(requestId);
+        ExternalExecutionTransport.Callback callback = CALLBACKS.remove(requestId);
         if (callback != null) callback.onError(message);
     }
 
@@ -29,7 +29,7 @@ public final class TermuxResultReceiverService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         if (intent == null) return;
         int requestId = intent.getIntExtra(EXTRA_REQUEST_ID, -1);
-        TermuxRunCommandBridge.Callback callback = CALLBACKS.remove(requestId);
+        ExternalExecutionTransport.Callback callback = CALLBACKS.remove(requestId);
         if (callback == null) return;
 
         Bundle result = intent.getBundleExtra(TermuxRunCommandBridge.RESULT_BUNDLE);
@@ -45,7 +45,7 @@ public final class TermuxResultReceiverService extends IntentService {
         String errorMessage = result.getString(TermuxRunCommandBridge.RESULT_ERRMSG, "");
 
         PidAndOutput pidAndOutput = extractPid(stdout);
-        if (pidAndOutput.pid > 0) callback.onStarted(pidAndOutput.pid);
+        if (pidAndOutput.pid > 0) callback.onStarted(pidAndOutput.pid, -1);
         if (!pidAndOutput.output.isEmpty()) callback.onStdout(pidAndOutput.output);
         if (!stderr.isEmpty()) callback.onStderr(stderr);
         if (errorCode != 0 || !errorMessage.isEmpty()) {
