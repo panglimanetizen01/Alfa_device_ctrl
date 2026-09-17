@@ -1,20 +1,142 @@
 package com.alfa.device_ctrl;
 
-import java.util.Arrays;
+import android.content.Context;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Canonical immutable registry of supported initial Linux runtimes. */
+/** Typed projection of the canonical runtime/runtimes.v1.json registry. */
 public final class RuntimeRegistry {
-    public static final String CANONICAL_REGISTRY_SHA256 = "2e5622860db9973f9349999306604d5b01bd6d7915d4a69ff4bf89127a1ca405";
+    private static final String REGISTRY_ASSET = "runtimes.v1.json";
+    private static final String SCHEMA_VERSION = "runtime-registry.v1";
+    private static final String ENGINE_CONTRACT = "multi-distro-linux-runtime.v1";
+    private static final String TARGET_ARCHITECTURE = "arm64-v8a";
 
-    private static final List<RuntimeProfile> PROFILES = Collections.unmodifiableList(Arrays.asList(
-            new RuntimeProfile("debian","Debian","trixie","aarch64","https://github.com/debuerreotype/docker-debian-artifacts/raw/fb7215b47dab72bdbdd59204a7b7914311431d90/trixie/oci/blobs/rootfs.tar.gz","6b89e501e8efce0d3d87e3f6b0f85c417e799a3b36b8f44419609ba7fecf9563",true,"tar.gz","/bin/sh","apt","alfa:debian:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"}),
-            new RuntimeProfile("ubuntu","Ubuntu","24.04.4","aarch64","https://cdimages.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz","04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",true,"tar.gz","/bin/sh","apt","alfa:ubuntu:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"}),
-            new RuntimeProfile("alpine","Alpine","3.24.1","aarch64","https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/aarch64/alpine-minirootfs-3.24.1-aarch64.tar.gz","f55a90f69052c5bd6f92cb09a8f47065970830b194c917a006fb94028e721259",true,"tar.gz","/bin/sh","apk","alfa:alpine:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence"}),
-            new RuntimeProfile("kali","Kali Linux","current","aarch64","https://kali.download/nethunter-images/current/rootfs/kali-nethunter-rootfs-minimal-arm64.tar.xz","d6403a5da175df325611d23af4b92330856059c45454eced7f4cdf3ca6df2e4e",false,"tar.xz","/bin/sh","apt","alfa:kali:",new String[]{"HOME=/root","TERM=xterm-256color"},new String[]{"bin","etc","usr","usr/bin/env","bin/sh"},new String[]{"rootless-proot","pty","storage-bridge","network-evidence","process-evidence","kernel-features-limited"})));
+    private static volatile RegistryData cached;
 
     private RuntimeRegistry() { }
-    public static List<RuntimeProfile> all(){return PROFILES;}
-    public static RuntimeProfile get(String id){if(id==null)return null;for(RuntimeProfile profile:PROFILES)if(profile.id().equals(id))return profile;return null;}
+
+    public static List<RuntimeProfile> all(){return load().profiles;}
+
+    public static RuntimeProfile get(String id){
+        if(id==null)return null;
+        for(RuntimeProfile profile:load().profiles)if(profile.id().equals(id))return profile;
+        return null;
+    }
+
+    public static String canonicalRegistrySha256(){return load().sha256;}
+
+    static List<RuntimeProfile> parseCanonicalJson(String json){
+        try {
+            JSONObject registry=new JSONObject(json);
+            requireEquals(registry.getString("schema_version"),SCHEMA_VERSION,"schema_version");
+            requireEquals(registry.getString("engine_contract"),ENGINE_CONTRACT,"engine_contract");
+            requireEquals(registry.getString("target_architecture"),TARGET_ARCHITECTURE,"target_architecture");
+            JSONArray runtimes=registry.getJSONArray("runtimes");
+            List<RuntimeProfile> profiles=new ArrayList<>(runtimes.length());
+            for(int i=0;i<runtimes.length();i++)profiles.add(parseProfile(runtimes.getJSONObject(i)));
+            if(profiles.isEmpty())throw new IllegalArgumentException("runtimes is empty");
+            return Collections.unmodifiableList(profiles);
+        } catch(Exception error) {
+            if(error instanceof IllegalArgumentException)throw (IllegalArgumentException)error;
+            throw new IllegalArgumentException("invalid canonical runtime registry",error);
+        }
+    }
+
+    private static RuntimeProfile parseProfile(JSONObject runtime){
+        String acceptanceStatus=runtime.getString("acceptance_status");
+        int acceptanceOrder=runtime.getInt("acceptance_order");
+        if(!"SUPPORTED".equals(acceptanceStatus)||acceptanceOrder<1)throw new IllegalArgumentException("runtime acceptance metadata is invalid");
+        return new RuntimeProfile(
+                runtime.getString("runtime_id"),
+                runtime.getString("family"),
+                runtime.getString("version"),
+                runtime.getString("architecture"),
+                runtime.getString("rootfs_uri"),
+                runtime.getString("rootfs_sha256"),
+                runtime.getBoolean("rootfs_gzip"),
+                runtime.getString("archive_format"),
+                runtime.getString("shell_path"),
+                runtime.getString("package_manager"),
+                runtime.getString("prompt_contract"),
+                stringArray(runtime.getJSONArray("environment")),
+                stringArray(runtime.getJSONArray("required_paths")),
+                stringArray(runtime.getJSONArray("capabilities")),
+                stringArray(runtime.getJSONArray("proot_arguments")));
+    }
+
+    private static String[] stringArray(JSONArray values){
+        String[] result=new String[values.length()];
+        if(result.length==0)throw new IllegalArgumentException("registry array is empty");
+        for(int i=0;i<values.length();i++)result[i]=values.getString(i);
+        return result;
+    }
+
+    private static void requireEquals(String actual,String expected,String field){
+        if(!expected.equals(actual))throw new IllegalArgumentException(field+" mismatch: "+actual);
+    }
+
+    private static RegistryData load(){
+        RegistryData current=cached;
+        if(current!=null)return current;
+        synchronized(RuntimeRegistry.class){
+            current=cached;
+            if(current==null){
+                byte[] bytes=readCanonicalRegistry();
+                List<RuntimeProfile> profiles=parseCanonicalJson(new String(bytes,StandardCharsets.UTF_8));
+                current=new RegistryData(profiles,sha256(bytes));
+                cached=current;
+            }
+            return current;
+        }
+    }
+
+    private static byte[] readCanonicalRegistry(){
+        try {
+            Context context=AlfaApplication.getInstance();
+            if(context!=null)return read(context.getAssets().open(REGISTRY_ASSET));
+            File file=new File("runtime/runtimes.v1.json");
+            if(!file.isFile())file=new File("../runtime/runtimes.v1.json");
+            if(!file.isFile())throw new IllegalStateException("canonical runtime registry is missing");
+            return read(new FileInputStream(file));
+        } catch(Exception error) {
+            throw new IllegalStateException("cannot load canonical runtime registry",error);
+        }
+    }
+
+    private static byte[] read(InputStream input)throws Exception{
+        try(InputStream stream=input;ByteArrayOutputStream output=new ByteArrayOutputStream()){
+            byte[] buffer=new byte[4096];
+            int count;
+            while((count=stream.read(buffer))!=-1)output.write(buffer,0,count);
+            return output.toByteArray();
+        }
+    }
+
+    private static String sha256(byte[] bytes){
+        try {
+            byte[] digest=MessageDigest.getInstance("SHA-256").digest(bytes);
+            StringBuilder result=new StringBuilder(digest.length*2);
+            for(byte value:digest)result.append(String.format("%02x",value));
+            return result.toString();
+        } catch(Exception error) {
+            throw new IllegalStateException("SHA-256 unavailable",error);
+        }
+    }
+
+    private static final class RegistryData {
+        final List<RuntimeProfile> profiles;
+        final String sha256;
+        RegistryData(List<RuntimeProfile> profiles,String sha256){this.profiles=profiles;this.sha256=sha256;}
+    }
 }

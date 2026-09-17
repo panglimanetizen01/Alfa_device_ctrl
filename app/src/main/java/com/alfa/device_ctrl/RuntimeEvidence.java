@@ -4,18 +4,43 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.Locale;
 import java.util.Properties;
 
 /** Fail-closed verifier for runtime-ready.v1 evidence. */
 public final class RuntimeEvidence {
+    public static final String TRUSTED_PROOT_ARM64_SHA256 = "c902f35b3bce4013d2e78e3bf360b606523d55ab7b907578938577b243bfca38";
     public static final String TRUSTED_PROOT_LOADER_ARM64_SHA256 = "b165c63ef14d274ddc7bc83e1e624fbb566d8cbd4a95a1d1891c7c6d8fd04baa";
-    public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "1e0341759bb0776dbfe6afbad7dbd51b0eb3fc38d7ff1db321b8c036e1617e33";
+    public static final String TRUSTED_PROOT_LOADER_CI_X86_64_SHA256 = "bf3a874eb863a148c89ee453d78e2a17cfb1feba25f58a2d4cb5a94ba0c70a58";
 
     private RuntimeEvidence() { }
 
+    public static String trustedProotSha256ForAbi(String abi) {
+        if (RuntimeAbi.ARM64_V8A.equals(abi)) return TRUSTED_PROOT_ARM64_SHA256;
+        // x86_64 remains fail-closed until the exact built artifact SHA is observed and reviewed.
+        return null;
+    }
+
+    public static boolean isTrustedProotSha256ForAbi(String abi, String sha256) {
+        String expected = trustedProotSha256ForAbi(abi);
+        return expected != null && expected.equalsIgnoreCase(sha256);
+    }
+
+    public static boolean isTrustedProotLoaderSha256ForAbi(String abi, String sha256) {
+        if (RuntimeAbi.ARM64_V8A.equals(abi)) return TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256);
+        if (RuntimeAbi.X86_64.equals(abi)) return TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.equalsIgnoreCase(sha256);
+        return false;
+    }
+
     public static boolean isTrustedProotLoaderSha256(String sha256) {
-        return TRUSTED_PROOT_LOADER_ARM64_SHA256.equalsIgnoreCase(sha256)
-                || TRUSTED_PROOT_LOADER_CI_X86_64_SHA256.equalsIgnoreCase(sha256);
+        return isTrustedProotLoaderSha256ForAbi(RuntimeAbi.ARM64_V8A, sha256)
+                || isTrustedProotLoaderSha256ForAbi(RuntimeAbi.X86_64, sha256);
+    }
+
+    public static String expectedEngineMachine(String abi) {
+        if (RuntimeAbi.ARM64_V8A.equals(abi)) return "AArch64";
+        if (RuntimeAbi.X86_64.equals(abi)) return "Advanced Micro Devices X86-64";
+        throw new IllegalArgumentException("unsupported-native-abi:" + abi);
     }
 
     public static boolean verify(File evidence, String runtimeId, File engine, File rootfs) {
@@ -29,20 +54,24 @@ public final class RuntimeEvidence {
             if (!engine.getCanonicalPath().equals(p.getProperty("engine_path"))) return false;
             if (!rootfs.getCanonicalPath().equals(p.getProperty("rootfs_path"))) return false;
             if (!"ApplicationInfo.nativeLibraryDir".equals(p.getProperty("engine_source"))) return false;
-            if (!"arm64-v8a".equals(p.getProperty("engine_abi"))) return false;
+            String abi = p.getProperty("engine_abi", "").trim().toLowerCase(Locale.ROOT);
+            if (!RuntimeAbi.ARM64_V8A.equals(abi) && !RuntimeAbi.X86_64.equals(abi)) return false;
             if (!"libproot.so".equals(engine.getName())) return false;
             if (!engine.isFile() || !engine.canExecute() || !rootfs.isDirectory()) return false;
+            if (!isExpectedElf(engine, abi)) return false;
             File loader = new File(engine.getParentFile(), "libproot-loader.so").getCanonicalFile();
-            if (!loader.isFile() || !loader.canExecute() || !isArm64Elf(loader)) return false;
-            if (!isTrustedProotLoaderSha256(sha256(loader))) return false;
+            if (!loader.isFile() || !loader.canExecute() || !isExpectedElf(loader, abi)) return false;
+            if (!isTrustedProotLoaderSha256ForAbi(abi, sha256(loader))) return false;
+            String actualEngineSha = sha256(engine);
+            if (!isTrustedProotSha256ForAbi(abi, actualEngineSha)) return false;
             String expected = p.getProperty("engine_sha256", "");
-            return expected.length() == 64 && expected.equalsIgnoreCase(sha256(engine));
+            return expected.length() == 64 && expected.equalsIgnoreCase(actualEngineSha);
         } catch (Exception ignored) {
             return false;
         }
     }
 
-    private static boolean isArm64Elf(File file) throws IOException {
+    static boolean isExpectedElf(File file, String abi) throws IOException {
         byte[] header = new byte[20];
         try (FileInputStream input = new FileInputStream(file)) {
             int offset = 0;
@@ -51,13 +80,12 @@ public final class RuntimeEvidence {
                 if (count < 0) break;
                 offset += count;
             }
-            return offset >= 20
-                    && (header[0] & 0xff) == 0x7f
-                    && header[1] == 'E' && header[2] == 'L' && header[3] == 'F'
-                    && (header[4] & 0xff) == 2
-                    && (header[5] & 0xff) == 1
-                    && (header[18] & 0xff) == 0xb7
-                    && (header[19] & 0xff) == 0x00;
+            if (offset < 20 || (header[0] & 0xff) != 0x7f || header[1] != 'E' || header[2] != 'L' || header[3] != 'F'
+                    || (header[4] & 0xff) != 2 || (header[5] & 0xff) != 1) return false;
+            int machine = (header[18] & 0xff) | ((header[19] & 0xff) << 8);
+            if (RuntimeAbi.ARM64_V8A.equals(abi)) return machine == 183;
+            if (RuntimeAbi.X86_64.equals(abi)) return machine == 62;
+            return false;
         }
     }
 

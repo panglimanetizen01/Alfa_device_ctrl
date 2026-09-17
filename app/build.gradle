@@ -12,6 +12,7 @@ android {
         main {
             jniLibs.srcDir("$buildDir/generated/jniLibs")
             assets.srcDir("$buildDir/generated/assets")
+            assets.srcDir("$rootDir/runtime")
         }
     }
 
@@ -53,14 +54,40 @@ android {
     }
 }
 
-def prootLoaderOutput = file("$buildDir/generated/jniLibs/arm64-v8a/libproot-loader.so")
+def prootLoaderOutputs = [
+        'arm64-v8a': file("$buildDir/generated/jniLibs/arm64-v8a/libproot-loader.so"),
+        'x86_64': file("$buildDir/generated/jniLibs/x86_64/libproot-loader.so")
+]
+def prootX86Outputs = [
+        file("$buildDir/generated/jniLibs/x86_64/libproot.so"),
+        file("$buildDir/generated/jniLibs/x86_64/libproot-loader.so")
+]
 
-tasks.register('prepareProotLoader', Exec) {
+tasks.register('prepareProotLoader') {
     inputs.file(file("$rootDir/tools/build_proot_loader.sh"))
-    outputs.file(prootLoaderOutput)
-    workingDir rootProject.projectDir
-    environment 'PROOT_LOADER_OUT', prootLoaderOutput.absolutePath
-    commandLine 'bash', 'tools/build_proot_loader.sh'
+    outputs.files(prootLoaderOutputs.values())
+    doLast {
+        exec {
+            workingDir rootProject.projectDir
+            commandLine 'bash', 'tools/build_proot_loader.sh'
+        }
+    }
+}
+
+tasks.register('prepareProotX86_64') {
+    inputs.file(file("$rootDir/tools/build_proot_x86_64.sh"))
+    outputs.files(prootX86Outputs)
+    doLast {
+        exec {
+            workingDir rootProject.projectDir
+            commandLine 'bash', 'tools/build_proot_x86_64.sh'
+        }
+    }
+}
+
+tasks.register('prepareNativeProot') {
+    dependsOn tasks.named('prepareProotLoader')
+    dependsOn tasks.named('prepareProotX86_64')
 }
 
 tasks.register('prepareGate7LaunchContract') {
@@ -109,7 +136,7 @@ tasks.register('prepareGate7LaunchContract') {
 }
 
 tasks.named('preBuild').configure {
-    dependsOn tasks.named('prepareProotLoader')
+    dependsOn tasks.named('prepareNativeProot')
 }
 
 tasks.configureEach {
@@ -120,7 +147,7 @@ tasks.configureEach {
 
 tasks.configureEach {
     if (name == 'testDebugUnitTest') {
-        dependsOn tasks.named('prepareProotLoader')
+        dependsOn tasks.named('prepareNativeProot')
     }
 }
 
