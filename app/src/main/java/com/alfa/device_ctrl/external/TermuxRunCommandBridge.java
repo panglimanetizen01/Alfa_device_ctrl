@@ -10,7 +10,7 @@ import android.os.Build;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** Evidence-producing bridge for Termux's documented RUN_COMMAND external execution lane. */
-public final class TermuxRunCommandBridge {
+public final class TermuxRunCommandBridge implements ExternalExecutionTransport {
     public static final String TERMUX_PACKAGE = "com.termux";
     public static final String TERMUX_API_PACKAGE = "com.termux.api";
     public static final String RUN_COMMAND_PERMISSION = "com.termux.permission.RUN_COMMAND";
@@ -34,16 +34,37 @@ public final class TermuxRunCommandBridge {
     private static final AtomicInteger REQUEST_IDS = new AtomicInteger(1);
     private final Context context;
 
-    public interface Callback {
-        void onStarted(long pid);
-        void onStdout(String output);
-        void onStderr(String output);
-        void onExit(int exitCode);
-        void onError(String message);
-    }
-
     public TermuxRunCommandBridge(Context context) {
         this.context = context.getApplicationContext();
+    }
+
+    @Override
+    public com.alfa.device_ctrl.ExecutionLane lane() {
+        return com.alfa.device_ctrl.ExecutionLane.TERMUX;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return isInstalled();
+    }
+
+    @Override
+    public boolean hasPermission() {
+        return context.checkSelfPermission(RUN_COMMAND_PERMISSION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    @Override
+    public boolean supportsStreamingStdin() {
+        return false;
+    }
+
+    @Override
+    public void execute(String[] command, String workDir, String stdin, Callback callback) {
+        if (command == null || command.length == 0) {
+            callback.onError("empty command");
+            return;
+        }
+        execute(command[0], tail(command), workDir, stdin, callback);
     }
 
     public boolean isInstalled() {
@@ -53,10 +74,6 @@ public final class TermuxRunCommandBridge {
         } catch (PackageManager.NameNotFoundException ignored) {
             return false;
         }
-    }
-
-    public boolean hasPermission() {
-        return context.checkSelfPermission(RUN_COMMAND_PERMISSION) == PackageManager.PERMISSION_GRANTED;
     }
 
     public void execute(String commandPath, String[] arguments, String workDir, String stdin, Callback callback) {
@@ -101,15 +118,29 @@ public final class TermuxRunCommandBridge {
         }
     }
 
+    @Override
+    public void writeStdin(String input) {
+        // RUN_COMMAND supports initial stdin payload only; it does not expose a streaming stdin channel.
+    }
+
+    @Override
+    public void terminate() {
+        // RUN_COMMAND does not expose a caller-side process handle for termination.
+    }
+
+    private String[] tail(String[] command) {
+        String[] result = new String[command.length - 1];
+        if (result.length > 0) System.arraycopy(command, 1, result, 0, result.length);
+        return result;
+    }
+
     private String[] wrapCommand(String commandPath, String[] arguments) {
         int argCount = arguments == null ? 0 : arguments.length;
         String[] wrapped = new String[argCount + 3];
         wrapped[0] = "-c";
         wrapped[1] = "echo $$; exec \"$0\" \"$@\"";
         wrapped[2] = commandPath;
-        if (arguments != null) {
-            System.arraycopy(arguments, 0, wrapped, 3, arguments.length);
-        }
+        if (arguments != null) System.arraycopy(arguments, 0, wrapped, 3, arguments.length);
         return wrapped;
     }
 
