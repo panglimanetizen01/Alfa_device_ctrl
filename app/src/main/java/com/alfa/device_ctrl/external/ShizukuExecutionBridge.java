@@ -77,7 +77,8 @@ public final class ShizukuExecutionBridge {
         }
 
         final Shizuku.UserServiceArgs args = userServiceArgs;
-        final ServiceConnection connection = new ServiceConnection() {
+        final ServiceConnection[] connectionHolder = new ServiceConnection[1];
+        connectionHolder[0] = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder binder) {
                 IAlfaShizukuService remote = IAlfaShizukuService.Stub.asInterface(binder);
@@ -104,7 +105,7 @@ public final class ShizukuExecutionBridge {
                         @Override
                         public void onExit(int exitCode) {
                             callback.onExit(exitCode);
-                            cleanup(args, connection);
+                            cleanup(args, connectionHolder[0]);
                         }
 
                         @Override
@@ -114,7 +115,7 @@ public final class ShizukuExecutionBridge {
                     });
                 } catch (Throwable error) {
                     callback.onError(describe(error));
-                    cleanup(args, connection);
+                    cleanup(args, connectionHolder[0]);
                 }
             }
 
@@ -128,10 +129,10 @@ public final class ShizukuExecutionBridge {
         };
 
         try {
-            Shizuku.bindUserService(args, connection);
+            Shizuku.bindUserService(args, connectionHolder[0]);
         } catch (Throwable error) {
             callback.onError(describe(error));
-            cleanup(args, connection);
+            cleanup(args, connectionHolder[0]);
         }
     }
 
@@ -165,9 +166,11 @@ public final class ShizukuExecutionBridge {
     }
 
     private void cleanup(Shizuku.UserServiceArgs args, ServiceConnection connection) {
-        try {
-            Shizuku.unbindUserService(args, connection, true);
-        } catch (Throwable ignored) {
+        if (connection != null) {
+            try {
+                Shizuku.unbindUserService(args, connection, true);
+            } catch (Throwable ignored) {
+            }
         }
         synchronized (lock) {
             service = null;
