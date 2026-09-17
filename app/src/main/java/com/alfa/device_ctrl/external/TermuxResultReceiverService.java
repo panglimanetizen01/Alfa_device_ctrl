@@ -41,14 +41,14 @@ public final class TermuxResultReceiverService extends IntentService {
         String stdout = result.getString(TermuxRunCommandBridge.RESULT_STDOUT, "");
         String stderr = result.getString(TermuxRunCommandBridge.RESULT_STDERR, "");
         int exitCode = result.getInt(TermuxRunCommandBridge.RESULT_EXIT_CODE, -1);
-        int errorCode = result.getInt(TermuxRunCommandBridge.RESULT_ERR, 0);
+        int errorCode = result.getInt(TermuxRunCommandBridge.RESULT_ERR, TermuxRunCommandBridge.TERMUX_RESULT_OK);
         String errorMessage = result.getString(TermuxRunCommandBridge.RESULT_ERRMSG, "");
 
         PidAndOutput pidAndOutput = extractPid(stdout);
         if (pidAndOutput.pid > 0) callback.onStarted(pidAndOutput.pid, -1);
         if (!pidAndOutput.output.isEmpty()) callback.onStdout(pidAndOutput.output);
         if (!stderr.isEmpty()) callback.onStderr(stderr);
-        if (errorCode != 0 || !errorMessage.isEmpty()) {
+        if (errorCode != TermuxRunCommandBridge.TERMUX_RESULT_OK || !errorMessage.isEmpty()) {
             callback.onError(errorMessage.isEmpty() ? "Termux returned error code " + errorCode : errorMessage);
         }
         callback.onExit(exitCode);
