@@ -1,0 +1,139 @@
+name: G2 Four-Session Lifecycle Instrumentation
+
+on:
+  workflow_run:
+    workflows: ["Alfa APK Readiness"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  g2-android-dut:
+    name: G2 Android instrumentation DUT
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      PRODUCER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
+      PACKAGE: com.alfa.device_ctrl
+      INSTRUMENTATION: com.alfa.device_ctrl.test/androidx.test.runner.AndroidJUnitRunner
+    steps:
+      - name: Checkout exact producer source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          ref: ${{ env.SOURCE_COMMIT }}
+
+      - name: Verify source identity
+        run: |
+          set -euo pipefail
+          test "$SOURCE_COMMIT" = "$(git rev-parse HEAD)"
+          git fsck --full --no-progress
+          echo "G2_SOURCE_COMMIT=$SOURCE_COMMIT"
+
+      - name: Download exact canonical APK artifact
+        if: ${{ github.event_name == 'workflow_run' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: alfa-device-ctrl-stitch-${{ env.SOURCE_COMMIT }}
+          path: deployment
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve and verify canonical APK
+        run: |
+          set -euo pipefail
+          APK="$(find deployment -type f -name '*.apk' -print -quit)"
+          MANIFEST="$(find deployment -type f -name 'apk-artifact-provenance.txt' -print -quit)"
+          test -n "$APK"
+          test -n "$MANIFEST"
+          EXPECTED="$(sed -n 's/^apk_sha256=//p' "$MANIFEST")"
+          test -n "$EXPECTED"
+          ACTUAL="$(sha256sum "$APK" | awk '{print $1}')"
+          test "$ACTUAL" = "$EXPECTED"
+          test "$(sed -n 's/^source_commit=//p' "$MANIFEST")" = "$SOURCE_COMMIT"
+          echo "CANONICAL_APK=$APK" >> "$GITHUB_ENV"
+          echo "CANONICAL_APK_SHA256=$ACTUAL" >> "$GITHUB_ENV"
+          echo "CANONICAL_APK_SHA256=$ACTUAL"
+
+      - name: Prepare Android SDK and x86_64 AVD
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n g2-api35 -k "system-images;android-35;google_apis;x86_64" --force
+          echo "hw.cpu.ncore=2" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
+          echo "hw.ramSize=4096" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
+
+      - name: Boot Android DUT and prove ADB readiness
+        run: |
+          set -euo pipefail
+          nohup "$ANDROID_HOME/emulator/emulator" -avd g2-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > "$RUNNER_TEMP/g2-emulator.log" 2>&1 &
+          adb wait-for-device
+          timeout 180 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q "1"; do sleep 2; done'
+          adb shell getprop ro.product.cpu.abi
+          adb shell getprop ro.build.version.sdk
+          adb shell get-state
+          echo "DUT_BOOT=PASS"
+
+      - name: Build only the Android instrumentation APK
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleDebugAndroidTest --no-daemon --stacktrace
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+
+      - name: Install exact production APK and test APK
+        run: |
+          set -euo pipefail
+          adb install -r "$CANONICAL_APK"
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          adb shell pm path "$PACKAGE"
+          adb shell pm list packages | grep -Fx "package:$PACKAGE"
+          echo "APK_INSTALL=PASS"
+
+      - name: Prove application process and launcher start
+        run: |
+          set -euo pipefail
+          adb shell am start -W -n "$PACKAGE/.StitchOperationalActivityV2"
+          timeout 30 bash -c 'until adb shell pidof "$PACKAGE" | tr -d "\r" | grep -Eq "^[0-9]+( [0-9]+)*$"; do sleep 1; done'
+          PID="$(adb shell pidof "$PACKAGE" | tr -d "\r")"
+          test -n "$PID"
+          echo "APP_START=PASS"
+          echo "APP_PID=$PID"
+
+      - name: Run canonical fresh-start terminal instrumentation
+        id: instrumentation
+        run: |
+          set -o pipefail
+          CLASS='com.alfa.device_ctrl.AlfaStartupTerminalE2ETest#freshStartupReachesTerminalPromptAndExecutesPwd'
+          adb shell am instrument -w -r \
+            -e class "$CLASS" \
+            -e expected_apk_sha256 "$CANONICAL_APK_SHA256" \
+            "$INSTRUMENTATION" 2>&1 | tee "$RUNNER_TEMP/g2-instrumentation.txt"
+
+      - name: Capture runtime execution evidence
+        if: always()
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/g2-evidence"
+          adb shell get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1
+          adb shell pm path "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-path.txt" 2>&1
+          adb shell pidof "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/app-pid.txt" 2>&1
+          adb shell dumpsys package "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-dumpsys.txt" 2>&1
+          adb shell pm list instrumentation > "$RUNNER_TEMP/g2-evidence/instrumentation-list.txt" 2>&1
+          adb logcat -d > "$RUNNER_TEMP/g2-evidence/logcat.txt" 2>&1
+          cp "$RUNNER_TEMP/g2-emulator.log" "$RUNNER_TEMP/g2-evidence/emulator.log" 2>/dev/null || true
+          cp "$RUNNER_TEMP/g2-instrumentation.txt" "$RUNNER_TEMP/g2-evidence/instrumentation.txt" 2>/dev/null || true
+          printf 'source_commit=%s\ncanonical_apk_sha256=%s\nproducer_run_id=%s\n' "$SOURCE_COMMIT" "$CANONICAL_APK_SHA256" "$PRODUCER_RUN_ID" > "$RUNNER_TEMP/g2-evidence/provenance.txt"
+
+      - name: Upload retained Android DUT evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: g2-android-dut-evidence-${{ env.SOURCE_COMMIT }}
+          path: ${{ runner.temp }}/g2-evidence
+          if-no-files-found: error
+          retention-days: 14
