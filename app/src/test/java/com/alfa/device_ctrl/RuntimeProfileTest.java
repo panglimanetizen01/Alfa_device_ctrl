@@ -5,6 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+
 import org.junit.Test;
 
 public final class RuntimeProfileTest {
@@ -41,6 +45,21 @@ public final class RuntimeProfileTest {
             assertEquals("{SHELL}", args[args.length - 2]);
             assertEquals("-i", args[args.length - 1]);
         }
+    }
+
+    @Test public void runtimeRegistryHashIsDerivedFromCanonicalJson() throws Exception {
+        File file = new File("../runtime/runtimes.v1.json");
+        if (!file.isFile()) file = new File("runtime/runtimes.v1.json");
+        assertTrue("canonical runtime registry JSON is missing", file.isFile());
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        assertEquals(hex(digest.digest(bytes)), RuntimeRegistry.canonicalRegistrySha256());
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder result = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) result.append(String.format("%02x", value));
+        return result.toString();
     }
 
     private static int find(String[] values, String expected) {
