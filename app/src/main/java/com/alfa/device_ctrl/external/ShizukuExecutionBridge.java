@@ -9,16 +9,8 @@ import android.os.IBinder;
 import rikka.shizuku.Shizuku;
 
 /** App-side lifecycle and evidence bridge for the Shizuku UserService lane. */
-public final class ShizukuExecutionBridge {
+public final class ShizukuExecutionBridge implements ExternalExecutionTransport {
     public static final int REQUEST_PERMISSION_CODE = 4201;
-
-    public interface Callback {
-        void onStarted(long pid, int uid);
-        void onStdout(String chunk);
-        void onStderr(String chunk);
-        void onExit(int exitCode);
-        void onError(String message);
-    }
 
     private final Context context;
     private final Object lock = new Object();
@@ -30,10 +22,17 @@ public final class ShizukuExecutionBridge {
         this.context = context.getApplicationContext();
     }
 
+    @Override
+    public com.alfa.device_ctrl.ExecutionLane lane() {
+        return com.alfa.device_ctrl.ExecutionLane.SHIZUKU_RISH;
+    }
+
+    @Override
     public boolean isAvailable() {
         return Shizuku.pingBinder();
     }
 
+    @Override
     public boolean hasPermission() {
         if (!isAvailable()) return false;
         try {
@@ -48,7 +47,13 @@ public final class ShizukuExecutionBridge {
         Shizuku.requestPermission(REQUEST_PERMISSION_CODE);
     }
 
-    public void execute(String[] command, String workDir, Callback callback) {
+    @Override
+    public boolean supportsStreamingStdin() {
+        return true;
+    }
+
+    @Override
+    public void execute(String[] command, String workDir, String initialStdin, Callback callback) {
         if (!isAvailable()) {
             callback.onError("Shizuku binder unavailable");
             return;
@@ -87,32 +92,16 @@ public final class ShizukuExecutionBridge {
                 }
                 try {
                     remote.execute(command, workDir, new IAlfaShizukuCallback.Stub() {
-                        @Override
-                        public void onStarted(long pid, int uid) {
-                            callback.onStarted(pid, uid);
-                        }
-
-                        @Override
-                        public void onStdout(String chunk) {
-                            callback.onStdout(chunk);
-                        }
-
-                        @Override
-                        public void onStderr(String chunk) {
-                            callback.onStderr(chunk);
-                        }
-
-                        @Override
-                        public void onExit(int exitCode) {
+                        @Override public void onStarted(long pid, int uid) { callback.onStarted(pid, uid); }
+                        @Override public void onStdout(String chunk) { callback.onStdout(chunk); }
+                        @Override public void onStderr(String chunk) { callback.onStderr(chunk); }
+                        @Override public void onExit(int exitCode) {
                             callback.onExit(exitCode);
                             cleanup(args, connectionHolder[0]);
                         }
-
-                        @Override
-                        public void onError(String message) {
-                            callback.onError(message);
-                        }
+                        @Override public void onError(String message) { callback.onError(message); }
                     });
+                    if (initialStdin != null && !initialStdin.isEmpty()) remote.writeStdin(initialStdin);
                 } catch (Throwable error) {
                     callback.onError(describe(error));
                     cleanup(args, connectionHolder[0]);
@@ -121,9 +110,7 @@ public final class ShizukuExecutionBridge {
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                synchronized (lock) {
-                    service = null;
-                }
+                synchronized (lock) { service = null; }
                 callback.onError("Shizuku UserService disconnected");
             }
         };
@@ -136,41 +123,31 @@ public final class ShizukuExecutionBridge {
         }
     }
 
+    @Override
     public void writeStdin(String input) {
         IAlfaShizukuService remote;
-        synchronized (lock) {
-            remote = service;
-        }
+        synchronized (lock) { remote = service; }
         if (remote == null) return;
         try {
             remote.writeStdin(input);
         } catch (Throwable error) {
             Callback target;
-            synchronized (lock) {
-                target = callback;
-            }
+            synchronized (lock) { target = callback; }
             if (target != null) target.onError(describe(error));
         }
     }
 
+    @Override
     public void terminate() {
         IAlfaShizukuService remote;
-        synchronized (lock) {
-            remote = service;
-        }
+        synchronized (lock) { remote = service; }
         if (remote == null) return;
-        try {
-            remote.terminate();
-        } catch (Throwable ignored) {
-        }
+        try { remote.terminate(); } catch (Throwable ignored) { }
     }
 
     private void cleanup(Shizuku.UserServiceArgs args, ServiceConnection connection) {
         if (connection != null) {
-            try {
-                Shizuku.unbindUserService(args, connection, true);
-            } catch (Throwable ignored) {
-            }
+            try { Shizuku.unbindUserService(args, connection, true); } catch (Throwable ignored) { }
         }
         synchronized (lock) {
             service = null;
