@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-/** Fresh-install acceptance proof: MainActivity must reach a real PRoot prompt and execute pwd as /root. */
+/** Fresh-install acceptance proof: StitchOperationalActivity must reach a real PRoot prompt and execute pwd as /root. */
 @RunWith(AndroidJUnit4.class)
 public final class AlfaStartupTerminalE2ETest {
     private static final long STARTUP_TIMEOUT_MS = 180000L;
@@ -42,7 +42,7 @@ public final class AlfaStartupTerminalE2ETest {
         assertTrue("installed APK source missing", new File(info.sourceDir).isFile());
         assertEquals("installed APK does not match exact CI artifact", expectedApkSha256, sha256(new File(info.sourceDir)));
 
-        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+        try (ActivityScenario<StitchOperationalActivity> scenario = ActivityScenario.launch(StitchOperationalActivity.class)) {
             long deadline = SystemClock.uptimeMillis() + STARTUP_TIMEOUT_MS;
             AtomicReference<RuntimeSessionManager> managerRef = new AtomicReference<>();
             AtomicReference<String> transcriptRef = new AtomicReference<>("");
@@ -105,9 +105,10 @@ public final class AlfaStartupTerminalE2ETest {
 
     private static RuntimeSessionManager readManager(Activity activity) {
         try {
-            Field field = MainActivity.class.getDeclaredField("sessionManager");
+            Field field = StitchOperationalActivity.class.getDeclaredField("sessionMultiplexer");
             field.setAccessible(true);
-            return (RuntimeSessionManager) field.get(activity);
+            RuntimeSessionMultiplexer multiplexer = (RuntimeSessionMultiplexer) field.get(activity);
+            return multiplexer.getSession("SESSION_A");
         } catch (Exception error) {
             return null;
         }

@@ -5,11 +5,32 @@ on:
   pull_request:
     branches: [master]
   workflow_dispatch:
+
+env:
+  ALFA_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   g12:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ env.ALFA_SOURCE_COMMIT }}
+          fetch-depth: 0
+      - name: Verify source identity
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ALFA_SOURCE_COMMIT"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            test "${GITHUB_REF}" = refs/heads/master
+            test "${GITHUB_SHA}" = "$ALFA_SOURCE_COMMIT"
+          elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            test "${GITHUB_BASE_REF}" = master
+            test "${{ github.event.pull_request.head.sha }}" = "$ALFA_SOURCE_COMMIT"
+          fi
+          echo EXACT_SOURCE_IDENTITY=PASS
       - name: Bash syntax
         run: |
           bash -n tools/gate12_runtime_kernel.sh

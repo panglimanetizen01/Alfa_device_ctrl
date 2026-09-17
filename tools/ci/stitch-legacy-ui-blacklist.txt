@@ -1,6 +1,4 @@
 # Explicit retired UI identifiers. One exact literal per line; no wildcard/heuristic matching.
-ALFA::CTRL
 ALFA OS
 ALFA_OS
 ALFA PTY  •  INTERACTIVE SESSION
-● ALFA::CTRL

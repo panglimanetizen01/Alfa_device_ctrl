@@ -26,8 +26,8 @@ public final class AlfaApplication extends Application {
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity activity) { startedActivities.incrementAndGet(); }
             @Override public void onActivityStopped(Activity activity) { startedActivities.updateAndGet(value -> Math.max(0, value - 1)); }
-            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowMetricsAndInsetsPolicy(activity); AlfaUiTheme.apply(activity); AlfaFinalUiHooks.apply(activity); }
-            @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); AlfaFinalUiHooks.apply(activity); RuntimeStartupCoordinator.onActivityResumed(activity); }
+            @Override public void onActivityCreated(Activity activity, Bundle state) { installWindowMetricsAndInsetsPolicy(activity); AlfaUiTheme.apply(activity); }
+            @Override public void onActivityResumed(Activity activity) { AlfaUiTheme.apply(activity); RuntimeStartupCoordinator.onActivityResumed(activity); }
             @Override public void onActivityPaused(Activity activity) { }
             @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
             @Override public void onActivityDestroyed(Activity activity) { }
@@ -39,7 +39,7 @@ public final class AlfaApplication extends Application {
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
 
     private static void installWindowMetricsAndInsetsPolicy(Activity activity) {
-        if (!(activity instanceof MainActivity)) return; View content = activity.findViewById(android.R.id.content); if (!(content instanceof FrameLayout)) return;
+        if (!(activity instanceof StitchOperationalActivity)) return; View content = activity.findViewById(android.R.id.content); if (!(content instanceof FrameLayout)) return;
         ActualWindowMetrics metrics = ActualWindowMetrics.from(activity); content.setTag(metrics); AdaptivePanelLayoutController.install(content, metrics);
         content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> { if (right != oldRight || bottom != oldBottom) { ActualWindowMetrics current = ActualWindowMetrics.from(activity); content.setTag(current); AdaptivePanelLayoutController.install(content, current); } });
         final int baseLeft = content.getPaddingLeft(); final int baseTop = content.getPaddingTop(); final int baseRight = content.getPaddingRight(); final int baseBottom = content.getPaddingBottom(); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) activity.getWindow().setDecorFitsSystemWindows(false);
