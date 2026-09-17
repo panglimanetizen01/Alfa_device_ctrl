@@ -8,15 +8,22 @@ import java.nio.file.Files;
 
 import org.junit.Test;
 
-/** Locks that the active launcher has a real production caller for external lanes. */
+/** Locks the active production UI -> external capability -> transport path. */
 public final class ExternalExecutionProductionCallerContractTest {
     @Test
-    public void activeStitchActivityOwnsExternalCoordinator() throws Exception {
-        File source = new File("src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java");
+    public void applicationInstallsExternalLaneUiHook() throws Exception {
+        File source = new File("src/main/java/com/alfa/device_ctrl/AlfaApplication.java");
         String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
-        assertTrue(text.contains("ExternalExecutionCoordinator"));
+        assertTrue(text.contains("ExternalExecutionUiHooks.apply(activity)"));
+    }
+
+    @Test
+    public void uiHookSelectsConcreteExternalLanes() throws Exception {
+        File source = new File("src/main/java/com/alfa/device_ctrl/ExternalExecutionUiHooks.java");
+        String text = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
         assertTrue(text.contains("executeShizukuProbe"));
         assertTrue(text.contains("executeTermuxProbe"));
         assertTrue(text.contains("executeTermuxApiProbe"));
+        assertTrue(text.contains("ExternalExecutionCoordinator"));
     }
 }
