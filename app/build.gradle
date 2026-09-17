@@ -12,6 +12,7 @@ android {
         main {
             jniLibs.srcDir("$buildDir/generated/jniLibs")
             assets.srcDir("$buildDir/generated/assets")
+            assets.srcDir("$rootDir/runtime")
         }
     }
 
