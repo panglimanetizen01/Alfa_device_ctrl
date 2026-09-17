@@ -39,7 +39,7 @@ public final class OperationEvidence {
             p.setProperty("state", state);
             p.setProperty("result", result);
             p.setProperty("process_pid", Integer.toString(processPid));
-            p.setProperty("pty_status", "PASS");
+            p.setProperty("pty_status", processPid > 0 ? "PASS" : "UNPROVEN");
             p.setProperty("prompt_observed", "READY".equals(state) ? "PASS" : "PENDING");
             p.setProperty("environment_profile", String.join(";", contract.environment()));
             p.setProperty("runtime_evidence", contract.runtimeReadyEvidence().getCanonicalPath());
