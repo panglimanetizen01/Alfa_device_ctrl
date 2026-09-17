@@ -1,0 +1,35 @@
+name: Transport Architecture Contract
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  transport-contract:
+    name: Embedded PTY/PRoot transport contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Prove canonical transport boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -R -E 'import com\.termux\.terminal\.TerminalSession|import com\.termux\.view\.TerminalView' app/src/main/java/com/alfa/device_ctrl >/dev/null
+          grep -R 'RuntimeSessionManager' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java >/dev/null
+          grep -R -E 'rikka\.shizuku|ShizukuRemoteProcess|IShizukuService|ShizukuProvider|termux-am|termux-open|Termux:API|com\.termux\.api' app/src/main/java app/build.gradle settings.gradle >/dev/null && {
+            echo 'UNEXPECTED_EXTERNAL_TRANSPORT_BRIDGE_FOUND';
+            exit 1;
+          } || true
+          printf '%s\n' \
+            'TRANSPORT_ARCHITECTURE=APP→RuntimeSessionManager→TerminalSession→embedded PTY→PRoot→rootfs' \
+            'TERMUX_API=NOT_ACTIVE' \
+            'SHIZUKU_RISH=NOT_ACTIVE'
