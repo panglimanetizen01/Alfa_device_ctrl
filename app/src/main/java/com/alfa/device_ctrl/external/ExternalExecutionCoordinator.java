@@ -32,11 +32,11 @@ public final class ExternalExecutionCoordinator {
         String marker = "ALFA_SHIZUKU_PROBE_" + UUID.randomUUID();
         ShizukuExecutionBridge bridge = new ShizukuExecutionBridge(context);
         if (!bridge.isAvailable()) {
-            listener.onResult(failure(ExecutionLane.SHIZUKU_RISH, "Shizuku binder unavailable"));
+            finishFailure(ExecutionLane.SHIZUKU_RISH, marker, "Shizuku binder unavailable", listener);
             return;
         }
         if (!bridge.hasPermission()) {
-            listener.onResult(failure(ExecutionLane.SHIZUKU_RISH, "Shizuku permission not granted"));
+            finishFailure(ExecutionLane.SHIZUKU_RISH, marker, "Shizuku permission not granted", listener);
             return;
         }
         execute(ExecutionLane.SHIZUKU_RISH, bridge,
@@ -48,11 +48,11 @@ public final class ExternalExecutionCoordinator {
         String marker = "ALFA_TERMUX_PROBE_" + UUID.randomUUID();
         TermuxRunCommandBridge bridge = new TermuxRunCommandBridge(context);
         if (!bridge.isInstalled()) {
-            listener.onResult(failure(ExecutionLane.TERMUX, "Termux package not installed"));
+            finishFailure(ExecutionLane.TERMUX, marker, "Termux package not installed", listener);
             return;
         }
         if (!bridge.hasPermission()) {
-            listener.onResult(failure(ExecutionLane.TERMUX, "Termux RUN_COMMAND permission not granted"));
+            finishFailure(ExecutionLane.TERMUX, marker, "Termux RUN_COMMAND permission not granted", listener);
             return;
         }
         execute(ExecutionLane.TERMUX, bridge,
@@ -64,12 +64,12 @@ public final class ExternalExecutionCoordinator {
         String marker = "ALFA_TERMUX_API_PROBE_" + UUID.randomUUID();
         TermuxApiCapability api = new TermuxApiCapability(context);
         if (!api.isInstalled()) {
-            listener.onResult(failure(ExecutionLane.TERMUX_API, "Termux:API package not installed"));
+            finishFailure(ExecutionLane.TERMUX_API, marker, "Termux:API package not installed", listener);
             return;
         }
         TermuxRunCommandBridge bridge = new TermuxRunCommandBridge(context);
         if (!bridge.isInstalled() || !bridge.hasPermission()) {
-            listener.onResult(failure(ExecutionLane.TERMUX_API, "Termux RUN_COMMAND transport unavailable"));
+            finishFailure(ExecutionLane.TERMUX_API, marker, "Termux RUN_COMMAND transport unavailable", listener);
             return;
         }
         // Two boundaries are explicit: RUN_COMMAND is the transport; termux-battery-status
@@ -96,8 +96,19 @@ public final class ExternalExecutionCoordinator {
         });
     }
 
-    private ExternalExecutionResult failure(ExecutionLane lane, String error) {
-        return new ExternalExecutionResult(lane, -1L, -1, "", "", error);
+    private void finishFailure(ExecutionLane lane, String marker, String error, Listener listener) {
+        ExternalExecutionResult result = new ExternalExecutionResult(lane, -1L, -1, "", "", error);
+        persist(result, marker);
+        listener.onEvent("ERROR lane=" + lane + " marker=" + marker + " message=" + error);
+        listener.onResult(result);
+    }
+
+    private void persist(ExternalExecutionResult result, String marker) {
+        try {
+            ExternalExecutionEvidenceStore.persist(context, result, marker);
+        } catch (Throwable ignored) {
+            // The execution result remains authoritative even if local evidence persistence fails.
+        }
     }
 
     private final class EvidenceAccumulator {
@@ -124,6 +135,7 @@ public final class ExternalExecutionCoordinator {
             ExternalExecutionResult result = new ExternalExecutionResult(
                     lane, pid, exitCode, stdout.toString(), stderr.toString(), error);
             mainHandler.removeCallbacks(this::timeout);
+            persist(result, marker);
             listener.onEvent("EXIT lane=" + lane + " pid=" + pid + " exit=" + exitCode + " marker=" + marker);
             listener.onResult(result);
         }
