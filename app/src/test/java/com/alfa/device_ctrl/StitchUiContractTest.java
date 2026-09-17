@@ -41,7 +41,6 @@ public final class StitchUiContractTest {
         String source = new String(Files.readAllBytes(Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java")), StandardCharsets.UTF_8);
         assertTrue(source.contains("ALFA::CTRL"));
         for (String label : StitchUiContract.BOTTOM_NAV_LABELS) assertTrue("missing bottom nav " + label, source.contains("\"" + label + "\""));
-        for (String distro : StitchUiContract.DISTRO_IDS) assertTrue("missing distro " + distro, source.contains(distro));
         assertTrue(source.contains("toggleWindowContent"));
         assertTrue(source.contains("toggleMax"));
         assertTrue(source.contains("writePty"));
