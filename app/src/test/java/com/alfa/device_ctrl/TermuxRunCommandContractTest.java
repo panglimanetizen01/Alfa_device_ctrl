@@ -21,6 +21,18 @@ public final class TermuxRunCommandContractTest {
     }
 
     @Test
+    public void resultSemanticsMatchDocumentedBackgroundExecution() {
+        assertEquals("result", TermuxRunCommandBridge.RESULT_BUNDLE);
+        assertEquals("stdout", TermuxRunCommandBridge.RESULT_STDOUT);
+        assertEquals("stderr", TermuxRunCommandBridge.RESULT_STDERR);
+        assertEquals("exitCode", TermuxRunCommandBridge.RESULT_EXIT_CODE);
+        assertEquals("err", TermuxRunCommandBridge.RESULT_ERR);
+        assertEquals("errmsg", TermuxRunCommandBridge.RESULT_ERRMSG);
+        assertEquals(-1, TermuxRunCommandBridge.TERMUX_RESULT_OK);
+        assertTrue(TermuxRunCommandBridge.TERMUX_SHELL.endsWith("/bin/sh"));
+    }
+
+    @Test
     public void termuxApiIsNotTheRunCommandLane() {
         assertTrue(ExecutionLane.TERMUX.isExternalToApp());
         assertTrue(ExecutionLane.TERMUX_API.isExternalToApp());
