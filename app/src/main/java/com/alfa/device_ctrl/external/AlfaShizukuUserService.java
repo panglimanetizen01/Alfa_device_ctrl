@@ -1,7 +1,6 @@
 package com.alfa.device_ctrl.external;
 
 import android.os.Parcel;
-import android.os.Process;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,7 +23,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
     private static final String PID_WRAPPER = "echo $$; exec \"$0\" \"$@\"";
 
     private final Object lock = new Object();
-    private Process process;
+    private java.lang.Process process;
     private OutputStream stdin;
     private IAlfaShizukuCallback callback;
 
@@ -65,7 +64,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
             }
         }
 
-        final Process child = process;
+        final java.lang.Process child = process;
         try {
             remoteCallback.asBinder().linkToDeath(() -> terminateProcess(child), 0);
         } catch (Throwable ignored) {
@@ -97,7 +96,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
 
     @Override
     public void terminate() {
-        Process child;
+        java.lang.Process child;
         synchronized (lock) {
             child = process;
         }
@@ -114,11 +113,11 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         return super.onTransact(code, data, reply, flags);
     }
 
-    private void readStdout(Process child, IAlfaShizukuCallback remoteCallback) {
+    private void readStdout(java.lang.Process child, IAlfaShizukuCallback remoteCallback) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(child.getInputStream(), StandardCharsets.UTF_8))) {
             String pidLine = reader.readLine();
             long pid = Long.parseLong(pidLine == null ? "-1" : pidLine.trim());
-            remoteCallback.onStarted(pid, Process.myUid());
+            remoteCallback.onStarted(pid, android.os.Process.myUid());
             readStream(reader, true, remoteCallback);
         } catch (Throwable error) {
             notifyError(remoteCallback, describe(error));
@@ -146,7 +145,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         }
     }
 
-    private void awaitExit(Process child, IAlfaShizukuCallback remoteCallback) {
+    private void awaitExit(java.lang.Process child, IAlfaShizukuCallback remoteCallback) {
         try {
             int exitCode = child.waitFor();
             remoteCallback.onExit(exitCode);
@@ -163,7 +162,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         }
     }
 
-    private void terminateProcess(Process child) {
+    private void terminateProcess(java.lang.Process child) {
         if (child == null) return;
         try {
             if (child.isAlive()) child.destroyForcibly();
