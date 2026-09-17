@@ -6,6 +6,7 @@ on:
     branches:
       - master
       - fix/sterile-stitch-apk-boundary
+      - work/g2-four-session-lifecycle
   pull_request:
     branches:
       - master
