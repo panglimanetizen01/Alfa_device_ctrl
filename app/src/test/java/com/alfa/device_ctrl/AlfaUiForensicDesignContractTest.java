@@ -17,7 +17,7 @@ public final class AlfaUiForensicDesignContractTest {
         assertEquals(0xFFEF4444, AlfaUiTheme.OBSIDIAN_ERROR);
         assertEquals(0xFF38BDF8, AlfaUiTheme.OBSIDIAN_TELEMETRY);
         assertEquals(0xFF64748B, AlfaUiTheme.OBSIDIAN_UNKNOWN);
-        assertEquals(0xFF0D1117, AlfaFinalUiPresentation.TERMINAL);
+        assertEquals(0xFF0D1117, AlfaUiTheme.TERMINAL);
         assertEquals(0xFFF0F6FC, AlfaUiTheme.OBSIDIAN_TEXT);
         assertEquals(0xFF8B949E, AlfaUiTheme.OBSIDIAN_TEXT_MUTED);
     }

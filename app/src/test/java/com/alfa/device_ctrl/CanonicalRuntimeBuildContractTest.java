@@ -26,9 +26,10 @@ public final class CanonicalRuntimeBuildContractTest {
     @Test public void manifestMustLetModernAgpControlNativeLibraryPackaging() throws Exception {
         String text=new String(Files.readAllBytes(Paths.get("src/main/AndroidManifest.xml")),StandardCharsets.UTF_8); assertFalse(text.contains("android:extractNativeLibs"));
     }
-    @Test public void mainActivityMustUseSelectedRuntimeProfile() throws Exception {
-        Path activity=Paths.get("src/main/java/com/alfa/device_ctrl/MainActivity.java"); String text=new String(Files.readAllBytes(activity),StandardCharsets.UTF_8);
-        assertTrue(text.contains("RuntimeProfile")); assertTrue(text.contains("selectedRuntime")); assertTrue(text.contains("installer.install(profile"));
+    @Test public void stitchOperationalActivityMustOwnSelectedRuntimeInstallation() throws Exception {
+        Path activity=Paths.get("src/main/java/com/alfa/device_ctrl/StitchOperationalActivity.java"); String text=new String(Files.readAllBytes(activity),StandardCharsets.UTF_8);
+        assertTrue(text.contains("RuntimeProfile")); assertTrue(text.contains("selectedRuntime"));
+        assertTrue(text.contains("selectedRuntime=p")); assertTrue(text.contains("install(p)"));
         assertFalse(text.contains("ubuntu-base/releases")); assertFalse(text.contains("alfa:ubuntu:"));
     }
 }

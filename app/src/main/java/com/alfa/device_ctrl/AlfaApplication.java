@@ -39,7 +39,7 @@ public final class AlfaApplication extends Application {
     public static boolean hasVisibleActivity() { return instance != null && instance.startedActivities.get() > 0; }
 
     private static void installWindowMetricsAndInsetsPolicy(Activity activity) {
-        if (!(activity instanceof MainActivity)) return; View content = activity.findViewById(android.R.id.content); if (!(content instanceof FrameLayout)) return;
+        if (!(activity instanceof StitchOperationalActivity)) return; View content = activity.findViewById(android.R.id.content); if (!(content instanceof FrameLayout)) return;
         ActualWindowMetrics metrics = ActualWindowMetrics.from(activity); content.setTag(metrics); AdaptivePanelLayoutController.install(content, metrics);
         content.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> { if (right != oldRight || bottom != oldBottom) { ActualWindowMetrics current = ActualWindowMetrics.from(activity); content.setTag(current); AdaptivePanelLayoutController.install(content, current); } });
         final int baseLeft = content.getPaddingLeft(); final int baseTop = content.getPaddingTop(); final int baseRight = content.getPaddingRight(); final int baseBottom = content.getPaddingBottom(); if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) activity.getWindow().setDecorFitsSystemWindows(false);
