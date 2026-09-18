@@ -62,6 +62,9 @@ jobs:
         run: |
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          command -v adb
           mkdir -p "$HOME/.android/avd"
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n alfa-canonical-api35 -k "system-images;android-35;google_apis;x86_64" -p "$HOME/.android/avd/alfa-canonical-api35.avd" --force
           test -s "$HOME/.android/avd/alfa-canonical-api35.avd/config.ini"
