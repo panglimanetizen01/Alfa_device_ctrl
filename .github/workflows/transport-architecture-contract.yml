@@ -19,17 +19,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Prove canonical transport boundary
+      - name: Prove canonical runtime transport and sibling external lanes
         shell: bash
         run: |
           set -euo pipefail
+
+          # The Linux runtime must remain on the proven internal PTY/PRoot path.
           grep -R -E 'import com\.termux\.terminal\.TerminalSession|import com\.termux\.view\.TerminalView' app/src/main/java/com/alfa/device_ctrl >/dev/null
           grep -R 'RuntimeSessionManager' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java >/dev/null
-          grep -R -E 'rikka\.shizuku|ShizukuRemoteProcess|IShizukuService|ShizukuProvider|termux-am|termux-open|Termux:API|com\.termux\.api' app/src/main/java app/build.gradle settings.gradle >/dev/null && {
-            echo 'UNEXPECTED_EXTERNAL_TRANSPORT_BRIDGE_FOUND';
-            exit 1;
-          } || true
+          if grep -R -E 'ShizukuExecutionBridge|TermuxRunCommandBridge|TermuxApiCapability|rikka\.shizuku|com\.termux\.RUN_COMMAND' \
+              app/src/main/java/com/alfa/device_ctrl/RuntimeSessionManager.java \
+              app/src/main/java/com/alfa/device_ctrl/InteractiveSessionContract.java \
+              app/src/main/java/com/alfa/device_ctrl/RuntimeInstaller.java 2>/dev/null; then
+            echo 'EXTERNAL_LANE_MUST_NOT_REPLACE_RUNTIME_TRANSPORT'
+            exit 1
+          fi
+
+          # External lanes are real source implementations, but remain outside the runtime engine.
+          test -f app/src/main/java/com/alfa/device_ctrl/external/ExternalExecutionTransport.java
+          test -f app/src/main/java/com/alfa/device_ctrl/external/ShizukuExecutionBridge.java
+          test -f app/src/main/java/com/alfa/device_ctrl/external/AlfaShizukuUserService.java
+          test -f app/src/main/java/com/alfa/device_ctrl/external/TermuxRunCommandBridge.java
+          test -f app/src/main/java/com/alfa/device_ctrl/external/TermuxResultReceiverService.java
+          test -f app/src/main/java/com/alfa/device_ctrl/external/TermuxApiCapability.java
+
+          grep -R 'ShizukuProvider' app/src/main/AndroidManifest.xml app/build.gradle >/dev/null
+          grep -R 'bindUserService' app/src/main/java/com/alfa/device_ctrl/external/ShizukuExecutionBridge.java >/dev/null
+          grep -R 'com\.termux\.RUN_COMMAND' app/src/main/java/com/alfa/device_ctrl/external/TermuxRunCommandBridge.java >/dev/null
+          grep -R 'com\.termux\.api' app/src/main/java/com/alfa/device_ctrl/external/TermuxApiCapability.java >/dev/null
+
+          # Rish/newProcess is not used as the Alfa app's bridge; UserService is the process primitive.
+          if grep -R -E 'ShizukuRemoteProcess|Shizuku#newProcess|newProcess\(' app/src/main/java/com/alfa/device_ctrl/external >/dev/null; then
+            echo 'DEPRECATED_SHIZUKU_NEW_PROCESS_FOUND'
+            exit 1
+          fi
+
           printf '%s\n' \
-            'TRANSPORT_ARCHITECTURE=APP→RuntimeSessionManager→TerminalSession→embedded PTY→PRoot→rootfs' \
-            'TERMUX_API=NOT_ACTIVE' \
-            'SHIZUKU_RISH=NOT_ACTIVE'
+            'RUNTIME_TRANSPORT=APP→RuntimeSessionManager→TerminalSession→embedded PTY→PRoot→rootfs' \
+            'SHIZUKU_TRANSPORT=Alfa→ShizukuProvider→UserService→external process→PID/stdout/stderr/exit' \
+            'TERMUX_TRANSPORT=Alfa→RUN_COMMAND Intent→RunCommandService→external process→PendingIntent result' \
+            'TERMUX_API=DEVICE_API_CAPABILITY_ONLY' \
+            'RISH=SHIZUKU-BACKED_EXTERNAL_SHELL_INTERFACE'

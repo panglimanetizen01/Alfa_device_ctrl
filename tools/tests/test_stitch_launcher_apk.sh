@@ -7,12 +7,12 @@ AAPT2="${2:-${ANDROID_HOME:-}/build-tools/35.0.0/aapt2}"
 [ -f "$APK" ] || { echo "APK_NOT_FOUND=$APK"; exit 1; }
 [ -x "$AAPT2" ] || { echo "AAPT2_NOT_FOUND=$AAPT2"; exit 1; }
 
-BADGING="$($AAPT2 dump badging "$APK")"
+BADGING="$("$AAPT2" dump badging "$APK")"
 printf '%s\n' "$BADGING" | grep -Fq "package: name='com.alfa.device_ctrl'"
 
 LAUNCH_LINE="$(printf '%s\n' "$BADGING" | grep '^launchable-activity:' || true)"
 case "$LAUNCH_LINE" in
-  *"name='com.alfa.device_ctrl.StitchOperationalActivity'"*) ;;
+  *"name='com.alfa.device_ctrl.StitchOperationalActivityV2'"*) ;;
   *)
     echo "STITCH_LAUNCHER=FAIL"
     echo "ACTUAL_LAUNCHABLE=${LAUNCH_LINE:-NONE}"
@@ -20,7 +20,7 @@ case "$LAUNCH_LINE" in
     ;;
 esac
 
-XMLTREE="$($AAPT2 dump xmltree "$APK" --file AndroidManifest.xml)"
+XMLTREE="$("$AAPT2" dump xmltree "$APK" --file AndroidManifest.xml)"
 export XMLTREE
 python3 - <<'PY'
 import os
@@ -40,7 +40,7 @@ for line in lines:
 if current:
     blocks.append("\n".join(current))
 
-needle = "com.alfa.device_ctrl.StitchOperationalActivity"
+needle = "com.alfa.device_ctrl.StitchOperationalActivityV2"
 stitch = next((b for b in blocks if needle in b), None)
 if stitch is None:
     print("STITCH_ACTIVITY_IN_FINAL_MANIFEST=FAIL")
