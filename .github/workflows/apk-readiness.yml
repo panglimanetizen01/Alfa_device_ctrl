@@ -39,6 +39,11 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
+      - name: Verify canonical APK producer policy
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_canonical_apk_provenance_contract.sh
+
       - name: Diagnose Debug Keystore Secret Boundary
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
