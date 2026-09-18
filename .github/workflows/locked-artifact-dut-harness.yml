@@ -1,0 +1,206 @@
+name: Locked Artifact DUT Transport Harness
+
+on:
+  push:
+    branches: [work/dut-harness-locked-artifact-20260918]
+    paths:
+      - '.github/workflows/locked-artifact-dut-harness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ARTIFACT_ID: '10536791235'
+  EXPECTED_APK_SHA256: '9206624fd302000fbf05f7f2824f49286226e433c332db66082bf80d2bc8807a'
+  EXPECTED_ZIP_SHA256: '8cd78dda27232cf3856c98bef7c542949dd385cbd62e3f2ff7c70b4d475b8092'
+  PRODUCER_RUN_ID: '35319845193'
+  PACKAGE: com.alfa.device_ctrl
+  ACTIVITY: com.alfa.device_ctrl/.StitchOperationalActivityV2
+  AVD: alfa-locked-transport-api35
+
+jobs:
+  dut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout harness only
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 1
+
+      - name: Verify harness has no producer build
+        run: |
+          set -euo pipefail
+          ! grep -nE 'gradlew|assemble(Debug|Release)|clean test' .github/workflows/locked-artifact-dut-harness.yml
+          echo HARNESS_SOURCE_ONLY=PASS
+
+      - name: Download exact artifact ID and fail closed on SHA
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p locked
+          curl --fail --silent --show-error --location -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" -o locked/artifact.zip
+          sha256sum locked/artifact.zip | tee locked/zip.sha256
+          test "$(awk '{print $1}' locked/zip.sha256)" = "$EXPECTED_ZIP_SHA256"
+          unzip -q locked/artifact.zip -d locked/x
+          APK="$(find locked/x -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          ACTUAL="$(sha256sum "$APK" | awk '{print $1}')"
+          printf '%s  %s\n' "$ACTUAL" "$APK" | tee locked/apk.sha256
+          test "$ACTUAL" = "$EXPECTED_APK_SHA256"
+          cp "$APK" locked/locked.apk
+          test "$(sed -n 's/^source_commit=//p' locked/x/production-provenance.txt)" = "97ea316ecc260d821941c9fe8555ee7cdad1e6b6"
+          test "$(sed -n 's/^producer_run_id=//p' locked/x/production-provenance.txt)" = "$PRODUCER_RUN_ID"
+          test "$(sed -n 's/^apk_sha256=//p' locked/x/production-provenance.txt)" = "$EXPECTED_APK_SHA256"
+          echo EXACT_APK_SHA_VERIFIED=PASS
+
+      - name: Prove emulator infrastructure before boot
+        run: |
+          set -euo pipefail
+          if [ ! -e /dev/kvm ]; then
+            echo FIRST_NEW_FAILURE=HARNESS_FAILURE
+            echo CAUSAL_BOUNDARY=ANDROID_EMULATOR_INFRASTRUCTURE_NO_KVM
+            exit 1
+          fi
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          "$ANDROID_HOME/emulator/emulator" -accel-check
+
+      - name: Provision and boot emulator
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "platforms;android-35" "system-images;android-35;google_apis;x86_64"
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          export ANDROID_SDK_HOME="$HOME"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n "$AVD" -k "system-images;android-35;google_apis;x86_64" --force
+          nohup "$ANDROID_HOME/emulator/emulator" -avd "$AVD" -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          timeout 120 bash -c 'until adb get-state 2>/dev/null | grep -q "^device$"; do sleep 2; done'
+          timeout 600 bash -c 'until adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" | grep -q "^1$"; do sleep 2; done'
+          adb get-state
+          echo DUT_BOOT=PASS
+
+      - name: Install exact locked APK and launch
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          adb install -r -g locked/locked.apk
+          adb shell pm path "$PACKAGE"
+          adb shell pm list packages | grep -Fx "package:$PACKAGE"
+          adb shell am start -W -n "$ACTIVITY"
+          timeout 30 bash -c 'until adb shell pidof "$PACKAGE" | tr -d "\r" | grep -Eq "^[0-9]+( [0-9]+)*$"; do sleep 1; done'
+          adb shell pidof "$PACKAGE"
+          adb exec-out screencap -p > "$RUNNER_TEMP/launch.png"
+          adb logcat -d > "$RUNNER_TEMP/launch.log"
+          echo INSTALL=PASS
+          echo LAUNCH=PASS
+
+      - name: Install official transport environment
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ext"
+          curl -fsSL "$(curl -fsSL https://api.github.com/repos/RikkaApps/Shizuku/releases/tags/v13.6.0 | jq -r '.assets[]|select(.name|endswith(".apk"))|.browser_download_url'|head -n1)" -o "$RUNNER_TEMP/ext/shizuku.apk"
+          curl -fsSL "$(curl -fsSL https://api.github.com/repos/termux/termux-app/releases/tags/v0.118.0 | jq -r '.assets[]|select(.name|test("apt-android-7.*universal.*\\.apk$"))|.browser_download_url'|head -n1)" -o "$RUNNER_TEMP/ext/termux.apk"
+          curl -fsSL "$(curl -fsSL https://api.github.com/repos/termux/termux-api/releases/tags/v0.53.0 | jq -r '.assets[]|select(.name|endswith(".apk"))|.browser_download_url'|head -n1)" -o "$RUNNER_TEMP/ext/termux-api.apk"
+          adb install -r "$RUNNER_TEMP/ext/shizuku.apk"
+          adb install -r "$RUNNER_TEMP/ext/termux.apk"
+          adb install -r "$RUNNER_TEMP/ext/termux-api.apk"
+          adb shell pm grant "$PACKAGE" com.termux.permission.RUN_COMMAND
+          adb shell am start -n com.termux/.app.TermuxActivity >/dev/null
+          sleep 8
+          adb shell input text 'mkdir%s-p%s~/.termux'
+          adb shell input keyevent 66
+          adb shell input text 'echo%sallow-external-apps=true%s>%s~/.termux/termux.properties'
+          adb shell input keyevent 66
+          sleep 2
+          adb shell am force-stop com.termux
+          adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh || true
+          sleep 3
+          adb shell pm grant "$PACKAGE" moe.shizuku.manager.permission.API_V23 || true
+          adb shell pm list packages | grep -E 'package:(moe.shizuku.privileged.api|com.termux|com.termux.api)'
+          echo TRANSPORT_ENVIRONMENT=PROVISIONED
+
+      - name: Create UI tap helper
+        run: |
+          cat > "$RUNNER_TEMP/tap.py" <<'PY'
+          import sys,re,xml.etree.ElementTree as ET
+          want=sys.argv[1]; root=ET.parse(sys.argv[2]).getroot()
+          for n in root.iter():
+              if n.attrib.get("text")==want or n.attrib.get("content-desc")==want:
+                  m=re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",n.attrib.get("bounds",""))
+                  if m:
+                      a,b,c,d=map(int,m.groups()); print((a+c)//2,(b+d)//2); raise SystemExit
+          raise SystemExit(2)
+          PY
+
+      - name: PHASE 2 - SHIZUKU REAL from Alfa UI
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          mkdir -p "$RUNNER_TEMP/shizuku"
+          adb shell am start -W -n "$ACTIVITY" >/dev/null
+          adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+          adb exec-out cat /sdcard/ui.xml > "$RUNNER_TEMP/shizuku/ui0.xml"
+          python3 "$RUNNER_TEMP/tap.py" LANES "$RUNNER_TEMP/shizuku/ui0.xml" > "$RUNNER_TEMP/xy"
+          read X Y < "$RUNNER_TEMP/xy"; adb shell input tap "$X" "$Y"; sleep 1
+          adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+          adb exec-out cat /sdcard/ui.xml > "$RUNNER_TEMP/shizuku/ui1.xml"
+          python3 "$RUNNER_TEMP/tap.py" "SHIZUKU EXEC" "$RUNNER_TEMP/shizuku/ui1.xml" > "$RUNNER_TEMP/xy"
+          (for i in $(seq 1 120); do adb shell ps -A -o PID,PPID,UID,NAME,CMDLINE; sleep .05; done) > "$RUNNER_TEMP/shizuku/ps.log" 2>&1 &
+          M=$!; read X Y < "$RUNNER_TEMP/xy"; adb shell input tap "$X" "$Y"; sleep 6; kill "$M" 2>/dev/null || true
+          adb shell run-as "$PACKAGE" sh -c 'find files/external-evidence -type f -name "*.properties" -exec cat {} \;' > "$RUNNER_TEMP/shizuku/evidence.txt"
+          adb exec-out screencap -p > "$RUNNER_TEMP/shizuku/ui.png"
+          adb logcat -d > "$RUNNER_TEMP/shizuku/logcat.txt"
+          grep -E '^lane=SHIZUKU_RISH$' "$RUNNER_TEMP/shizuku/evidence.txt"
+          grep -Eq '^pid=[1-9][0-9]*$' "$RUNNER_TEMP/shizuku/evidence.txt"
+          grep -E '^stdout=.*alfa-shizuku-ok' "$RUNNER_TEMP/shizuku/evidence.txt"
+          grep -E '^exit=0$' "$RUNNER_TEMP/shizuku/evidence.txt"
+          echo SHIZUKU=REAL_EVIDENCE_CAPTURED
+
+      - name: PHASE 3 - TERMUX RUN_COMMAND REAL from Alfa UI
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          mkdir -p "$RUNNER_TEMP/termux"
+          adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+          adb exec-out cat /sdcard/ui.xml > "$RUNNER_TEMP/termux/ui.xml"
+          python3 "$RUNNER_TEMP/tap.py" "TERMUX RUN_COMMAND" "$RUNNER_TEMP/termux/ui.xml" > "$RUNNER_TEMP/xy"
+          (for i in $(seq 1 120); do adb shell ps -A -o PID,PPID,UID,NAME,CMDLINE; sleep .05; done) > "$RUNNER_TEMP/termux/ps.log" 2>&1 &
+          M=$!; read X Y < "$RUNNER_TEMP/xy"; adb shell input tap "$X" "$Y"; sleep 8; kill "$M" 2>/dev/null || true
+          adb shell run-as "$PACKAGE" sh -c 'find files/external-evidence -type f -name "*.properties" -exec cat {} \;' > "$RUNNER_TEMP/termux/evidence.txt"
+          adb exec-out screencap -p > "$RUNNER_TEMP/termux/ui.png"
+          adb logcat -d > "$RUNNER_TEMP/termux/logcat.txt"
+          grep -E '^lane=TERMUX_RUN_COMMAND$' "$RUNNER_TEMP/termux/evidence.txt"
+          grep -Eq '^pid=[1-9][0-9]*$' "$RUNNER_TEMP/termux/evidence.txt"
+          grep -E '^stdout=.*alfa-termux-ok' "$RUNNER_TEMP/termux/evidence.txt"
+          grep -E '^exit=0$' "$RUNNER_TEMP/termux/evidence.txt"
+          echo TERMUX=REAL_EVIDENCE_CAPTURED
+
+      - name: PHASE 4 - TERMUX API REAL from Alfa UI
+        run: |
+          set -euo pipefail
+          export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+          mkdir -p "$RUNNER_TEMP/termux-api"
+          adb shell uiautomator dump /sdcard/ui.xml >/dev/null
+          adb exec-out cat /sdcard/ui.xml > "$RUNNER_TEMP/termux-api/ui.xml"
+          python3 "$RUNNER_TEMP/tap.py" "TERMUX API PROBE" "$RUNNER_TEMP/termux-api/ui.xml" > "$RUNNER_TEMP/xy"
+          read X Y < "$RUNNER_TEMP/xy"; adb shell input tap "$X" "$Y"; sleep 8
+          adb shell run-as "$PACKAGE" sh -c 'find files/external-evidence -type f -name "*.properties" -exec cat {} \;' > "$RUNNER_TEMP/termux-api/evidence.txt"
+          adb exec-out screencap -p > "$RUNNER_TEMP/termux-api/ui.png"
+          adb logcat -d > "$RUNNER_TEMP/termux-api/logcat.txt"
+          grep -E '^lane=TERMUX_API$' "$RUNNER_TEMP/termux-api/evidence.txt"
+          grep -Eq '^stdout=.*(percentage|level|battery|plugged|health|temperature)' "$RUNNER_TEMP/termux-api/evidence.txt"
+          grep -E '^exit=0$' "$RUNNER_TEMP/termux-api/evidence.txt"
+          echo TERMUX_API=REAL_EVIDENCE_CAPTURED
+
+      - name: Retain DUT evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: locked-artifact-dut-evidence
+          path: locked/
+          retention-days: 14
