@@ -1,6 +1,7 @@
 name: Production Transport Bridge CI
 
 on:
+  pull_request:
   push:
     branches: [master, work/production-transport-bridges-20260918]
     paths:
