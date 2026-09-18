@@ -91,11 +91,21 @@ jobs:
           adb install -r -g locked/locked.apk
           adb shell pm path "$PACKAGE"
           adb shell pm list packages | grep -Fx "package:$PACKAGE"
-          adb shell am start -W -n "$ACTIVITY"
+          adb shell am start -W -n "$ACTIVITY" | tee "$RUNNER_TEMP/launch.txt"
+          set +e
           timeout 30 bash -c 'until adb shell pidof "$PACKAGE" | tr -d "\r" | grep -Eq "^[0-9]+( [0-9]+)*$"; do sleep 1; done'
-          adb shell pidof "$PACKAGE"
+          PID_STATUS=$?
+          set -e
+          adb shell pidof "$PACKAGE" > "$RUNNER_TEMP/app-pid.txt" 2>&1 || true
           adb exec-out screencap -p > "$RUNNER_TEMP/launch.png"
           adb logcat -d > "$RUNNER_TEMP/launch.log"
+          if [ "$PID_STATUS" -ne 0 ]; then
+            echo FIRST_NEW_FAILURE=APP_LAUNCH_FAILURE
+            echo CAUSAL_BOUNDARY=APP_PROCESS_NOT_PROVEN_AFTER_AM_START
+            grep -E "FATAL EXCEPTION|AndroidRuntime|Process: $PACKAGE|am_crash|Fatal signal" "$RUNNER_TEMP/launch.log" || true
+            exit "$PID_STATUS"
+          fi
+          cat "$RUNNER_TEMP/app-pid.txt"
           echo INSTALL=PASS
           echo LAUNCH=PASS
 
@@ -202,5 +212,14 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: locked-artifact-dut-evidence
-          path: locked/
+          path: |
+            locked/
+            $RUNNER_TEMP/emulator.log
+            $RUNNER_TEMP/launch.txt
+            $RUNNER_TEMP/launch.png
+            $RUNNER_TEMP/launch.log
+            $RUNNER_TEMP/app-pid.txt
+            $RUNNER_TEMP/shizuku/
+            $RUNNER_TEMP/termux/
+            $RUNNER_TEMP/termux-api/
           retention-days: 14
