@@ -16,7 +16,7 @@ public final class ExternalExecutionEvidenceStoreContractTest {
         String coordinatorText = new String(Files.readAllBytes(coordinator.toPath()), StandardCharsets.UTF_8);
         String storeText = new String(Files.readAllBytes(store.toPath()), StandardCharsets.UTF_8);
         assertTrue(coordinatorText.contains("ExternalExecutionEvidenceStore.persist"));
-        assertTrue(storeText.contains("external-evidence-v1"));
+        assertTrue(storeText.contains("external-execution-v1"));
         assertTrue(storeText.contains("pid="));
         assertTrue(storeText.contains("exit_code="));
         assertTrue(storeText.contains("stdout="));
