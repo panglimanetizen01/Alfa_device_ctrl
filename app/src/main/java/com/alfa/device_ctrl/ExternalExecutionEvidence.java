@@ -16,7 +16,7 @@ public final class ExternalExecutionEvidence {
         if (context == null) throw new IllegalArgumentException("context");
         if (lane == null || lane.trim().isEmpty()) throw new IllegalArgumentException("lane");
         if (requestId == null || requestId.trim().isEmpty()) throw new IllegalArgumentException("requestId");
-        if (pid <= 0) throw new IllegalArgumentException("real pid required");
+        if (pid < 0) throw new IllegalArgumentException("pid must be non-negative");
         File dir = new File(context.getFilesDir(), "external-evidence");
         if (!dir.isDirectory() && !dir.mkdirs()) throw new IllegalStateException("evidence-dir-create-failed");
         File tmp = new File(dir, "." + requestId + "." + UUID.randomUUID() + ".tmp");
@@ -40,7 +40,7 @@ public final class ExternalExecutionEvidence {
     }
 
     public static File persistFailure(Context context, String lane, String requestId, String reason) throws Exception {
-        return persist(context, lane, requestId, Process.myPid(), "", reason == null ? "" : reason, 126, "FAILED");
+        return persist(context, lane, requestId, 0, "", reason == null ? "" : reason, 126, "FAILED_NO_PID");
     }
 
     private static String encode(String value) {
