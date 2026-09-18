@@ -8,8 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import rikka.shizuku.UserService;
-
 /** Real Shizuku UserService execution boundary. No simulated process/result values. */
 public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
     private final ExecutorService executor = Executors.newCachedThreadPool();
