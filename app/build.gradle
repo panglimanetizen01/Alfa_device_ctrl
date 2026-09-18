@@ -8,6 +8,10 @@ android {
     namespace 'com.alfa.device_ctrl'
     compileSdk 36
 
+    buildFeatures {
+        aidl true
+    }
+
     sourceSets {
         main {
             jniLibs.srcDir("$buildDir/generated/jniLibs")
