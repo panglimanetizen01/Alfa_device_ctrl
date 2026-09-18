@@ -102,7 +102,22 @@ jobs:
           test "$ALFA_GATE7_RUNTIME_ID" = "debian"
 
       - name: Assemble production APK
-        run: ./gradlew :app:assembleDebug --no-daemon
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/alfa-apk-packaging.init.gradle" <<'EOF'
+          gradle.beforeProject { project ->
+            if (project.path == ':app') {
+              project.plugins.withId('com.android.application') {
+                project.android.packagingOptions {
+                  exclude 'lib/*/libtermux.so'
+                }
+              }
+            }
+          }
+          EOF
+          INIT_SHA="$(sha256sum "$RUNNER_TEMP/alfa-apk-packaging.init.gradle" | awk '{print $1}')"
+          echo "ALFA_BUILD_INIT_SHA256=$INIT_SHA" >> "$GITHUB_ENV"
+          ./gradlew :app:assembleDebug --no-daemon --init-script "$RUNNER_TEMP/alfa-apk-packaging.init.gradle"
       - name: Verify APK and write provenance
         run: |
           set -euo pipefail
@@ -111,7 +126,7 @@ jobs:
           SOURCE_COMMIT="$(git rev-parse HEAD)"
           test "$SOURCE_COMMIT" = "97ea316ecc260d821941c9fe8555ee7cdad1e6b6"
           APK_SHA="$(sha256sum "$APK" | awk '{print $1}')"
-          printf 'source_commit=%s\nproducer_run_id=%s\napk_sha256=%s\n' "$SOURCE_COMMIT" "$GITHUB_RUN_ID" "$APK_SHA" | tee production-provenance.txt
+          printf 'source_commit=%s\nproducer_run_id=%s\napk_sha256=%s\nbuild_init_sha256=%s\n' "$SOURCE_COMMIT" "$GITHUB_RUN_ID" "$APK_SHA" "$ALFA_BUILD_INIT_SHA256" | tee production-provenance.txt
           cp "$APK" production-app-debug.apk
           sha256sum production-app-debug.apk | tee production-app-debug.apk.sha256
           sha256sum production-provenance.txt | tee production-provenance.txt.sha256
