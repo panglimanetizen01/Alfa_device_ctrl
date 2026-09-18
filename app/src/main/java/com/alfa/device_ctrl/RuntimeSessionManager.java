@@ -49,7 +49,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             RuntimeKeepAliveService.start(AlfaApplication.getInstance(), this);
             session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
             session.mSessionName = contract.sessionId();
-            session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
+            session.updateSize(columns, rows);
         } catch (RuntimeException error) {
             if (session != null) session.finishIfRunning();
             session = null;
@@ -117,7 +117,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
     @Override public void onBell(TerminalSession session) { }
     @Override public void onColorsChanged(TerminalSession session) { }
     @Override public void onTerminalCursorStateChange(boolean state) { }
-    @Override public void setTerminalShellPid(TerminalSession session, int pid) { }
+    public void setTerminalShellPid(TerminalSession session, int pid) { }
     @Override public Integer getTerminalCursorStyle() { return null; }
     @Override public void logError(String tag, String message) { }
     @Override public void logWarn(String tag, String message) { }
