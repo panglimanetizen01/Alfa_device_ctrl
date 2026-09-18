@@ -24,10 +24,15 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         Process process = null;
         try {
             process = new ProcessBuilder(command).redirectErrorStream(false).start();
-            callback.onStarted(process.pid());
             Process p = process;
             Thread out = stream(p.getInputStream(), true, callback);
             Thread err = stream(p.getErrorStream(), false, callback);
+            long pid = findChildPid(process);
+            if (pid <= 0) {
+                callback.onFailure("FAILED_NO_PID");
+                return;
+            }
+            callback.onStarted(pid);
             int exit = p.waitFor();
             out.join(5000);
             err.join(5000);
@@ -38,6 +43,27 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         } finally {
             if (process != null && process.isAlive()) process.destroyForcibly();
         }
+    }
+
+    private static long findChildPid(Process process) {
+        try {
+            long parent = android.os.Process.myPid();
+            java.io.File[] entries = new java.io.File("/proc").listFiles();
+            if (entries == null) return 0;
+            for (java.io.File entry : entries) {
+                if (!entry.isDirectory()) continue;
+                long candidate;
+                try { candidate = Long.parseLong(entry.getName()); } catch (NumberFormatException ignored) { continue; }
+                if (candidate <= 0 || candidate == parent) continue;
+                java.nio.file.Path statPath = java.nio.file.Paths.get(entry.getAbsolutePath(), "stat");
+                String stat = new String(java.nio.file.Files.readAllBytes(statPath), java.nio.charset.StandardCharsets.UTF_8);
+                int close = stat.lastIndexOf(") ");
+                if (close < 0) continue;
+                String[] fields = stat.substring(close + 2).trim().split(" +");
+                if (fields.length > 1 && Long.parseLong(fields[1]) == parent) return candidate;
+            }
+        } catch (Throwable ignored) {}
+        return 0;
     }
 
     private static Thread stream(java.io.InputStream input, boolean stdout, IAlfaShizukuCallback callback) {
