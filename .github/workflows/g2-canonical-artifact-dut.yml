@@ -122,12 +122,12 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/g2-evidence"
-          adb shell get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1
-          adb shell pm path "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-path.txt" 2>&1
-          adb shell pidof "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/app-pid.txt" 2>&1
-          adb shell dumpsys package "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-dumpsys.txt" 2>&1
-          adb shell pm list instrumentation > "$RUNNER_TEMP/g2-evidence/instrumentation-list.txt" 2>&1
-          adb logcat -d > "$RUNNER_TEMP/g2-evidence/logcat.txt" 2>&1
+          timeout 10 adb shell get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1
+          timeout 10 adb shell pm path "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-path.txt" 2>&1
+          timeout 10 adb shell pidof "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/app-pid.txt" 2>&1
+          timeout 10 adb shell dumpsys package "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-dumpsys.txt" 2>&1
+          timeout 10 adb shell pm list instrumentation > "$RUNNER_TEMP/g2-evidence/instrumentation-list.txt" 2>&1
+          timeout 10 adb logcat -d > "$RUNNER_TEMP/g2-evidence/logcat.txt" 2>&1
           cp "$RUNNER_TEMP/g2-emulator.log" "$RUNNER_TEMP/g2-evidence/emulator.log" 2>/dev/null || true
           cp "$RUNNER_TEMP/g2-instrumentation.txt" "$RUNNER_TEMP/g2-evidence/instrumentation.txt" 2>/dev/null || true
           printf 'source_commit=%s\ncanonical_apk_sha256=%s\nproducer_run_id=%s\n' "$SOURCE_COMMIT" "$CANONICAL_APK_SHA256" "$PRODUCER_RUN_ID" > "$RUNNER_TEMP/g2-evidence/provenance.txt"
