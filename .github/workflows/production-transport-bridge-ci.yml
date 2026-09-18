@@ -63,8 +63,44 @@ jobs:
           set -euo pipefail
           test -x "$ALFA_SDK_ROOT/ndk/28.0.13004108/ndk-build"
           "$ALFA_SDKMANAGER" --sdk_root="$ALFA_SDK_ROOT" --list | grep -F 'ndk;28.0.13004108'
+      - name: Configure current-run Gate 7 provenance
+        env:
+          ALFA_SOURCE_COMMIT: 97ea316ecc260d821941c9fe8555ee7cdad1e6b6
+          ALFA_GATE7_RUNTIME_ID: debian
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/alfa-ci-shared" "$RUNNER_TEMP/alfa-ci-private"
+          export ALFA_EXEC_SHARED_ROOT="$RUNNER_TEMP/alfa-ci-shared"
+          export TMPDIR="$RUNNER_TEMP/alfa-ci-private"
+          bash tools/runtime_pipeline.sh > "$RUNNER_TEMP/alfa-runtime-pipeline.out" 2>&1
+          cat "$RUNNER_TEMP/alfa-runtime-pipeline.out"
+          RUN_ID="$(sed -n 's/^pipeline_run_id=//p' "$RUNNER_TEMP/alfa-runtime-pipeline.out" | sed -n '1p')"
+          test -n "$RUN_ID"
+          RUN_DIR="artifacts/pipeline/$RUN_ID"
+          test -s "$RUN_DIR/gate4/environment_contract.txt"
+          test "$(sed -n 's/^source_commit=//p' "$RUN_DIR/gate4/environment_contract.txt" | sed -n '1p')" = "$ALFA_SOURCE_COMMIT"
+          bash tools/apk_readiness_provenance.sh "$RUN_ID" "$ALFA_GATE7_RUNTIME_ID" production-transport-bridge
+          OUT="$RUNNER_TEMP/gate7-launch.properties"
+          ALFA_GATE7_ASSET_OUT="$OUT" RUNTIME_ID="$ALFA_GATE7_RUNTIME_ID" bash tools/prepare_gate7_android_asset.sh "$RUN_ID"
+          test -s "$OUT"
+          grep -Fx 'schema_version=gate7-launch.v1' "$OUT"
+          grep -Fx 'gate_status=READY' "$OUT"
+          grep -Fx 'launch_status=AUTHORIZED' "$OUT"
+          grep -Fx "pipeline_run_id=$RUN_ID" "$OUT"
+          grep -Fx "source_commit=$ALFA_SOURCE_COMMIT" "$OUT"
+          grep -Fx "runtime_id=$ALFA_GATE7_RUNTIME_ID" "$OUT"
+          echo "ALFA_GATE7_ASSET=$OUT" >> "$GITHUB_ENV"
+          echo "ALFA_GATE7_RUNTIME_ID=$ALFA_GATE7_RUNTIME_ID" >> "$GITHUB_ENV"
+          echo "ALFA_PIPELINE_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+
       - name: Clean test
         run: ./gradlew clean test --no-daemon
+      - name: Verify Gate 7 asset before build
+        run: |
+          set -euo pipefail
+          test -s "$ALFA_GATE7_ASSET"
+          test "$ALFA_GATE7_RUNTIME_ID" = "debian"
+
       - name: Assemble production APK
         run: ./gradlew :app:assembleDebug --no-daemon
       - name: Verify APK and write provenance
@@ -79,6 +115,15 @@ jobs:
           cp "$APK" production-app-debug.apk
           sha256sum production-app-debug.apk | tee production-app-debug.apk.sha256
           sha256sum production-provenance.txt | tee production-provenance.txt.sha256
+      - name: Independent local APK hash verification
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          SHA="$(sha256sum "$APK" | awk '{print $1}')"
+          grep -Fx "apk_sha256=$SHA" production-provenance.txt
+          echo "APK_SHA256=$SHA"
+
       - name: Upload production APK artifact
         uses: actions/upload-artifact@v4
         with:
