@@ -8,6 +8,10 @@ android {
     namespace 'com.alfa.device_ctrl'
     compileSdk 36
 
+    buildFeatures {
+        aidl true
+    }
+
     sourceSets {
         main {
             jniLibs.srcDir("$buildDir/generated/jniLibs")
@@ -133,6 +137,14 @@ tasks.configureEach {
 dependencies {
     implementation project(":terminal-view")
     implementation 'org.tukaani:xz:1.12'
+    implementation 'dev.rikka.shizuku:api:13.1.5'
+    implementation 'dev.rikka.shizuku:provider:13.1.5'
+    implementation('com.github.Termux:Termux-app:v0.118.0') {
+        // Keep Termux-app/termux-shared for RUN_COMMAND constants, but use the
+        // canonical in-repo terminal-view/terminal-emulator project pair.
+        exclude module: 'terminal-view'
+        exclude module: 'terminal-emulator'
+    }
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:core:1.7.0'
