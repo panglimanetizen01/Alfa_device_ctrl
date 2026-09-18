@@ -19,7 +19,7 @@ jobs:
       - name: Checkout exact producer source
         uses: actions/checkout@v4
         with:
-          ref: 97ea316ecc260d821941c9fe8555ee7cdad1e6b6
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
@@ -65,7 +65,7 @@ jobs:
           "$ALFA_SDKMANAGER" --sdk_root="$ALFA_SDK_ROOT" --list | grep -F 'ndk;28.0.13004108'
       - name: Configure current-run Gate 7 provenance
         env:
-          ALFA_SOURCE_COMMIT: 97ea316ecc260d821941c9fe8555ee7cdad1e6b6
+          ALFA_SOURCE_COMMIT: ${{ github.sha }}
           ALFA_GATE7_RUNTIME_ID: debian
         run: |
           set -euo pipefail
@@ -124,7 +124,7 @@ jobs:
           APK="app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           SOURCE_COMMIT="$(git rev-parse HEAD)"
-          test "$SOURCE_COMMIT" = "97ea316ecc260d821941c9fe8555ee7cdad1e6b6"
+          test "$SOURCE_COMMIT" = "$ALFA_SOURCE_COMMIT"
           APK_SHA="$(sha256sum "$APK" | awk '{print $1}')"
           printf 'source_commit=%s\nproducer_run_id=%s\napk_sha256=%s\nbuild_init_sha256=%s\n' "$SOURCE_COMMIT" "$GITHUB_RUN_ID" "$APK_SHA" "$ALFA_BUILD_INIT_SHA256" | tee production-provenance.txt
           cp "$APK" production-app-debug.apk
