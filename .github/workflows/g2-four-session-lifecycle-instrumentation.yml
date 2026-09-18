@@ -5,6 +5,15 @@ on:
     workflows: ["Alfa APK Readiness"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact producer source commit to execute
+        required: true
+        type: string
+      producer_run_id:
+        description: Exact producer workflow run containing the canonical APK artifact
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -17,8 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-      PRODUCER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
+      SOURCE_COMMIT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.source_commit }}
+      PRODUCER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.producer_run_id }}
       PACKAGE: com.alfa.device_ctrl
       INSTRUMENTATION: com.alfa.device_ctrl.test/androidx.test.runner.AndroidJUnitRunner
     steps:
@@ -36,7 +45,7 @@ jobs:
           echo "G2_SOURCE_COMMIT=$SOURCE_COMMIT"
 
       - name: Download exact canonical APK artifact
-        if: ${{ github.event_name == 'workflow_run' }}
+        if: ${{ github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch' }}
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: alfa-device-ctrl-stitch-${{ env.SOURCE_COMMIT }}
@@ -64,9 +73,25 @@ jobs:
         run: |
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n g2-api35 -k "system-images;android-35;google_apis;x86_64" --force
-          echo "hw.cpu.ncore=2" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
-          echo "hw.ramSize=4096" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_AVD_HOME=${ANDROID_AVD_HOME:-<unset>}"
+          echo "ANDROID_SDK_HOME=${ANDROID_SDK_HOME:-<unset>}"
+          echo "HOME=$HOME"
+          AVD_ROOT="$HOME/.android/avd"
+          AVD_DIR="$AVD_ROOT/g2-api35.avd"
+          mkdir -p "$AVD_ROOT"
+          rm -rf "$AVD_DIR"
+          printf 'no\n' | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n g2-api35 -k "system-images;android-35;google_apis;x86_64" --force -p "$AVD_DIR"
+          echo "AVD_ROOT=$AVD_ROOT"
+          echo "AVD_DIR=$AVD_DIR"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" list avd -c
+          find "$AVD_ROOT" -maxdepth 2 -type f -name 'config.ini' -print
+          test -d "$AVD_DIR"
+          test -f "$AVD_DIR/config.ini"
+          echo "hw.cpu.ncore=2" >> "$AVD_DIR/config.ini"
+          echo "hw.ramSize=4096" >> "$AVD_DIR/config.ini"
+          echo "AVD_CONFIG=$AVD_DIR/config.ini"
+          cat "$AVD_DIR/config.ini"
 
       - name: Boot Android DUT and prove ADB readiness
         run: |
