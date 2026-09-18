@@ -62,14 +62,14 @@ jobs:
         run: |
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "emulator" "platforms;android-35" "build-tools;35.0.0" "system-images;android-35;google_apis;x86_64"
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n alfa-canonical-api35 -k "system-images;android-35;google_apis;x86_64" --force
-          echo "hw.cpu.ncore=2" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
-          echo "hw.ramSize=4096" >> "$HOME/.android/avd/g2-api35.avd/config.ini"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n alfa-canonical-api35 -k "system-images;android-35;google_apis;x86_64" -d "pixel_2" --force
+          test -s "$HOME/.android/avd/alfa-canonical-api35.avd/config.ini"
+          echo "AVD_CREATED=PASS"
 
       - name: Boot Android DUT and prove ADB readiness
         run: |
           set -euo pipefail
-          nohup "$ANDROID_HOME/emulator/emulator" -avd g2-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > "$RUNNER_TEMP/g2-emulator.log" 2>&1 &
+          nohup "$ANDROID_HOME/emulator/emulator" -avd alfa-canonical-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect > "$RUNNER_TEMP/g2-emulator.log" 2>&1 &
           adb wait-for-device
           timeout 180 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q "1"; do sleep 2; done'
           adb shell getprop ro.product.cpu.abi
