@@ -49,7 +49,7 @@ public final class RuntimeSessionManager implements TerminalSessionClient {
             RuntimeKeepAliveService.start(AlfaApplication.getInstance(), this);
             session = new TerminalSession(contract.prootExecutable().getAbsolutePath(), contract.hostCwd().getAbsolutePath(), contract.prootArguments(), contract.environment(), 2000, this);
             session.mSessionName = contract.sessionId();
-            session.updateSize(columns, rows);
+            session.updateSize(columns, rows, cellWidthPixels, cellHeightPixels);
         } catch (RuntimeException error) {
             if (session != null) session.finishIfRunning();
             session = null;
