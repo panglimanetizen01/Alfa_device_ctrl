@@ -28,7 +28,17 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
           SDKMANAGER="$SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
           test -x "$SDKMANAGER"
-          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --version
+          set +e
+          SDKMANAGER_VERSION="$("$SDKMANAGER" --sdk_root="$SDK_ROOT" --version 2>&1)"
+          SDKMANAGER_VERSION_STATUS=$?
+          printf "SDKMANAGER_VERSION_STATUS=%s\n%s\n" "$SDKMANAGER_VERSION_STATUS" "$SDKMANAGER_VERSION"
+          SDKMANAGER_LIST="$("$SDKMANAGER" --sdk_root="$SDK_ROOT" --list 2>&1)"
+          SDKMANAGER_LIST_STATUS=$?
+          printf "SDKMANAGER_LIST_STATUS=%s\n" "$SDKMANAGER_LIST_STATUS"
+          printf "%s\n" "$SDKMANAGER_LIST" | grep -F "ndk;28.0.13004108" || true
+          set -e
+          test "$SDKMANAGER_VERSION_STATUS" -eq 0
+          test "$SDKMANAGER_LIST_STATUS" -eq 0
           yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null
           "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "ndk;28.0.13004108"
       - name: Run production transport contract
