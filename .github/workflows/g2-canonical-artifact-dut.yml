@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           nohup "$ANDROID_HOME/emulator/emulator" -avd alfa-canonical-api35 -no-window -no-audio -no-boot-anim -no-snapshot -no-accel -gpu swiftshader_indirect > "$RUNNER_TEMP/g2-emulator.log" 2>&1 &
-          timeout 30 adb wait-for-device
+          timeout 120 bash -c 'until adb get-state 2>/dev/null | grep -q "^device$"; do sleep 2; done'
           timeout 600 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q "1"; do sleep 2; done'
           adb shell getprop ro.product.cpu.abi
           adb shell getprop ro.build.version.sdk
