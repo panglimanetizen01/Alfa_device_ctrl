@@ -132,7 +132,7 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         }
     }
 
-    private void readStream(BufferedReader reader, boolean stdout, IAlfaShizukuCallback remoteCallback) throws IOException {
+    private void readStream(BufferedReader reader, boolean stdout, IAlfaShizukuCallback remoteCallback) throws IOException, android.os.RemoteException {
         char[] buffer = new char[4096];
         int count;
         while ((count = reader.read(buffer)) != -1) {
@@ -152,6 +152,8 @@ public final class AlfaShizukuUserService extends IAlfaShizukuService.Stub {
         } catch (InterruptedException error) {
             Thread.currentThread().interrupt();
             notifyError(remoteCallback, "wait interrupted");
+        } catch (android.os.RemoteException error) {
+            notifyError(remoteCallback, describe(error));
         } finally {
             synchronized (lock) {
                 if (process == child) {
