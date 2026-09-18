@@ -1,0 +1,88 @@
+{
+  "schema": "alfa-recovery-checkpoint.v1",
+  "checkpoint_id": "ALFA-RECOVERY-2026-09-18-BASELINE-001",
+  "created_utc": "2026-09-18",
+  "status": "IMMUTABLE_BASELINE",
+  "source": {
+    "producer_source_commit": "97a1e5a8e3ce5d2de63508af0c57de2dd0873117",
+    "infrastructure_correction_commit": "5b37290d1067bda7627c9f9d97626b9dc412231d",
+    "correction_branch": "work/g2-avd-provisioning-fix-20260918",
+    "application_source_modified_after_artifact_producer": false,
+    "execution_revision": "5b37290d1067bda7627c9f9d97626b9dc412231d"
+  },
+  "artifact": {
+    "artifact_id": 10530345563,
+    "producer_run_id": 35300121723,
+    "artifact_zip_sha256": "2f505c77364dfac0160bd960d875065b8a62424748518820d42c2352fc1c6b34",
+    "apk_sha256": "2659ac40da7fd2b3c7d497872538180102a965a1f611490d724cffb36d1a5745",
+    "package_name": "com.alfa.device_ctrl",
+    "version_code": 1,
+    "version_name": "0.1.0",
+    "abi": "arm64-v8a",
+    "build_variant": "debug-deployable",
+    "artifact_policy": "ONE_APK_PLUS_ONE_PROVENANCE_MANIFEST",
+    "provenance_manifest": {
+      "schema_version": "apk-artifact-provenance.v2",
+      "artifact_name": "alfa-device-ctrl-stitch-97a1e5a8e3ce5d2de63508af0c57de2dd0873117.apk",
+      "apk_path": "alfa-device-ctrl-stitch-97a1e5a8e3ce5d2de63508af0c57de2dd0873117.apk",
+      "source_commit": "97a1e5a8e3ce5d2de63508af0c57de2dd0873117",
+      "pipeline_run_id": "run_20260918_024758_2225",
+      "stitch_reference": "stitch/stitch_alfa_device_control_v1.0.0.zip",
+      "stitch_reference_sha256": "7b3428e474e7c778a11fecf995d417bc1b6d5d9575a879fa9da1e86eb637895d",
+      "legacy_ui_blacklist": "tools/ci/stitch-legacy-ui-blacklist.txt",
+      "legacy_ui_blacklist_sha256": "4924b29ee7635f1f25296258f2425bbddd38985a03626c8b35196f6828444a42",
+      "package_name": "com.alfa.device_ctrl",
+      "version_code": 1,
+      "version_name": "0.1.0",
+      "abi": "arm64-v8a",
+      "build_variant": "debug-deployable"
+    }
+  },
+  "native": {
+    "status": "PASS_PROVEN",
+    "libproot_loader": {"elf":"AArch64 EXEC","load_alignment":"0x4000","gnu_relro":"not_applicable"},
+    "libproot": {"elf":"AArch64 EXEC","load_alignment":"0x10000","gnu_relro":"not_required_for_EXEC"},
+    "libtermux": {"elf":"AArch64 DYN","load_alignment":"0x4000","gnu_relro":"PASS","sha256":"5b62e792a1aebbbc5f0dbc874a560d0299ba31d82772130d0a84a11fa48a583"},
+    "apk_zipalign": "PASS (-P 16 -v 4 in producer workflow)",
+    "reaudit_policy": "ONLY_IF_NEW_FAILURE_DIRECTLY_TOUCHES_NATIVE"
+  },
+  "runtime_graph": {
+    "graph": ["StartupCoordinator","Gate6/Gate7","RuntimeInstaller","rootfs","READY.evidence","RuntimeSessionManager","TerminalSession/PTTY","PRoot","guest shell"],
+    "boundaries": {
+      "StartupCoordinator": "SOURCE-PROVEN",
+      "Gate6/Gate7": "SOURCE-PROVEN",
+      "RuntimeInstaller": "SOURCE-PROVEN",
+      "rootfs_materialization": "SOURCE-PROVEN",
+      "READY.evidence": "SOURCE-PROVEN",
+      "RuntimeSessionManager": "SOURCE-PROVEN",
+      "TerminalSession_PTY": "SOURCE-PROVEN",
+      "PRoot_invocation": "SOURCE-PROVEN",
+      "guest_shell_contract": "CI-PROVEN",
+      "exact_APK_live_DUT_execution": "DUT-UNPROVEN",
+      "exact_APK_live_READY": "DUT-UNPROVEN",
+      "exact_APK_live_PTY_PRoot": "DUT-UNPROVEN",
+      "exact_APK_live_guest_pwd_root": "DUT-UNPROVEN"
+    },
+    "evidence_rule": "SOURCE-PROVEN, CI-PROVEN, and DUT-UNPROVEN are kept distinct."
+  },
+  "rootfs": {
+    "runtime": "Debian",
+    "version": "Trixie",
+    "architecture": "aarch64",
+    "archive": "tar.gz",
+    "registry_sha256": "6b89e501...f9563",
+    "correlation_rule": "Do not substitute Bookworm or Ubuntu evidence for Debian Trixie."
+  },
+  "external_transport": {
+    "shizuku_user_service": {"source_wired": true, "dut_execution": "UNPROVEN"},
+    "termux_run_command": {"source_wired": true, "dut_execution": "UNPROVEN"},
+    "termux_api": {"lane": "capability via RUN_COMMAND", "dut_invocation": "UNPROVEN"},
+    "mutation_policy": "Do not change transport implementation solely because DUT execution has not yet occurred."
+  },
+  "execution_blocker": {
+    "current_blocker": "workflow_dispatch unavailable through current connector",
+    "do_not_rerun_old_workflow": "105463004721",
+    "next_execution_revision": "5b37290d1067bda7627c9f9d97626b9dc412231d"
+  },
+  "recovery_rule": "On next execution failure: restore this baseline -> isolate first new failure -> diagnose -> minimal correction if proven -> execute exact canonical artifact."
+}
