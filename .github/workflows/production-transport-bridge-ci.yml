@@ -48,7 +48,11 @@ jobs:
         run: |
           set -euo pipefail
           test -x "$ALFA_SDKMANAGER"
+          set +e
           yes | "$ALFA_SDKMANAGER" --sdk_root="$ALFA_SDK_ROOT" --licenses >/dev/null
+          SDKMANAGER_LICENSE_STATUS="${PIPESTATUS[1]}"
+          set -e
+          test "$SDKMANAGER_LICENSE_STATUS" -eq 0
           "$ALFA_SDKMANAGER" --sdk_root="$ALFA_SDK_ROOT" --install "ndk;28.0.13004108"
       - name: Verify NDK
         run: |
