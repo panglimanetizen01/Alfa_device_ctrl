@@ -76,8 +76,50 @@ else
 fi
 echo "TEST_DYNAMIC_WORKFLOW_SOURCE_IDENTITY=PASS"
 
-CANONICAL_NAME_COUNT="$(grep -R -l -F 'name: alfa-device-ctrl-stitch-' "$WORKFLOW_DIR" | wc -l)"
-test "$CANONICAL_NAME_COUNT" -eq 1
+count_canonical_producer_definitions() {
+  local dir="$1"
+  awk '
+    /^[[:space:]]*-[[:space:]]+name:/ {
+      if (in_step && has_upload && has_canonical_name) count++
+      in_step=1
+      has_upload=0
+      has_canonical_name=0
+      next
+    }
+    in_step && /uses:[[:space:]]*actions\\/upload-artifact(@|$)/ { has_upload=1 }
+    in_step && /name:[[:space:]]*alfa-device-ctrl-stitch-/ { has_canonical_name=1 }
+    END {
+      if (in_step && has_upload && has_canonical_name) count++
+      print count+0
+    }
+  ' "$dir"/*.yml
+}
+
+CANONICAL_PRODUCER_COUNT="$(count_canonical_producer_definitions "$WORKFLOW_DIR")"
+test "$CANONICAL_PRODUCER_COUNT" -eq 1
+
+printf '%s\\n' 'name: download-only' 'steps:' '  - name: Download canonical artifact' '    uses: actions/download-artifact@v4' '    with:' '      name: alfa-device-ctrl-stitch-${{ github.sha }}' > "$TMP_CASE_DIR/download-only.yml"
+test "$(count_canonical_producer_definitions "$TMP_CASE_DIR")" -eq 0
+echo "TEST_CANONICAL_DOWNLOAD_ONLY=PASS"
+
+cat > "$TMP_CASE_DIR/duplicate-upload.yml" <<'EOF'
+name: duplicate-upload
+steps:
+  - name: Canonical upload A
+    uses: actions/upload-artifact@v4
+    with:
+      name: alfa-device-ctrl-${{ github.sha }}
+  - name: Canonical upload B
+    uses: actions/upload-artifact@v4
+    with:
+      name: alfa-device-ctrl-${{ github.sha }}
+EOF
+if test "$(count_canonical_producer_definitions "$TMP_CASE_DIR")" -eq 1; then
+  echo "TEST_DUPLICATE_CANONICAL_UPLOAD=FAIL"
+  exit 1
+else
+  echo "TEST_DUPLICATE_CANONICAL_UPLOAD=FAIL_AS_EXPECTED"
+fi
 
 grep -Fq 'name: Alfa APK Readiness' "$CANONICAL_WORKFLOW"
 grep -Fq 'actions/upload-artifact' "$CANONICAL_WORKFLOW"
