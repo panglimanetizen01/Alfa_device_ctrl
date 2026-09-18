@@ -66,9 +66,15 @@ jobs:
           echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
           export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           command -v adb
-          mkdir -p "$HOME/.android/avd"
-          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n alfa-canonical-api35 -k "system-images;android-35;google_apis;x86_64" -p "$HOME/.android/avd/alfa-canonical-api35.avd" --force
-          test -s "$HOME/.android/avd/alfa-canonical-api35.avd/config.ini"
+          export ANDROID_SDK_HOME="$HOME"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          echo "ANDROID_SDK_HOME=$ANDROID_SDK_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n alfa-canonical-api35 -k "system-images;android-35;google_apis;x86_64" --force
+          test -s "$ANDROID_AVD_HOME/alfa-canonical-api35.ini"
+          test -s "$ANDROID_AVD_HOME/alfa-canonical-api35.avd/config.ini"
+          echo "AVD_PATH_VERIFIED=$ANDROID_AVD_HOME/alfa-canonical-api35.avd"
           echo "AVD_CREATED=PASS"
 
       - name: Boot Android DUT and prove ADB readiness
