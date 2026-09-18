@@ -21,7 +21,7 @@ public final class TermuxRunCommandResultReceiver extends IntentService {
         }
         String out=result.getString(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_STDOUT,"");
         String err=result.getString(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_STDERR,"");
-        int exit=result.getInt(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_EXIT_CODE,126);
+        int exit=result.getInt(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_EXIT_CODE,126);\n        long pid=parsePid(out);\n        if (pid <= 0) { try { ExternalExecutionEvidence.persistFailure(this,"TERMUX_RUN_COMMAND",id,"child-pid-marker-missing"); } catch (Exception ignored) {} return; }
         int termuxErr=result.getInt(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_ERR,0);
         String termuxMsg=result.getString(TERMUX_SERVICE.EXTRA_PLUGIN_RESULT_BUNDLE_ERRMSG,"");
         try {
