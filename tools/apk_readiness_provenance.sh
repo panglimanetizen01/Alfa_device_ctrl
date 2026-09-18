@@ -8,6 +8,7 @@ ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 RUN_ID="${1:-}"
 RUNTIME_ID="${2:-debian}"
 REQUEST_ID="${3:-apk-readiness}"
+TMP_ROOT="${TMPDIR:-/tmp}"
 
 fail() { echo "APK_PROVENANCE_STATUS=BLOCKED"; echo "APK_PROVENANCE_REASON=$1"; exit 20; }
 
@@ -74,7 +75,7 @@ created_at=$NOW
 EOF
 mv "$DECISION.tmp" "$DECISION"
 
-bash "$ROOT/tools/runtime_execution_authorize.sh" "$REQUEST" "$DECISION" "$AUTH" >/tmp/alfa-apk-g5-auth.$$.out
+bash "$ROOT/tools/runtime_execution_authorize.sh" "$REQUEST" "$DECISION" "$AUTH" >"$TMP_ROOT/alfa-apk-g5-auth.$.out"
 
 grep -Fx 'authorization_status=AUTHORIZED' "$AUTH" >/dev/null || fail "GATE5_AUTHORIZATION_DENIED"
 grep -Fx "request_id=$REQUEST_ID" "$AUTH" >/dev/null || fail "GATE5_REQUEST_ID_MISMATCH"
@@ -86,7 +87,7 @@ authorization_policy="$(gate5_field "$REQUEST" policy_version)"
 grep -Fx "runtime_id=$RUNTIME_ID" "$REQUEST" >/dev/null || fail "GATE5_RUNTIME_ID_MISSING"
 grep -Fx "runtime_id=$RUNTIME_ID" "$DECISION" >/dev/null || fail "GATE5_DECISION_RUNTIME_ID_MISSING"
 
-bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$RUNTIME_ID" "$REQUEST_ID" >/tmp/alfa-apk-g6.$$.out
+bash "$ROOT/tools/runtime_bootstrap.sh" "$RUN_ID" "$RUNTIME_ID" "$REQUEST_ID" >"$TMP_ROOT/alfa-apk-g6.$.out"
 GATE6="$ROOT/artifacts/pipeline/$RUN_ID/gate6/bootstrap.txt"
 [ -f "$GATE6" ] || fail "GATE6_BOOTSTRAP_MISSING"
 grep -Fx 'gate_status=PASS' "$GATE6" >/dev/null || fail "GATE6_NOT_PASS"
@@ -96,7 +97,7 @@ grep -Fx "runtime_id=$RUNTIME_ID" "$GATE6" >/dev/null || fail "GATE6_RUNTIME_ID_
 grep -Fx "source_commit=$RUN_SOURCE" "$GATE6" >/dev/null || fail "GATE6_SOURCE_COMMIT_MISMATCH"
 grep -Fx 'authorization_status=AUTHORIZED' "$GATE6" >/dev/null || fail "GATE6_NOT_AUTHORIZED"
 
-rm -f /tmp/alfa-apk-g5-auth.$$ /tmp/alfa-apk-g6.$$ || true
+rm -f "$TMP_ROOT/alfa-apk-g5-auth.$" "$TMP_ROOT/alfa-apk-g6.$" || true
 
 echo 'APK_PROVENANCE_STATUS=PASS'
 echo "PIPELINE_RUN_ID=$RUN_ID"
