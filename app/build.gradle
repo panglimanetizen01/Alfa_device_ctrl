@@ -135,7 +135,7 @@ dependencies {
     implementation 'org.tukaani:xz:1.12'
     implementation 'dev.rikka.shizuku:api:13.1.5'
     implementation 'dev.rikka.shizuku:provider:13.1.5'
-    implementation 'com.termux:termux-shared:0.109'
+    implementation 'com.termux.termux-app:termux-shared:0.118.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:core:1.7.0'
