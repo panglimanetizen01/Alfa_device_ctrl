@@ -25,9 +25,11 @@ jobs:
       - name: Install NDK 28.0.13004108 required by existing PRoot loader contract
         run: |
           set -euo pipefail
-          SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/16.0/bin/sdkmanager"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
           test -x "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null
-          "$SDKMANAGER" --install "ndk;28.0.13004108"
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --version
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "ndk;28.0.13004108"
       - name: Run production transport contract
         run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.ProductionTransportContractTest --no-daemon
