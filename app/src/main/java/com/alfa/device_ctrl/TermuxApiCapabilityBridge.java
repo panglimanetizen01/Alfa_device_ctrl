@@ -4,7 +4,7 @@ import android.content.Context;
 
 /** Termux API capability lane: invoked through RUN_COMMAND, never treated as shell transport. */
 public final class TermuxApiCapabilityBridge {
-    public interface Callback { void onSubmitted(String requestId); void onFailure(String requestId,String reason); }
+    public interface Callback extends TermuxRunCommandBridge.Callback { }
     private final TermuxRunCommandBridge runCommand;
     public TermuxApiCapabilityBridge(Context context) { runCommand=new TermuxRunCommandBridge(context); }
 
