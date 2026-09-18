@@ -81,7 +81,13 @@ jobs:
         run: |
           set -euo pipefail
           nohup "$ANDROID_HOME/emulator/emulator" -avd alfa-canonical-api35 -no-window -no-audio -no-boot-anim -no-snapshot -no-accel -gpu swiftshader_indirect > "$RUNNER_TEMP/g2-emulator.log" 2>&1 &
-          timeout 120 bash -c 'until adb get-state 2>/dev/null | grep -q "^device$"; do sleep 2; done'
+          sleep 5
+          adb devices -l || true
+          adb reconnect offline || true
+          adb kill-server || true
+          adb start-server
+          adb devices -l
+          timeout 120 bash -c 'until adb get-state 2>/dev/null | grep -q "^device$"; do adb reconnect offline >/dev/null 2>&1 || true; sleep 2; done'
           timeout 600 bash -c 'until adb shell getprop sys.boot_completed | tr -d "\r" | grep -q "1"; do sleep 2; done'
           adb shell getprop ro.product.cpu.abi
           adb shell getprop ro.build.version.sdk
@@ -128,7 +134,12 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/g2-evidence"
-          timeout 10 adb shell get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1
+          timeout 10 adb devices -l > "$RUNNER_TEMP/g2-evidence/adb-devices.txt" 2>&1
+          timeout 10 adb get-state > "$RUNNER_TEMP/g2-evidence/adb-state.txt" 2>&1
+          timeout 10 adb reconnect offline > "$RUNNER_TEMP/g2-evidence/adb-reconnect-offline.txt" 2>&1
+          timeout 10 adb -s emulator-5554 get-state > "$RUNNER_TEMP/g2-evidence/adb-emulator-5554-state.txt" 2>&1
+          timeout 10 adb emu avd name > "$RUNNER_TEMP/g2-evidence/emulator-console-avd-name.txt" 2>&1
+          ADB_TRACE=transport,sockets,adb timeout 10 adb devices -l > "$RUNNER_TEMP/g2-evidence/adb-trace-devices.txt" 2>&1
           timeout 10 adb shell pm path "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-path.txt" 2>&1
           timeout 10 adb shell pidof "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/app-pid.txt" 2>&1
           timeout 10 adb shell dumpsys package "$PACKAGE" > "$RUNNER_TEMP/g2-evidence/package-dumpsys.txt" 2>&1
