@@ -22,9 +22,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install canonical NDK required by existing PRoot loader contract
-        uses: android-actions/setup-android@v3
-      - name: Install NDK 28.0.13004108
-        run: sdkmanager --install "ndk;28.0.13004108"
+      - name: Install NDK 28.0.13004108 required by existing PRoot loader contract
+        run: yes | sdkmanager "ndk;28.0.13004108"
       - name: Run production transport contract
         run: ./gradlew :app:testDebugUnitTest --tests com.alfa.device_ctrl.ProductionTransportContractTest --no-daemon
