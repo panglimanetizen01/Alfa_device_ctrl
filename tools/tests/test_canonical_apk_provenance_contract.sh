@@ -42,7 +42,7 @@ grep -Fq 'workflows: ["Alfa APK Readiness"]' "$CANONICAL_CONSUMER"
 grep -Fq 'actions/download-artifact' "$CANONICAL_CONSUMER"
 grep -Fq 'run-id: ${{ env.PRODUCER_RUN_ID }}' "$CANONICAL_CONSUMER"
 grep -Fq 'apk-artifact-provenance.txt' "$CANONICAL_CONSUMER"
-grep -Fq 'workflow_run_id=' "$CANONICAL_CONSUMER
+grep -Fq 'workflow_run_id=' "$CANONICAL_CONSUMER"
 
 echo "CANONICAL_APK_PRODUCER_COUNT=1"
 echo "CANONICAL_APK_PROVENANCE_POLICY=PASS"
