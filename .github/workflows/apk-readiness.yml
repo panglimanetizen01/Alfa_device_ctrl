@@ -39,6 +39,11 @@ jobs:
           git fsck --full --no-progress
           echo "CANONICAL_SOURCE_COMMIT=$(git rev-parse HEAD)"
 
+      - name: Verify canonical APK producer policy
+        run: |
+          set -euo pipefail
+          bash tools/tests/test_canonical_apk_provenance_contract.sh
+
       - name: Diagnose Debug Keystore Secret Boundary
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
@@ -308,6 +313,16 @@ jobs:
           version_name=0.1.0
           abi=arm64-v8a
           build_variant=debug-deployable
+          workflow=${GITHUB_WORKFLOW}
+          workflow_file=.github/workflows/apk-readiness.yml
+          workflow_sha=${GITHUB_WORKFLOW_SHA}
+          workflow_run_id=${GITHUB_RUN_ID}
+          build_command=./gradlew clean test :app:assembleDebug --no-daemon --stacktrace
+          java_version=21
+          gradle_version=8.11.1
+          android_platform=android-36
+          android_build_tools=35.0.0
+          ndk_version=28.0.13004108
           artifact_policy=ONE_APK_PLUS_ONE_PROVENANCE_MANIFEST
           EOF
           test "$(find "$ALFA_PIPELINE_RUN_DIR" -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 1
@@ -316,6 +331,7 @@ jobs:
           echo "CANONICAL_ARTIFACT_SHAPE=ONE_APK_PLUS_ONE_MANIFEST"
 
       - name: Upload only canonical APK and provenance manifest
+        id: canonical_upload
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: alfa-device-ctrl-stitch-${{ env.ALFA_SOURCE_COMMIT }}
@@ -324,6 +340,20 @@ jobs:
             artifacts/pipeline/${{ env.ALFA_PIPELINE_RUN_ID }}/apk-artifact-provenance.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Record external artifact identity
+        run: |
+          set -euo pipefail
+          {
+            echo "### Canonical APK artifact binding"
+            echo "workflow=$GITHUB_WORKFLOW"
+            echo "workflow_file=.github/workflows/apk-readiness.yml"
+            echo "workflow_sha=$GITHUB_WORKFLOW_SHA"
+            echo "workflow_run_id=$GITHUB_RUN_ID"
+            echo "artifact_id=${{ steps.canonical_upload.outputs.artifact-id }}"
+            echo "artifact_name=alfa-device-ctrl-stitch-${ALFA_SOURCE_COMMIT}"
+            echo "artifact_digest=${{ steps.canonical_upload.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   independent-artifact-verification:
     name: Independent post-upload artifact verification
