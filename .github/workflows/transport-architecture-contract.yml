@@ -25,11 +25,13 @@ jobs:
           set -euo pipefail
           grep -R -E 'import com\.termux\.terminal\.TerminalSession|import com\.termux\.view\.TerminalView' app/src/main/java/com/alfa/device_ctrl >/dev/null
           grep -R 'RuntimeSessionManager' app/src/main/java/com/alfa/device_ctrl/StitchOperationalActivityV2.java >/dev/null
-          grep -R -E 'rikka\.shizuku|ShizukuRemoteProcess|IShizukuService|ShizukuProvider|termux-am|termux-open|Termux:API|com\.termux\.api' app/src/main/java app/build.gradle settings.gradle >/dev/null && {
-            echo 'UNEXPECTED_EXTERNAL_TRANSPORT_BRIDGE_FOUND';
-            exit 1;
-          } || true
+          grep -R 'ShizukuExecutionBridge' app/src/main/java/com/alfa/device_ctrl >/dev/null
+          grep -R 'TermuxRunCommandBridge' app/src/main/java/com/alfa/device_ctrl >/dev/null
+          grep -R 'TermuxApiCapabilityBridge' app/src/main/java/com/alfa/device_ctrl >/dev/null
+          grep -R 'ShizukuProvider' app/src/main/AndroidManifest.xml >/dev/null
+          grep -R 'com.termux.permission.RUN_COMMAND' app/src/main/AndroidManifest.xml >/dev/null
           printf '%s\n' \
             'TRANSPORT_ARCHITECTURE=APP→RuntimeSessionManager→TerminalSession→embedded PTY→PRoot→rootfs' \
-            'TERMUX_API=NOT_ACTIVE' \
-            'SHIZUKU_RISH=NOT_ACTIVE'
+            'EXTERNAL_TRANSPORT=Shizuku + Termux RUN_COMMAND' \
+            'TERMUX_API=ACTIVE_CAPABILITY_LANE' \
+            'SHIZUKU_RISH=ACTIVE_EXTERNAL_LANE'
