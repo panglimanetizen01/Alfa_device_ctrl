@@ -12,7 +12,7 @@ printf '%s\n' "$BADGING" | grep -Fq "package: name='com.alfa.device_ctrl'"
 
 LAUNCH_LINE="$(printf '%s\n' "$BADGING" | grep '^launchable-activity:' || true)"
 case "$LAUNCH_LINE" in
-  *"name='com.alfa.device_ctrl.StitchOperationalActivity'"*) ;;
+  *"name='com.alfa.device_ctrl.StitchOperationalActivityV2'"*) ;;
   *)
     echo "STITCH_LAUNCHER=FAIL"
     echo "ACTUAL_LAUNCHABLE=${LAUNCH_LINE:-NONE}"
@@ -40,7 +40,7 @@ for line in lines:
 if current:
     blocks.append("\n".join(current))
 
-needle = "com.alfa.device_ctrl.StitchOperationalActivity"
+needle = "com.alfa.device_ctrl.StitchOperationalActivityV2"
 stitch = next((b for b in blocks if needle in b), None)
 if stitch is None:
     print("STITCH_ACTIVITY_IN_FINAL_MANIFEST=FAIL")

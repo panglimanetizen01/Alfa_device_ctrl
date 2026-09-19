@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+
+    <queries>
+        <package android:name="com.termux" />
+    </queries>
 
     <application
         android:name=".AlfaApplication"
@@ -14,6 +19,18 @@
         android:resizeableActivity="true"
         android:enableOnBackInvokedCallback="true"
         android:supportsRtl="true">
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="\${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <service
+            android:name=".TermuxRunCommandResultReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".StitchOperationalActivityV2"
             android:exported="true"
@@ -24,11 +41,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".StitchOperationalActivity"
-            android:exported="false"
-            android:enableOnBackInvokedCallback="true"
-            android:windowSoftInputMode="adjustResize" />
         <activity android:name=".Gate6ImportActivity" android:exported="false" android:label="Alfa Runtime Provisioning" />
         <service android:name=".RuntimeKeepAliveService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="keep an explicitly user-started Alfa interactive Linux runtime PTY alive while the user backgrounds the app" />
