@@ -86,7 +86,7 @@ count_canonical_producer_definitions() {
       has_canonical_name=0
       next
     }
-    in_step && /uses:[[:space:]]*actions\\/upload-artifact(@|$)/ { has_upload=1 }
+    in_step && /uses:[[:space:]]*actions\/upload-artifact(@|$)/ { has_upload=1 }
     in_step && /name:[[:space:]]*alfa-device-ctrl-stitch-/ { has_canonical_name=1 }
     END {
       if (in_step && has_upload && has_canonical_name) count++
@@ -108,11 +108,11 @@ steps:
   - name: Canonical upload A
     uses: actions/upload-artifact@v4
     with:
-      name: alfa-device-ctrl-${{ github.sha }}
+      name: alfa-device-ctrl-stitch-${{ github.sha }}
   - name: Canonical upload B
     uses: actions/upload-artifact@v4
     with:
-      name: alfa-device-ctrl-${{ github.sha }}
+      name: alfa-device-ctrl-stitch-${{ github.sha }}
 EOF
 if test "$(count_canonical_producer_definitions "$TMP_CASE_DIR")" -eq 1; then
   echo "TEST_DUPLICATE_CANONICAL_UPLOAD=FAIL"
