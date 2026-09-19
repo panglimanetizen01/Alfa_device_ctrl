@@ -6,6 +6,7 @@ on:
     branches:
       - master
       - fix/sterile-stitch-apk-boundary
+      - fix/canonical-launcher-verifier-v2-20260919
   pull_request:
     branches:
       - master
